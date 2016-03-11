@@ -1,0 +1,119 @@
+#include <cstdio>
+#include <cstdlib>
+
+#include <iostream>
+
+#include <linenoise.hpp>
+
+#include <sss/path.hpp>
+#include <sss/utlstring.hpp>
+#include <sss/algorithm.hpp>
+#include <sss/log.hpp>
+
+#include "varlisp/interpreter.hpp"
+#include "varlisp/tokenizer.hpp"
+
+int main (int argc, char *argv[])
+{
+    (void) argc;
+    (void) argv;
+
+#if 1
+    varlisp::Interpreter interpreter;
+
+    linenoise::SetHistoryMaxLen(100);
+    linenoise::SetCompletionCallback([](const char* editBuffer,
+                                            std::vector<std::string>& completions) {
+        completions.push_back("(lambda ");
+        completions.push_back("(if ");
+        completions.push_back("(list ");
+        completions.push_back("(define ");
+        completions.push_back("(quit) ");
+    });
+
+    std::string hist_path = sss::path::dirname(sss::path::getbin());
+    sss::path::append(hist_path, "history.txt");
+
+    std::cout << hist_path << std::endl;
+
+    sss::log::level(sss::log::log_ERROR);
+    // const char * hist_path = ;
+
+    linenoise::LoadHistory(hist_path.c_str());
+    std::string app = sss::path::basename(sss::path::getbin());
+    varlisp::Interpreter::status_t st = varlisp::Interpreter::status_OK;
+    while (st != varlisp::Interpreter::status_ERROR && st != varlisp::Interpreter::status_QUIT) {
+        auto line = linenoise::Readline("> ");
+
+        // 如何处理空行？
+        // 当然Interpreter的状态是status_UNFINISHED的时候，不对line进行处理，直
+        // 接eval即可；
+        //
+        // status_OK状态，则直接continue；
+        //
+        // status_UNFINISHED  任何行，都eval()
+        //
+        // status_OK          避开空行；
+
+        switch (st) {
+        case varlisp::Interpreter::status_QUIT:
+            std::cout << "quit! bye" << std::endl;
+            exit(EXIT_SUCCESS);
+
+        case varlisp::Interpreter::status_UNFINISHED:
+            st = interpreter.eval(line);
+            break;
+
+        case varlisp::Interpreter::status_OK:
+            if (sss::is_all_blank(line)) {
+                continue;
+            }
+            else {
+                st = interpreter.eval(line);
+                if (st == varlisp::Interpreter::status_QUIT) {
+                    std::cout << "quit " << __func__ << std::endl;
+                }
+            }
+            break;
+
+        case varlisp::Interpreter::status_ERROR:
+            break;
+        }
+
+        // Add line to history
+        linenoise::AddHistory(line.c_str());
+
+        // Save history
+        linenoise::SaveHistory(hist_path.c_str());
+    }
+
+#else
+    //*
+    std::string scripts = "(define a 1)";
+    varlisp::Interpreter interpreter;
+    interpreter.eval(scripts);
+    interpreter.eval("a");
+    return EXIT_SUCCESS;
+    /*/
+    std::string scripts = "(define a 1)";
+    varlisp::Tokenizer m_toknizer;
+    varlisp::Token tok;
+    m_toknizer.append(scripts);
+    std::cout << "Parser::" << __func__ << "(\"" << scripts << "\")" << std::endl;
+    while (tok = m_toknizer.top(), tok.which())
+    {
+        std::cout << m_toknizer.consume_count() << " " << tok.which() << " " << tok << std::endl;
+        m_toknizer.consume();
+    }
+    return EXIT_SUCCESS;
+
+    varlisp::Interpreter interpreter;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        interpreter.eval(line);
+    }
+    //*/
+#endif
+    return EXIT_SUCCESS;
+}
+
