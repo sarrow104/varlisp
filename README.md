@@ -1,5 +1,5 @@
 # varlisp
-a lisp syntax lip mini interpreter
+a lisp syntax like mini interpreter
 
 based no these Library:
 
