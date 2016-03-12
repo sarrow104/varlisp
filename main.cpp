@@ -18,7 +18,7 @@ int main (int argc, char *argv[])
     (void) argc;
     (void) argv;
 
-#if 0
+#if 1
     varlisp::Interpreter interpreter;
 
     linenoise::SetHistoryMaxLen(100);
@@ -70,9 +70,6 @@ int main (int argc, char *argv[])
             }
             else {
                 st = interpreter.eval(line);
-                if (st == varlisp::Interpreter::status_QUIT) {
-                    std::cout << "quit " << __func__ << std::endl;
-                }
             }
             break;
 
@@ -92,7 +89,14 @@ int main (int argc, char *argv[])
     // std::string scripts = "(define a (lambda (x) (* x 2)))";
     varlisp::Interpreter interpreter;
     interpreter.eval("(define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))");
-    interpreter.eval("(fib 3)");
+    interpreter.eval("(define x 3)");
+    interpreter.eval("(- x 1)");
+    interpreter.eval("(> x 2)");
+    interpreter.eval("(fib (- x 1))");
+    interpreter.eval("(fib 5)");
+    // interpreter.eval("(fib 1)");
+    // interpreter.eval("(fib 2)");
+    // interpreter.eval("(fib 3)");
     return EXIT_SUCCESS;
 #endif
     return EXIT_SUCCESS;
