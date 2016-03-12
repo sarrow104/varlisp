@@ -36,12 +36,12 @@ namespace varlisp {
         }
 
         bool operator()(const varlisp::symbol& s) const {
-            Environment::const_iterator it = m_env.find(s.m_data);
-            if (it == m_env.cend()) {
+            Object * it = m_env.find(s.m_data);
+            if (!it) {
                 SSS_POSTION_THROW(std::runtime_error,
                                   "symbol " << s.m_data << " not exists!");
             }
-            return boost::apply_visitor(cast2bool_visitor(m_env), it->second);
+            return boost::apply_visitor(cast2bool_visitor(m_env), *it);
         }
 
         bool operator()(const List& l) const {

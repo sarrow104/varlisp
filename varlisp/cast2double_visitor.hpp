@@ -17,18 +17,9 @@ namespace varlisp {
         }
         template<typename T>
             double operator()(const T& v) const {
-                // TODO
-                // FIXME
-                // SSS_POSTION_THROW(std::runtime_error,
-                //                   "object: cannot convert to double!");
-                return 0;
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "object: cannot convert to double!");
             }
-
-        double operator()(const varlisp::Empty& e ) const {
-            return 0;
-            SSS_POSTION_THROW(std::runtime_error,
-                              "Empty: cannot convert to double!");
-        }
 
         double operator()(double d) const {
             return d;
@@ -47,17 +38,16 @@ namespace varlisp {
         }
 
         double operator()(const varlisp::symbol& s) const {
-            Environment::const_iterator it = m_env.find(s.m_data);
-            if (it == m_env.cend()) {
+            Object * p_obj = m_env.find(s.m_data);
+            if (!p_obj) {
                 SSS_POSTION_THROW(std::runtime_error,
                                   "symbol " << s.m_data << " not exists!");
             }
-            return boost::apply_visitor(cast2double_visitor(m_env), it->second);
+            return boost::apply_visitor(cast2double_visitor(m_env), *p_obj);
         }
 
         double operator()(const List& l) const {
             Object res = l.eval(m_env);
-            // boost::apply_visitor(eval_visitor(m_env), l)
             return boost::apply_visitor(cast2double_visitor(m_env), res);
         }
     };
