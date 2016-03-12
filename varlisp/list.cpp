@@ -72,18 +72,21 @@ namespace varlisp {
 
     Object eval_impl(Environment& env, const Object& funcObj, const List& args)
     {
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, funcObj);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args);
         if (const varlisp::symbol * ps = boost::get<varlisp::symbol>(&funcObj)) {
             if (*ps == varlisp::symbol("list")) {
                 return args;
             }
 
             std::string name = (*ps).m_data;
-            Environment::const_iterator it = env.find(name);
-            if ( it == env.cend()) {
+            Object * p_func = env.find(name);
+            if (!p_func) {
                 SSS_POSTION_THROW(std::runtime_error,
                                   "Application "<< name << " not exist.");
             }
-            const Object& invokable = it->second;
+            const Object& invokable = *p_func;
+
             if (const varlisp::Builtin *p_builtin_func = boost::get<varlisp::Builtin>(&invokable)) {
                 return p_builtin_func->eval(env, args);
             }
@@ -129,7 +132,6 @@ namespace varlisp {
         // 不可能的值有哪些？Empty和Builtin；前者不用说了；后者只是内建函数的容
         // 器，不可能出现由表达式生成；解析到的表达式，最多只能是运算符号。
         if (const varlisp::List * pl = boost::get<varlisp::List>(&this->head)) {
-            SSS_LOG_EXPRESSION(sss::log::log_ERROR, pl);
             funcObj = pl->eval(env);
         }
         else if (const varlisp::IfExpr * pi = boost::get<varlisp::IfExpr>(&this->head)) {
