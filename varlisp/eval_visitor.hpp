@@ -29,12 +29,12 @@ struct eval_visitor : boost::static_visitor<Object>
 
     Object operator() (const varlisp::symbol& s) const
     {
-        Environment::const_iterator it = m_env.find(s.m_data);
-        if (it == m_env.cend()) {
+        Object * it = m_env.find(s.m_data);
+        if (!it) {
             SSS_POSTION_THROW(std::runtime_error,
                               "symbol " << s.m_data << " not exsist");
         }
-        return it->second;
+        return *it;
     }
 
     Object operator() (const Define& d) const;
