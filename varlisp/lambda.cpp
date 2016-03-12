@@ -21,8 +21,8 @@ namespace varlisp {
 
     Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
     {
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, true_args);
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, *this);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, true_args);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, *this);
         Environment inner(&env);
         if (this->args.size() != true_args.length()) {
             SSS_POSTION_THROW(std::runtime_error,
@@ -43,7 +43,7 @@ namespace varlisp {
             }
 
             SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args[i]);
-            inner[args[i]] = p->head;
+            inner[args[i]] = boost::apply_visitor(eval_visitor(env), p->head);
         }
         return boost::apply_visitor(eval_visitor(inner), this->body);
     }
