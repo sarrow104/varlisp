@@ -1,6 +1,8 @@
 #ifndef __STRICT_LESS_VISITOR_HPP_1457699825__
 #define __STRICT_LESS_VISITOR_HPP_1457699825__
 
+#include <sss/log.hpp>
+
 #include <boost/variant.hpp>
 
 #include "object.hpp"
@@ -15,11 +17,12 @@ namespace varlisp {
             : m_env(env)
         {
         }
+
         template <typename T, typename U>
             bool operator() (const T& lhs, const U& rhs) const
             {
-                double d1 = boost::apply_visitor(cast2double_visitor(m_env), lhs);
-                double d2 = boost::apply_visitor(cast2double_visitor(m_env), rhs);
+                double d1 = cast2double_visitor(m_env)(lhs);
+                double d2 = cast2double_visitor(m_env)(rhs);
                 return d1 < d2;
             }
 
