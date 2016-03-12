@@ -11,6 +11,11 @@ namespace varlisp {
     
 struct Empty {};
 
+inline std::ostream& operator << (std::ostream& o, const Empty& )
+{
+    return o;
+}
+
 inline bool operator==(const Empty& , const Empty& )
 {
     return true;
