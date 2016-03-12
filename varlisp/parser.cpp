@@ -19,7 +19,7 @@ namespace varlisp {
     //    -> *Expression
     void Parser::parse(varlisp::Environment& env, const std::string& scripts)
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
 
         // std::string scripts = "(list 12.5 abc 1.2 #f #t xy-z \"123\" )";
         m_toknizer.append(scripts);
@@ -30,8 +30,10 @@ namespace varlisp {
         while (tok = m_toknizer.top(), tok.which())
         {
             try {
-                auto node = this->parseExpression();
-                const auto res = boost::apply_visitor(eval_visitor(env), node);
+                auto expr = this->parseExpression();
+                const auto res = boost::apply_visitor(eval_visitor(env), expr);
+                boost::apply_visitor(print_visitor(std::cout), expr);
+                std::cout << " = ";
                 boost::apply_visitor(print_visitor(std::cout), res);
                 std::cout << std::endl;
             }
@@ -50,7 +52,7 @@ namespace varlisp {
     //      -> Symbol
     Object Parser::parseExpression()
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         varlisp::Token tok;
         while (tok = this->m_toknizer.top(), tok.which())
         {
@@ -100,36 +102,23 @@ namespace varlisp {
     //
     Object Parser::parseList()
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         if (!this->m_toknizer.consume(varlisp::left_parenthese)) {
             SSS_POSTION_THROW(std::runtime_error,
                               "expect '('");
         }
 
         varlisp::Token next = this->m_toknizer.lookahead(0);
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, next);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, next);
 
 #define define_builtin_symbol(a) static const varlisp::Token tok_##a(varlisp::symbol(#a));
         define_builtin_symbol(if);
-        define_builtin_symbol(quote);
         define_builtin_symbol(define);
         define_builtin_symbol(lambda);
-        define_builtin_symbol(eval);
-        define_builtin_symbol(list);
 #undef  define_builtin_symbol
-
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, (next == tok_list));
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, (next == tok_if));
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, (next == tok_quote));
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, (next == tok_define));
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, (next == tok_lambda));
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, (next == tok_eval));
 
         if (next == tok_if) {
             return this->parseSpecialIf();
-        }
-        else if (next == tok_quote) {
-            return this->parseSpecialQuote();
         }
         else if (next == tok_define) {
             return this->parseSpecialDefine();
@@ -137,12 +126,14 @@ namespace varlisp {
         else if (next == tok_lambda) {
             return this->parseSpecialLambda();
         }
-        else if (next == tok_eval) {
-            return this->parseSpecialEval();
-        }
-        else if (next == tok_list) {
-            return this->parseSpecialList();
-        }
+        // NOTE (1 2 3) (list 1 2 3)
+        // 的区别，仅在于第一个元素的不同；
+        // 后者的第一个元素，相当于一个函数；其作用，就是将当前列表之后的部分整体返回！
+        // 可以看做：(cdr (list list 1 2 3))
+        // else if (next == tok_list) {
+        //     // TODO
+        //     return this->parseSpecialList();
+        // }
 
         List current;
         varlisp::Token tok;
@@ -202,22 +193,27 @@ namespace varlisp {
             SSS_POSTION_THROW(std::runtime_error,
                               "expect 'if'");
         }
-        return varlisp::IfExpr(parseExpression(), parseExpression(), parseExpression());
-    }
+        Object condition = parseExpression(); 
+        Object consequent = parseExpression();
+        Object alternative;
 
-    Object Parser::parseSpecialQuote()
-    {
-        if (!this->m_toknizer.consume(varlisp::symbol("quote"))) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "expect 'quote'");
+        varlisp::Token tok = this->m_toknizer.lookahead();
+        if (!(tok == varlisp::Token(varlisp::right_parenthese))) {
+            alternative = parseExpression();
         }
-        throw std::runtime_error("not implement parseSpecialQuote");
-        return Object();
+
+        Object ret = varlisp::IfExpr(condition, consequent, alternative);
+
+        if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "expect ')'");
+        }
+        return ret;
     }
 
     Object Parser::parseSpecialDefine()
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         if (!this->m_toknizer.consume(varlisp::symbol("define"))) {
             SSS_POSTION_THROW(std::runtime_error,
                               "expect 'quote'");
@@ -259,7 +255,7 @@ namespace varlisp {
         }
         while (true) {
             Token tok = this->m_toknizer.lookahead();
-            if (tok.which() != 6) {
+            if (!boost::get<varlisp::symbol>(&tok)) {
                 break;
             }
             const std::string& name = boost::get<varlisp::symbol>(tok).m_data;
@@ -283,45 +279,46 @@ namespace varlisp {
         return varlisp::Lambda(std::move(args), std::move(body));
     }
 
-    Object Parser::parseSpecialEval()
-    {
-        if (!this->m_toknizer.consume(varlisp::symbol("eval"))) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "expect 'eval'");
-        }
-    }
-
-    Object Parser::parseSpecialList()
-    {
-        if (!this->m_toknizer.consume(varlisp::symbol("list"))) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "expect 'list'");
-        }
-    }
-
-    Object Parser::parseSymbol()
-    {
-        return 0;
-    }
-
-    Object Parser::parseNumber()
-    {
-        return 0;
-    }
-
-    Object Parser::parseDouble()
-    {
-        return 0;
-    }
-
-    Object Parser::parseInteger()
-    {
-        return 0;
-    }
-
-    Object Parser::parseString()
-    {
-        return 0;
-    }
+    // '(' "eval" Expression+ ')'
+    // lisp是一个包含上下文的语言——它可以载入各种文法，以形成新的解析形式；
+    //! https://zh.wikipedia.org/wiki/Eval
+    // (eval (read-from-string "(format t \"Hello World!!!~%\")"))
+    //
+    // 上例中，字符串，被read-from-string函数，解析为list；然后，由eval，对其进行解释；
+    //
+    // 又如：
+    //
+    // (define form2 '(+ 5 2))
+    //
+    // (eval form2 user-initial-environment)
+    // (eval form2)
+    //
+    // 其中， user-initial-environment 用来制定解析的上下文；
+    //
+    // 重定义 符号+ 的行为 为 "-"
+    // ;; Confuse the initial environment, so that + will be
+    // ;; a name for the subtraction function.
+    // (environment-define user-initial-environment '+ -)
+    // ;Value: +
+    //
+    //! http://clhs.lisp.se/Body/f_eval.htm
+    //
+    // > (eval (list + 1 2))
+    // 3
+    // > (eval list + 1 2))
+    // eval: arity mismatch;
+    //  the expected number of arguments does not match the given number
+    //   expected: 1 to 2
+    //   given: 4
+    //   arguments...:
+    //    #<procedure:list>
+    //    #<procedure:+>
+    //    1
+    //    2
+    // > (eval 1)
+    // 1
+    // 可见，eval也相当于一个内建的函数……
+    // 它需要1-2个参数；分别是一个表达式；还有一个是执行的环境(可选)；
+    // 这样来看的话，我也没有必要将其特殊化了；直接弄进builtin就好了。
 
 } // namespace varlisp

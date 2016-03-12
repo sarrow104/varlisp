@@ -6,6 +6,7 @@
 #include <utility>
 
 namespace varlisp {
+    struct Environment;
 
     struct IfExpr
     {
@@ -26,6 +27,8 @@ namespace varlisp {
         IfExpr(IfExpr&& rhs) = default;
         IfExpr& operator=(IfExpr&& rhs) = default;
 
+        Object eval(Environment& env) const;
+
         Object condition;
         Object consequent;
         Object alternative;
@@ -38,6 +41,7 @@ namespace varlisp {
         return o;
     }
     bool operator==(const IfExpr& lhs, const IfExpr& rhs);
+    bool operator<(const IfExpr& lhs, const IfExpr& rhs);
 } // namespace varlisp
 
 

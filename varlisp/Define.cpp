@@ -5,14 +5,23 @@
 namespace varlisp {
     void Define::print(std::ostream& o) const
     {
-        o << "(def " << this->name << " ";
+        o << "(define " << this->name << " ";
         boost::apply_visitor(print_visitor(o), this->value);
         o << ")";
     }
 
+    // 不可比较！
     bool operator==(const Define& lhs, const Define& rhs)
     {
-        return lhs.name == rhs.name &&
-            boost::apply_visitor(strict_equal_visitor(), lhs.value, rhs.value);
+//         return lhs.name == rhs.name &&
+//             boost::apply_visitor(strict_equal_visitor(), lhs.value, rhs.value);
+        return false;
     }
+
+    // 不可比较！
+    bool operator<(const Define& lhs, const Define& rhs)
+    {
+        return false;
+    }
+
 } // namespace varlisp

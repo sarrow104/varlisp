@@ -3,9 +3,16 @@
 
 #include <boost/variant.hpp>
 
+#include "environment.hpp"
+
 namespace varlisp {
     struct strict_equal_visitor : boost::static_visitor<bool>
     {
+        // Environment& m_env;
+        // explicit strict_equal_visitor(Environment& env)
+        //     : m_env(env)
+        // {
+        // }
         template <typename T, typename U>
             bool operator() (const T&, const U&) const
             {

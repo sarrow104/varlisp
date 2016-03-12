@@ -28,6 +28,8 @@ namespace varlisp {
         Lambda(Lambda&& ) = default;
         Lambda& operator=(Lambda&& ) = default;
 
+        Object eval(Environment& env, const varlisp::List& args) const;
+
         void print(std::ostream& o) const;
     };
 
@@ -38,6 +40,7 @@ namespace varlisp {
     }
 
     bool operator==(const Lambda& lhs, const Lambda& rhs);
+    bool operator<(const Lambda& lhs, const Lambda& rhs);
 
 } // namespace varlisp
 

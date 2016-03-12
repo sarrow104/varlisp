@@ -45,7 +45,7 @@ namespace varlisp {
 
         Object eval(Environment& env) const;
 
-        int length() const;
+        size_t length() const;
 
         // NOTE
         // 尾节点，貌似有两种状态！
@@ -63,6 +63,7 @@ namespace varlisp {
     }
 
     bool operator==(const List& lhs, const List& rhs);
+    bool operator<(const List& lhs, const List& rhs);
 } // namespace varlisp
 
 

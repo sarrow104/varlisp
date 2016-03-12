@@ -1,6 +1,6 @@
 #include "interpreter.hpp"
-
 #include "parser.hpp"
+#include "builtin.hpp"
 
 #include <sss/regex/cregex.hpp>
 
@@ -10,6 +10,7 @@ namespace varlisp {
     Interpreter::Interpreter()
             : m_status(status_OK)
         {
+            Builtin::regist_builtin_function(this->m_env);
         }
 
     Interpreter::status_t Interpreter::eval(const std::string& line)

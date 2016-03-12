@@ -2,6 +2,7 @@
 #define __CAST2DOUBLE_VISITOR_HPP_1457603964__
 
 #include <sss/utlstring.hpp>
+#include <sss/util/PostionThrow.hpp>
 
 #include "object.hpp"
 #include "environment.hpp"
@@ -15,8 +16,11 @@ namespace varlisp {
         {
         }
         template<typename T>
-            double operator()(const T& ) const {
-                return 0;
+            double operator()(const T& v) const {
+                // TODO
+                // FIXME
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "object: cannot convert to double!");
             } 
 
         double operator()(double d) const {
@@ -33,6 +37,15 @@ namespace varlisp {
 
         double operator()(const std::string& s) const {
             return sss::string_cast_nothrow<double>(s);
+        }
+
+        double operator()(const varlisp::symbol& s) const {
+            Environment::const_iterator it = m_env.find(s.m_data);
+            if (it == m_env.cend()) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "symbol " << s.m_data << " not exists!");
+            }
+            return boost::apply_visitor(cast2double_visitor(m_env), it->second);
         }
 
         double operator()(const List& l) const {

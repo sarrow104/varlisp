@@ -41,7 +41,7 @@ namespace varlisp {
      */
     Token   Tokenizer::lookahead_nothrow(int index)
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         if (index < 0) {
             return Token();
         }
@@ -59,7 +59,7 @@ namespace varlisp {
 
     Token   Tokenizer::lookahead(int index)
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         Token ret = lookahead_nothrow(index);
         if (!ret.which()) {
             SSS_POSTION_THROW(std::runtime_error,
@@ -70,9 +70,8 @@ namespace varlisp {
 
     bool    Tokenizer::consume()
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         if (!this->empty()) {
-            // SSS_LOG_EXPRESSION(sss::log::log_ERROR, this->m_tokens.front());
             this->m_tokens.erase(this->m_tokens.begin());
             this->m_consumed++;
             return true;
@@ -140,8 +139,8 @@ namespace varlisp {
      */
     void    Tokenizer::parse()
     {
-        SSS_LOG_FUNC_TRACE(sss::log::log_ERROR);
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, sss::util::make_slice(this->m_beg, this->m_end));
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, sss::util::make_slice(this->m_beg, this->m_end));
         using namespace ss1x::parser;
         Token tok;
 
@@ -163,8 +162,6 @@ namespace varlisp {
         rule Double_p = (double_p > &TokenEnd_p)[ss1x::parser::rule::ActionT([&tok](StrIterator beg,
                                                                                     StrIterator end,
                                                                                     ss1x::parser::rule::matched_value_t v) {
-                // SSS_LOG_EXPRESSION(sss::log::log_ERROR, __func__);
-                // SSS_LOG_EXPRESSION(sss::log::log_ERROR, sss::util::make_slice(beg, end));
                 tok = ss1x::parser::rule::toDouble(v);
 ;
             })].result(std::function<double(StrIterator,StrIterator)>(&util::slice2double));
@@ -176,8 +173,6 @@ namespace varlisp {
             > &TokenEnd_p)[ss1x::parser::rule::ActionT([&tok](StrIterator beg,
                                                               StrIterator end,
                                                               ss1x::parser::rule::matched_value_t v) {
-                // SSS_LOG_EXPRESSION(sss::log::log_ERROR, sss::util::make_slice(beg, end));
-                // SSS_LOG_EXPRESSION(sss::log::log_ERROR, ss1x::parser::rule::toString(v));
                 tok = symbol(ss1x::parser::rule::toString(v));
 ;
             })].result(ss1x::parser::util::slice2string);
@@ -242,7 +237,7 @@ namespace varlisp {
                 | refer(BoolFalse_p));
 
         if (Token_p.match(this->m_beg, this->m_end)) {
-            SSS_LOG_EXPRESSION(sss::log::log_ERROR, tok);
+            SSS_LOG_EXPRESSION(sss::log::log_DEBUG, tok);
             this->m_tokens.push_back(tok);
         }
     }

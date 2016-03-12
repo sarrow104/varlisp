@@ -42,6 +42,8 @@ struct eval_visitor : boost::static_visitor<Object>
     Object operator() (const IfExpr& i) const;
 
     Object operator() (const List& l) const;
+
+    // Object operator() (const Lambda& l) const;
 };
 } // namespace varlisp
 

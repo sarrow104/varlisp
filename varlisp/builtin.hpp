@@ -12,17 +12,29 @@
 #include "object.hpp"
 
 namespace varlisp {
+
+    struct Environment;
+
     struct Builtin
     {
         enum type_t {
-            TYPE_ADD, TYPE_SUB,
-            TYPE_MUL, TYPE_DIV
+            TYPE_ADD,
+            TYPE_SUB,
+            TYPE_MUL,
+            TYPE_DIV,
+
+            TYPE_POW,
+
+            TYPE_EQ,
+
+            TYPE_GT,
+            TYPE_LT,
+
+            TYPE_GE,
+            TYPE_LE,
+
+            TYPE_EVAL,
         };
-        struct para_length_t {
-            int min;
-            int max;
-        };
-        static const para_length_t  para_length[];
 
     public:
         explicit Builtin(type_t type);
@@ -37,11 +49,33 @@ namespace varlisp {
         Builtin& operator = (const Builtin& ) = default;
 
     public:
-        Object eval(varlisp::Environment& env, const varlisp::List& args);
+        static void regist_builtin_function(Environment& env);
+
+    public:
+        void print(std::ostream& o) const;
+
+        bool operator==(const Builtin& rhs) const
+        {
+            return this == &rhs || this->m_type == rhs.m_type;
+        }
+
+        bool operator<(const Builtin& rhs) const
+        {
+            return this != &rhs && this->m_type < rhs.m_type;
+        }
+
+    public:
+        Object eval(varlisp::Environment& env, const varlisp::List& args) const;
 
     private:
         type_t m_type;
     };
+
+    inline std::ostream& operator << (std::ostream& o, const Builtin& b)
+    {
+        b.print(o);
+        return o;
+    }
 } // namespace varlisp
 
 

@@ -2,6 +2,7 @@
 #include <sss/log.hpp>
 
 #include "list.hpp"
+#include "object.hpp"
 
 #include "cast2double_visitor.hpp"
 #include "print_visitor.hpp"
@@ -9,9 +10,9 @@
 
 namespace varlisp {
 
-    int List::length() const
+    size_t List::length() const
     {
-        int len = 0;
+        size_t len = 0;
         const List * p = this;
         while (p && p->head.which()) {
             len++;
@@ -69,116 +70,80 @@ namespace varlisp {
         // std::cout << "after:" << *this << std::endl;
     }
 
+    Object eval_impl(Environment& env, const Object& funcObj, const List& args)
+    {
+        if (const varlisp::symbol * ps = boost::get<varlisp::symbol>(&funcObj)) {
+            if (*ps == varlisp::symbol("list")) {
+                return args;
+            }
+
+            std::string name = (*ps).m_data;
+            Environment::const_iterator it = env.find(name);
+            if ( it == env.cend()) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "Application "<< name << " not exist.");
+            }
+            const Object& invokable = it->second;
+            if (const varlisp::Builtin *p_builtin_func = boost::get<varlisp::Builtin>(&invokable)) {
+                return p_builtin_func->eval(env, args);
+            }
+            else if (const varlisp::Lambda *pl = boost::get<varlisp::Lambda>(&invokable))
+            {
+                return pl->eval(env, args);
+            }
+            else {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "Application "<< name << " not invokable.");
+            }
+        }
+        else if (const varlisp::Lambda * pl = boost::get<varlisp::Lambda>(&funcObj)) {
+            return pl->eval(env, args);
+        }
+        else {
+            std::ostringstream oss;
+            boost::apply_visitor(print_visitor(oss), funcObj);
+            SSS_POSTION_THROW(std::runtime_error,
+                              oss.str() << " not callable objct");
+        }
+    }
+
     Object List::eval(Environment& env) const
     {
         // NOTE list.eval，需要非空，不然，都会抛出异常！
         if (this->is_empty()) {
             throw std::runtime_error("() is an illegal empty application!");
         }
+        // 晕！
+        //
+        // 理论上，需要先对每一个元素进行eval；然后再对新的list，应用eval！
+        //
 
-        int args_cnt = this->length() - 1;
-        if (this->head.which() == 5) {
-            // 调用函数；以this->head为函数名；this->tail为实参参数；另外有环境env；
-            // 但，这不能直接调用 apply_visitor()；因为它只能作用到variant上！
-            // 而List的tail[0]，还是List；就是说，我只能再次调用函数(或者函数对象)
-            const varlisp::symbol& op = boost::get<varlisp::symbol>(this->head);
-            static const varlisp::symbol op_add("+");
-            static const varlisp::symbol op_sub("-");
-            static const varlisp::symbol op_mul("*");
-            static const varlisp::symbol op_div("/");
-            // TODO FIXME
-            // list中，内建函数，比如'+','/'等的行为，都可以被重定义、修改！
-            if (op == op_add) {
-                if (!args_cnt) {
-                    throw std::runtime_error(op.m_data + " need at least one parameter");
-                }
-                double sum = 0;
-                const List * p = this;
-                while (p && p->head.which()) {
-                    sum += boost::apply_visitor(cast2double_visitor(env), p->head);
-                    if (p->tail.empty()) {
-                        p = 0;
-                    }
-                    else {
-                        p = &p->tail[0];
-                    }
-                }
-                return Object(sum);
-            }
-            else if (op == op_sub) {
-                if (!args_cnt) {
-                    throw std::runtime_error(op.m_data + " need at least one parameter");
-                }
-                if (args_cnt == 1) {
-                    return Object(-boost::apply_visitor(cast2double_visitor(env),
-                                                        this->tail[0].head));
-                }
-                else {
-                    double sum = boost::apply_visitor(cast2double_visitor(env), this->tail[0].head);
-                    const List * p = &this->tail[0].tail[0];
-                    while (p && p->head.which()) {
-                        sum -= boost::apply_visitor(cast2double_visitor(env), p->head);
-                        if (p->tail.empty()) {
-                            p = 0;
-                        }
-                        else {
-                            p = &p->tail[0];
-                        }
-                    }
-                    return Object(sum);
-                }
-            }
-            else if (op == op_mul) {
-                if (args_cnt < 2) {
-                    throw std::runtime_error(op.m_data + " need at least two parameter");
-                }
-                else {
-                    double mul = boost::apply_visitor(cast2double_visitor(env), this->tail[0].head);
-                    const List * p = &this->tail[0].tail[0];
-                    while (mul && p && p->head.which()) {
-                        mul *= boost::apply_visitor(cast2double_visitor(env), p->head);
-                        if (p->tail.empty()) {
-                            p = 0;
-                        }
-                        else {
-                            p = &p->tail[0];
-                        }
-                    }
-                    return Object(mul);
-                }
-            }
-            else if (op == op_div) {
-                if (args_cnt < 2) {
-                    throw std::runtime_error(op.m_data + " need at least two parameter");
-                }
-                else {
-                    double mul = boost::apply_visitor(cast2double_visitor(env), this->tail[0].head);
-                    const List * p = &this->tail[0].tail[0];
-                    while (mul && p && p->head.which()) {
-                        double div = boost::apply_visitor(cast2double_visitor(env), p->head);
-                        if (!div) {
-                            throw std::runtime_error(" divide by zero!");
-                        }
-                        mul /= div;
-                        if (p->tail.empty()) {
-                            p = 0;
-                        }
-                        else {
-                            p = &p->tail[0];
-                        }
-                    }
-                    return Object(mul);
-                }
-            }
+        varlisp::List nil;
+
+        Object funcObj;
+
+        // 直接值(字符量，用作list的第一个元素，被求值，都是错误！)
+        // 其次，是IfExpr,List，需要被eval一下；
+        // 如果是Lambda，可以直接使用；
+        // 如果是symbol，则进行调用尝试；
+        // 不可能的值有哪些？Empty和Builtin；前者不用说了；后者只是内建函数的容
+        // 器，不可能出现由表达式生成；解析到的表达式，最多只能是运算符号。
+        if (const varlisp::List * pl = boost::get<varlisp::List>(&this->head)) {
+            SSS_LOG_EXPRESSION(sss::log::log_ERROR, pl);
+            funcObj = pl->eval(env);
+        }
+        else if (const varlisp::IfExpr * pi = boost::get<varlisp::IfExpr>(&this->head)) {
+            funcObj = pi->eval(env);
         }
 
-        return Object();
+        return eval_impl(env,
+                         funcObj.which() ? funcObj : this->head,
+                         this->tail.empty() ? nil : this->tail[0]);
     }
-
 
     void List::print(std::ostream& o) const
     {
-        o << "(list";
+        o << "(";
         this->print_impl(o);
         o << ")";
     }
@@ -186,8 +151,14 @@ namespace varlisp {
     void List::print_impl(std::ostream& o) const
     {
         const List * p = this;
+        bool is_first = true;
         while (p && p->head.which()) {
-            o << " ";
+            if (is_first) {
+                is_first = false;
+            }
+            else {
+                o << " ";
+            }
             boost::apply_visitor(print_visitor(o), p->head);
             if (p->tail.empty()) {
                 p = 0;
@@ -203,6 +174,12 @@ namespace varlisp {
         return boost::apply_visitor(strict_equal_visitor(), lhs.head, rhs.head)
             && ((lhs.tail.empty() && rhs.tail.empty()) ||
                 lhs.tail[0] == rhs.tail[0]);
+    }
+
+    bool operator<(const List& lhs, const List& rhs)
+    {
+        // TODO FIXME
+        return false;
     }
 
 } // namespace varlisp

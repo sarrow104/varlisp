@@ -18,7 +18,7 @@ int main (int argc, char *argv[])
     (void) argc;
     (void) argv;
 
-#if 1
+#if 0
     varlisp::Interpreter interpreter;
 
     linenoise::SetHistoryMaxLen(100);
@@ -88,31 +88,12 @@ int main (int argc, char *argv[])
     }
 
 #else
-    //*
-    std::string scripts = "(define a 1)";
+    // std::string scripts = "(+ 1 2)";
+    // std::string scripts = "(define a (lambda (x) (* x 2)))";
     varlisp::Interpreter interpreter;
-    interpreter.eval(scripts);
-    interpreter.eval("a");
+    interpreter.eval("(define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))");
+    interpreter.eval("(fib 3)");
     return EXIT_SUCCESS;
-    /*/
-    std::string scripts = "(define a 1)";
-    varlisp::Tokenizer m_toknizer;
-    varlisp::Token tok;
-    m_toknizer.append(scripts);
-    std::cout << "Parser::" << __func__ << "(\"" << scripts << "\")" << std::endl;
-    while (tok = m_toknizer.top(), tok.which())
-    {
-        std::cout << m_toknizer.consume_count() << " " << tok.which() << " " << tok << std::endl;
-        m_toknizer.consume();
-    }
-    return EXIT_SUCCESS;
-
-    varlisp::Interpreter interpreter;
-    std::string line;
-    while (std::getline(std::cin, line)) {
-        interpreter.eval(line);
-    }
-    //*/
 #endif
     return EXIT_SUCCESS;
 }

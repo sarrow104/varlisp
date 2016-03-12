@@ -3,3 +3,5 @@ Debug/
 varLisp
 varLispD
 history.txt
+**/*.bak
+**/log.txt

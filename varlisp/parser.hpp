@@ -47,18 +47,10 @@ namespace varlisp {
         // 这就是说，包括操作符，也是Symbol!
         Object parseExpression();
         Object parseList();
-        Object parseSymbol();
-        Object parseNumber();
-        Object parseDouble();
-        Object parseInteger();
-        Object parseString();
 
         Object parseSpecialIf();
-        Object parseSpecialQuote();
         Object parseSpecialDefine();
         Object parseSpecialLambda();
-        Object parseSpecialEval();
-        Object parseSpecialList();
 
     private:
         varlisp::Tokenizer m_toknizer;

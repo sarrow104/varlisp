@@ -37,6 +37,7 @@ inline std::ostream& operator << (std::ostream& o, const Define& d)
 }
 
 bool operator==(const Define& lhs, const Define& rhs);
+bool operator<(const Define& lhs, const Define& rhs);
 
 } // namespace varlisp
 

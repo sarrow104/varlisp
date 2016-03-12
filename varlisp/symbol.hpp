@@ -21,6 +21,10 @@ namespace varlisp {
         bool operator == (const symbol& ref ) const {
             return this == &ref || this->m_data == ref.m_data;
         }
+
+        bool operator < (const symbol& ref ) const {
+            return this != &ref && this->m_data < ref.m_data;
+        }
     };
 
     inline std::ostream& operator << (std::ostream& o, const varlisp::symbol& s)
