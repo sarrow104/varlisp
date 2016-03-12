@@ -47,34 +47,14 @@ namespace varlisp {
 
     Object IfExpr::eval(Environment& env) const
     {
-        std::cout << "IfExpr::" << __func__ << " " << *this << std::endl;
-        // boost::apply_visitor(print_visitor(std::cout), this->condition);
         Object res = boost::apply_visitor(eval_visitor(env), this->condition);
-        Environment::const_iterator it = env.find("x");
-        if (it != env.cend()) {
-            std::cout << "x = ";
-            boost::apply_visitor(print_visitor(std::cout), it->second);
-            std::cout << std::endl;
-        }
-        std::cout << "res = ";
-        boost::apply_visitor(print_visitor(std::cout), res);
-        std::cout << std::endl;
-
-        // boost::apply_visitor(print_visitor(std::cout), this->condition);
 
         bool is_condition = boost::apply_visitor(cast2bool_visitor(env), res);
 
         if (is_condition) {
-            std::cout << "IfExpr::" << __func__ << " ";
-            boost::apply_visitor(print_visitor(std::cout), this->condition);
-            std::cout << std::endl;
-
             return boost::apply_visitor(eval_visitor(env), this->consequent);
         }
         else {
-            std::cout << "IfExpr::" << __func__ << " ";
-            boost::apply_visitor(print_visitor(std::cout), this->alternative);
-            std::cout << std::endl;
             return boost::apply_visitor(eval_visitor(env), this->alternative);
         }
     }
