@@ -217,7 +217,7 @@ namespace varlisp {
 
     void Builtin::print(std::ostream& o) const
     {
-        o << "#<builtin:" << builtin_infos[this->m_type].name << ">";
+        o << "#<builtin:\"" << builtin_infos[this->m_type].name << "\">";
     }
 
     Builtin::Builtin(type_t type)
