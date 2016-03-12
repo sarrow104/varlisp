@@ -19,9 +19,16 @@ namespace varlisp {
             double operator()(const T& v) const {
                 // TODO
                 // FIXME
-                SSS_POSTION_THROW(std::runtime_error,
-                                  "object: cannot convert to double!");
-            } 
+                // SSS_POSTION_THROW(std::runtime_error,
+                //                   "object: cannot convert to double!");
+                return 0;
+            }
+
+        double operator()(const varlisp::Empty& e ) const {
+            return 0;
+            SSS_POSTION_THROW(std::runtime_error,
+                              "Empty: cannot convert to double!");
+        }
 
         double operator()(double d) const {
             return d;

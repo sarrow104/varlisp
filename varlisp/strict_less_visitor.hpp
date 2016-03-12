@@ -3,6 +3,7 @@
 
 #include <boost/variant.hpp>
 
+#include "object.hpp"
 #include "cast2double_visitor.hpp"
 #include "environment.hpp"
 
@@ -27,16 +28,16 @@ namespace varlisp {
             return lhs < rhs;
         }
 
-        bool operator() (const Empty& lhs, const Empty& rhs) const
+        bool operator() (Empty lhs, Empty rhs) const
         {
             throw std::runtime_error("Empty < Empty");
         }
 
-        // template <typename T>
-        //     bool operator() (const T& lhs, const T& rhs) const
-        //     {
-        //         return lhs < rhs;
-        //     }
+        template <typename T>
+            bool operator() (const T& lhs, const T& rhs) const
+            {
+                return lhs < rhs;
+            }
 
         // template<typename T>
         //     bool operator() (const T& lhs, const )
