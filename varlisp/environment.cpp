@@ -1,51 +1,44 @@
 #include "environment.hpp"
 
 #include <sss/util/Memory.hpp>
+#include <sss/log.hpp>
 
 namespace varlisp {
 
     Environment::Environment(Environment * parent)
         : m_parent(parent)
     {
-        std::cout << __func__ << " from " << parent << std::endl;
+        // std::cout << __func__ << " " << this << " from " << parent << std::endl;
     }
 
-    Environment::const_iterator Environment::find(const std::string& name) const
+    const Object * Environment::find(const std::string& name) const
     {
-        const_iterator it = this->BaseT::find(name);
-        if (it != this->BaseT::cend()) {
-            return it;
-        }
-        else {
-            const Environment * pe = this;
-            while (pe->m_parent) {
-                it = pe->m_parent->BaseT::find(name);
-                if (it != pe->BaseT::cend()) {
-                    break;
-                }
-                pe = pe->m_parent;
+        const Environment * pe = this;
+        const Object * ret = 0;
+        do {
+            auto it = pe->BaseT::find(name);
+            if (it != pe->BaseT::cend()) {
+                ret = &it->second;
             }
-        }
-        return it;
+            pe = pe->m_parent;
+        } while(pe && !ret);
+
+        return ret;
     }
 
-    Environment::iterator Environment::find(const std::string& name)
+    Object* Environment::find(const std::string& name)
     {
-        iterator it = this->BaseT::find(name);
-        if (it != this->BaseT::end()) {
-            return it;
-        }
-        else {
-            const Environment * pe = this;
-            while (pe->m_parent) {
-                it = pe->m_parent->BaseT::find(name);
-                if (it != pe->BaseT::end()) {
-                    break;
-                }
-                pe = pe->m_parent;
+        Environment * pe = this;
+        Object * ret = 0;
+        do {
+            auto it = pe->BaseT::find(name);
+            if (it != pe->BaseT::end()) {
+                ret = &it->second;
             }
-        }
-        return it;
+            pe = pe->m_parent;
+        } while(pe && !ret);
+
+        return ret;
     }
 
 } // namespace varlisp
