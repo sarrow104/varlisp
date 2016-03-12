@@ -136,21 +136,21 @@ namespace varlisp {
             !boost::apply_visitor(strict_equal_visitor(),
                                   args.tail[0].head,
                                   args.head) &&
-            boost::apply_visitor(strict_less_visitor(),
+            boost::apply_visitor(strict_less_visitor(env),
                                  args.tail[0].head,
                                  args.head));
     }
 
     Object eval_lt(varlisp::Environment& env, const varlisp::List& args)
     {
-        return Object(boost::apply_visitor(strict_less_visitor(),
+        return Object(boost::apply_visitor(strict_less_visitor(env),
                                            args.head,
                                            args.tail[0].head));
     }
 
     Object eval_ge(varlisp::Environment& env, const varlisp::List& args)
     {
-        return Object(boost::apply_visitor(strict_less_visitor(),
+        return Object(boost::apply_visitor(strict_less_visitor(env),
                                            args.tail[0].head,
                                            args.head));
     }
@@ -162,7 +162,7 @@ namespace varlisp {
                                  args.tail[0].head,
                                  args.head)
             ||
-            boost::apply_visitor(strict_less_visitor(),
+            boost::apply_visitor(strict_less_visitor(env),
                                  args.head,
                                  args.tail[0].head));
 
