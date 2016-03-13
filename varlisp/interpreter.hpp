@@ -36,6 +36,8 @@ namespace varlisp {
             return m_status == status;
         }
 
+        int retrieve_symbols(std::vector<std::string>& symbols) const;
+
         /**
          * @brief 传入一行文本；并求值；
          *
