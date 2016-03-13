@@ -17,31 +17,74 @@ namespace varlisp {
 
     // scripts
     //    -> *Expression
-    void Parser::parse(varlisp::Environment& env, const std::string& scripts)
+    int Parser::parse(varlisp::Environment& env, const std::string& scripts)
     {
         SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, scripts);
 
         // std::string scripts = "(list 12.5 abc 1.2 #f #t xy-z \"123\" )";
         m_toknizer.append(scripts);
-        std::cout << "Parser::" << __func__ << "(\"" << scripts << "\")" << std::endl;
 
-        varlisp::Token tok;
+        // std::cout << "Parser::" << __func__ << "(\"" << scripts << "\")" << std::endl;
 
-        while (tok = m_toknizer.top(), tok.which())
+        bool is_balance = true;
+
+        while (is_balance && (m_toknizer.top().which()))
         {
             try {
+                if (!this->balance_preread()) {
+                    is_balance = false;
+                    break;
+                }
                 auto expr = this->parseExpression();
                 const auto res = boost::apply_visitor(eval_visitor(env), expr);
-                boost::apply_visitor(print_visitor(std::cout), expr);
-                std::cout << " = ";
-                boost::apply_visitor(print_visitor(std::cout), res);
-                std::cout << std::endl;
+                // std::cout << expr << " = " << res << std::endl;
+                if (res.which()) {
+                    std::cout << res << std::endl;
+                }
             }
             catch (std::runtime_error& e) {
                 std::cout << e.what() << std::endl;
                 this->m_toknizer.clear();
+                return -1;
+                // NOTE
+                // should return error code
             }
         }
+        return is_balance;
+    }
+
+    bool Parser::balance_preread()
+    {
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+        size_t token_cnt = 0;
+        int parenthese_balance = 0;
+        while (true) {
+            static varlisp::Token left(varlisp::left_parenthese);
+            static varlisp::Token right(varlisp::right_parenthese);
+            varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
+            if (!tok.which()) {
+                break;
+            }
+            if (tok == left) {
+                parenthese_balance ++;
+            }
+            if (tok == right) {
+                parenthese_balance --;
+            }
+            if (parenthese_balance < 0) {
+                this->m_toknizer.clear();
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "parenthese not balance!");
+            }
+            if (parenthese_balance == 0) {
+                break;
+            }
+            token_cnt++;
+        }
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, parenthese_balance);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, token_cnt);
+        return parenthese_balance == 0;
     }
 
     // Expression:
@@ -270,8 +313,18 @@ namespace varlisp {
             SSS_POSTION_THROW(std::runtime_error,
                               "expect ')'");
         }
-        varlisp::Object body = this->parseList();
+        std::vector<Object> body;
+        while (true) {
+            varlisp::Token tok = this->m_toknizer.lookahead(0);
+            if (tok == varlisp::Token(varlisp::right_parenthese)) {
+                break;
+            }
+            body.push_back(this->parseExpression());
+        }
+        // // 貌似 Lambda的body部分，可以有很多语句；
+        // varlisp::Object body = this->parseList();
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            // std::cout << body << std::endl;
             SSS_POSTION_THROW(std::runtime_error,
                               "expect ')'");
         }

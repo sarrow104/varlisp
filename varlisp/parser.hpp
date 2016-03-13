@@ -34,7 +34,14 @@ namespace varlisp {
         Parser& operator = (const Parser& ) = default;
 
     public:
-        void parse(varlisp::Environment & env, const std::string& scripts);
+        int parse(varlisp::Environment & env, const std::string& scripts);
+
+        /**
+         * @brief verify '( ') balance
+         *
+         * @return 
+         */
+        bool balance_preread();
 
     protected:
         // 空白和括弧，是不纳入结构的！
