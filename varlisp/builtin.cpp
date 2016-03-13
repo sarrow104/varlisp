@@ -59,14 +59,8 @@ namespace varlisp {
     Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
     {
         double mul = boost::apply_visitor(cast2double_visitor(env), args.head);
-        std::cout << "args.head " << args.head.which() << " ";
-        boost::apply_visitor(print_visitor(std::cout), args.head);
-        std::cout << std::endl;
         if (args.head.which() == 5) {
             const Object& ref = env[boost::get<varlisp::symbol>(args.head).m_data];
-            std::cout << " ";
-            boost::apply_visitor(print_visitor(std::cout), ref);
-            std::cout << std::endl;
         }
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, mul);
         const List * p = &args.tail[0];
@@ -125,7 +119,7 @@ namespace varlisp {
     // > (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))
     Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
     {
-        return Object(boost::apply_visitor(strict_equal_visitor(),
+        return Object(boost::apply_visitor(strict_equal_visitor(env),
                                            args.head,
                                            args.tail[0].head));
     }
@@ -133,7 +127,7 @@ namespace varlisp {
     Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
     {
         return Object(
-            !boost::apply_visitor(strict_equal_visitor(),
+            !boost::apply_visitor(strict_equal_visitor(env),
                                   args.tail[0].head,
                                   args.head) &&
             boost::apply_visitor(strict_less_visitor(env),
@@ -158,7 +152,7 @@ namespace varlisp {
     Object eval_le(varlisp::Environment& env, const varlisp::List& args)
     {
         return Object(
-            boost::apply_visitor(strict_equal_visitor(),
+            boost::apply_visitor(strict_equal_visitor(env),
                                  args.tail[0].head,
                                  args.head)
             ||
@@ -170,9 +164,6 @@ namespace varlisp {
 
     Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
     {
-        std::cout << __func__ << " ";
-        boost::apply_visitor(print_visitor(std::cout), args.head);
-        std::cout << std::endl;
         int arg_length = args.length();
         if (arg_length == 2) {
             SSS_POSTION_THROW(std::runtime_error,

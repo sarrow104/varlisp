@@ -173,9 +173,10 @@ namespace varlisp {
 
     bool operator==(const List& lhs, const List& rhs)
     {
-        return boost::apply_visitor(strict_equal_visitor(), lhs.head, rhs.head)
-            && ((lhs.tail.empty() && rhs.tail.empty()) ||
-                lhs.tail[0] == rhs.tail[0]);
+        // return boost::apply_visitor(strict_equal_visitor(), lhs.head, rhs.head)
+        //     && ((lhs.tail.empty() && rhs.tail.empty()) ||
+        //         lhs.tail[0] == rhs.tail[0]);
+        return false;
     }
 
     bool operator<(const List& lhs, const List& rhs)

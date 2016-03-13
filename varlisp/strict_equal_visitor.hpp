@@ -4,19 +4,22 @@
 #include <boost/variant.hpp>
 
 #include "environment.hpp"
+#include "cast2double_visitor.hpp"
 
 namespace varlisp {
     struct strict_equal_visitor : boost::static_visitor<bool>
     {
-        // Environment& m_env;
-        // explicit strict_equal_visitor(Environment& env)
-        //     : m_env(env)
-        // {
-        // }
+        Environment& m_env;
+        explicit strict_equal_visitor(Environment& env)
+            : m_env(env)
+        {
+        }
         template <typename T, typename U>
-            bool operator() (const T&, const U&) const
+            bool operator() (const T& lhs, const U& rhs) const
             {
-                return false;
+                double d1 = cast2double_visitor(m_env)(lhs);
+                double d2 = cast2double_visitor(m_env)(rhs);
+                return d1 == d2;
             }
 
         template <typename T>
@@ -24,6 +27,11 @@ namespace varlisp {
             {
                 return lhs == rhs;
             }
+
+        bool operator() (Empty lhs, Empty rhs) const
+        {
+            throw std::runtime_error("Empty = Empty");
+        }
     };
 } // namespace varlisp
 
