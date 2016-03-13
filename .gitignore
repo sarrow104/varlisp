@@ -5,3 +5,6 @@ varLispD
 history.txt
 **/*.bak
 **/log.txt
+cscope.files
+cscope.out
+tags
