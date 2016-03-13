@@ -7,15 +7,30 @@
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
 #include "eval_visitor.hpp"
+#include "cast2double_visitor.hpp"
 #include "environment.hpp"
 
 namespace varlisp {
     void Lambda::print(std::ostream& o) const
     {
         o << "(lambda (";
-        std::copy(this->args.begin(), this->args.end(), std::ostream_iterator<std::string>(o, " "));
+        if (!this->args.empty()) {
+            std::copy(this->args.begin(), this->args.end() - 1, std::ostream_iterator<std::string>(o, " "));
+            o << this->args.back();
+        }
         o << ") ";
-        boost::apply_visitor(print_visitor(o), this->body);
+        if (!this->body.empty()) {
+            bool is_first = true;
+            for (const auto& obj : this->body) {
+                if (is_first) {
+                    is_first = false;
+                }
+                else {
+                    o << " ";
+                }
+                boost::apply_visitor(print_visitor(o), obj);
+            }
+        }
         o << ")";
     }
 
@@ -29,6 +44,7 @@ namespace varlisp {
                               "expect " << this->args.size() << ", but given " << true_args.length());
         }
         const varlisp::List * p = &true_args;
+        bool need_exist = false;
         for (size_t i = 0;
              i != this->args.size();
              ++i, p = p->tail.empty() ? 0 : &p->tail[0])
@@ -42,10 +58,25 @@ namespace varlisp {
                                   "Empty argument at " << i << "; name " << args[i]);
             }
 
-            SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args[i]);
+            // SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args[i]);
             inner[args[i]] = boost::apply_visitor(eval_visitor(env), p->head);
         }
-        return boost::apply_visitor(eval_visitor(inner), this->body);
+
+        if (need_exist) {
+            exit(1);
+        }
+
+        size_t i = 0;
+        for (const auto& obj : this->body) {
+            if (i == this->body.size() - 1) {
+                return boost::apply_visitor(eval_visitor(inner), obj);
+            }
+            else {
+                boost::apply_visitor(eval_visitor(inner), obj);
+            }
+            ++i;
+        }
+        // return boost::apply_visitor(eval_visitor(inner), this->body);
     }
 
     // 不可比较
