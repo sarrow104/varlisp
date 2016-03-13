@@ -13,6 +13,21 @@
 #include "varlisp/interpreter.hpp"
 #include "varlisp/tokenizer.hpp"
 
+const char * find_identifier(const char *buf)
+{
+    if (!buf || !buf[0]) {
+        return 0;
+    }
+    const char * ret = std::strchr(buf, '\0');
+    if (std::isspace(*(ret-1))) {
+        return 0;
+    }
+    while (std::distance(buf, ret - 1) >= 0 && (std::isalnum(*(ret - 1)) || *(ret - 1) == '-')) {
+        ret--;
+    }
+    return ret;
+}
+
 int main (int argc, char *argv[])
 {
     (void) argc;
@@ -22,13 +37,31 @@ int main (int argc, char *argv[])
     varlisp::Interpreter interpreter;
 
     linenoise::SetHistoryMaxLen(100);
-    linenoise::SetCompletionCallback([](const char* editBuffer,
-                                            std::vector<std::string>& completions) {
-        completions.push_back("(lambda ");
-        completions.push_back("(if ");
-        completions.push_back("(list ");
-        completions.push_back("(define ");
-        completions.push_back("(quit) ");
+    linenoise::SetCompletionCallback([&interpreter](const char* editBuffer,
+                                                    std::vector<std::string>& completions) {
+
+        std::vector<std::string> current_symbols;
+        interpreter.retrieve_symbols(current_symbols);
+        current_symbols.push_back("lambda ");
+        current_symbols.push_back("if ");
+        current_symbols.push_back("list ");
+        current_symbols.push_back("define ");
+        current_symbols.push_back("quit) ");
+
+        const char * last_identifier = find_identifier(editBuffer);
+        if (!last_identifier) {
+            int width = strlen(editBuffer);
+            int tabsize = 8;
+            // width = width - width % tabsize + tabsize;
+            completions.push_back(editBuffer + std::string(tabsize - width % tabsize, ' '));
+            return;
+        }
+        std::string prefix = std::string(editBuffer, std::distance(editBuffer, last_identifier));
+        for (auto symbol : current_symbols) {
+            if (sss::is_begin_with(symbol, last_identifier)) {
+                completions.push_back(prefix + symbol + " ");
+            }
+        }
     });
 
     std::string hist_path = sss::path::dirname(sss::path::getbin());
@@ -36,30 +69,18 @@ int main (int argc, char *argv[])
 
     std::cout << hist_path << std::endl;
 
-    sss::log::level(sss::log::log_ERROR);
     // const char * hist_path = ;
 
     linenoise::LoadHistory(hist_path.c_str());
     std::string app = sss::path::basename(sss::path::getbin());
     varlisp::Interpreter::status_t st = varlisp::Interpreter::status_OK;
-    while (st != varlisp::Interpreter::status_ERROR && st != varlisp::Interpreter::status_QUIT) {
-        auto line = linenoise::Readline("> ");
 
-        // 如何处理空行？
-        // 当然Interpreter的状态是status_UNFINISHED的时候，不对line进行处理，直
-        // 接eval即可；
-        //
-        // status_OK状态，则直接continue；
-        //
-        // status_UNFINISHED  任何行，都eval()
-        //
-        // status_OK          避开空行；
+    std::string last_command;
+
+    while (st != varlisp::Interpreter::status_ERROR && st != varlisp::Interpreter::status_QUIT) {
+        auto line = linenoise::Readline(st == varlisp::Interpreter::status_UNFINISHED ? ": " : "> ");
 
         switch (st) {
-        case varlisp::Interpreter::status_QUIT:
-            std::cout << "quit! bye" << std::endl;
-            exit(EXIT_SUCCESS);
-
         case varlisp::Interpreter::status_UNFINISHED:
             st = interpreter.eval(line);
             break;
@@ -74,27 +95,53 @@ int main (int argc, char *argv[])
             break;
 
         case varlisp::Interpreter::status_ERROR:
+
+        default:
             break;
         }
 
-        // Add line to history
-        linenoise::AddHistory(line.c_str());
+        if (st == varlisp::Interpreter::status_OK || st == varlisp::Interpreter::status_UNFINISHED) {
+            if (!last_command.empty()) {
+                sss::rtrim(last_command);
+                last_command += " ";
+            }
+            // NOTE
+            // 在 status_UNFINISHED 状态下，清除左侧的空白，是不安全的作法——不过关系不大；
+            // 我的token，可不是按行处理的。
+            // 对于当前的token模式，rtrim是安全的
+            sss::ltrim(line);
+            last_command += line;
 
-        // Save history
-        linenoise::SaveHistory(hist_path.c_str());
+            if (st == varlisp::Interpreter::status_OK) {
+                // Add line to history
+                linenoise::AddHistory(last_command.c_str());
+
+                // Save history
+                linenoise::SaveHistory(hist_path.c_str());
+                last_command.resize(0);
+            }
+        }
+        if (st == varlisp::Interpreter::status_ERROR) {
+            if (!last_command.empty()) {
+                last_command.resize(0);
+            }
+            st = varlisp::Interpreter::status_OK;
+        }
     }
 
 #else
     // std::string scripts = "(+ 1 2)";
     // std::string scripts = "(define a (lambda (x) (* x 2)))";
     varlisp::Interpreter interpreter;
-    interpreter.eval("(define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))");
-    interpreter.eval("(define x 3)");
-    interpreter.eval("(- x 1)");
-    interpreter.eval("(> x 2)");
-    interpreter.eval("(fib (- x 1))");
-    interpreter.eval("(fib 5)");
-    // interpreter.eval("(fib 1)");
+    // interpreter.eval("(define i 0)");
+    // interpreter.eval("(= i 0)");
+    interpreter.eval("(define fibonacci (lambda (n) (define iter (lambda (i n1 n2) (if (= i 0) n2 (iter (- i 1) n2 (+ n1 n2))))) (iter n 0 1)))");
+    interpreter.eval("(fibonacci 10)");
+    // interpreter.eval("(define x 3)");
+    // interpreter.eval("(- x 1)");
+    // interpreter.eval("(> x 2)");
+    // interpreter.eval("(fib (- x 1))");
+    // interpreter.eval("(fib 5)");
     // interpreter.eval("(fib 2)");
     // interpreter.eval("(fib 3)");
     return EXIT_SUCCESS;
@@ -102,3 +149,11 @@ int main (int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
+// (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))
+// (define x (fib 20))
+// (define radius 10)
+// (define pi 3.14159)
+// (* pi (* radius radius))
+// (define circumference (* 2 pi radius))
+// (quit) 
+// (define fibonacci (lambda (n) (define iter (lambda (i n1 n2) (if (= i 0) n2 (iter (- i 1) n2 (+ n1 n2))))) (iter n 0 1)))
