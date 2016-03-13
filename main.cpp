@@ -134,9 +134,9 @@ int main (int argc, char *argv[])
     // std::string scripts = "(define a (lambda (x) (* x 2)))";
     varlisp::Interpreter interpreter;
     // interpreter.eval("(define i 0)");
-    // interpreter.eval("(= i 0)");
-    interpreter.eval("(define fibonacci (lambda (n) (define iter (lambda (i n1 n2) (if (= i 0) n2 (iter (- i 1) n2 (+ n1 n2))))) (iter n 0 1)))");
-    interpreter.eval("(fibonacci 10)");
+    interpreter.eval("(define (a x) (* x 2))");
+    // interpreter.eval("(define fibonacci (lambda (n) (define iter (lambda (i n1 n2) (if (= i 0) n2 (iter (- i 1) n2 (+ n1 n2))))) (iter n 0 1)))");
+    // interpreter.eval("(fibonacci 10)");
     // interpreter.eval("(define x 3)");
     // interpreter.eval("(- x 1)");
     // interpreter.eval("(> x 2)");
