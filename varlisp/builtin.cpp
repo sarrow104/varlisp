@@ -1,7 +1,15 @@
+#include <cmath>
+#include <sstream>
+
 #include <sss/util/PostionThrow.hpp>
 #include <sss/log.hpp>
+#include <sss/iConvpp.hpp>
+#include <sss/encoding.hpp>
+#include <sss/path.hpp>
 
-#include <cmath>
+#include <ss1x/asio/GetFile.hpp>
+#include <ss1x/asio/headers.hpp>
+#include <ss1x/asio/utility.hpp>
 
 #include "builtin.hpp"
 #include "cast2double_visitor.hpp"
@@ -12,6 +20,49 @@
 #include "strict_less_visitor.hpp"
 
 namespace varlisp {
+
+    enum type_t {
+        TYPE_ADD,
+        TYPE_SUB,
+        TYPE_MUL,
+        TYPE_DIV,
+
+        TYPE_POW,
+
+        TYPE_EQ,
+
+        TYPE_GT,
+        TYPE_LT,
+
+        TYPE_GE,
+        TYPE_LE,
+
+        TYPE_EVAL,
+
+        TYPE_READ,
+        TYPE_WRITE,
+
+        TYPE_SPLIT,
+        TYPE_ZIP,
+
+        TYPE_HTTP_GET,
+        TYPE_GUMBO_QUERY
+    };
+
+    void ensure_utf8(std::string& content, const std::string& encodings)
+    {
+        std::string encoding = sss::Encoding::encodings(content, encodings);
+        if (encoding.empty()) {
+            encoding = sss::Encoding::dectect(content);
+        }
+
+        if (!sss::Encoding::isCompatibleWith(encoding, "utf8")) {
+            std::string out;
+            sss::iConv ic("utf8", encoding);
+            ic.convert(out, content);
+            std::swap(out, content);
+        }
+    }
 
     typedef Object (*eval_func_t)(varlisp::Environment& env, const varlisp::List& args);
 
@@ -167,7 +218,7 @@ namespace varlisp {
         int arg_length = args.length();
         if (arg_length == 2) {
             SSS_POSTION_THROW(std::runtime_error,
-                             "eval only support one arguments now!");
+                              "eval only support one arguments now!");
             // TODO
             // 至于环境变量，可以根据传入进来的symbol，然后通过全局函数，获取环
             // 境变量的引用，然后应用到这里。
@@ -180,6 +231,110 @@ namespace varlisp {
         // 所以，这两次eval动作，分别是原有的用户动作，和这个eval关键字自己引发的动作；
         varlisp::Object first_res = boost::apply_visitor(eval_visitor(env), args.head);
         return boost::apply_visitor(eval_visitor(env), first_res);
+    }
+
+    Object eval_read(varlisp::Environment& env, const varlisp::List& args)
+    {
+        Object path = boost::apply_visitor(eval_visitor(env), args.head);
+        const std::string *p_path = boost::get<std::string>(&path);
+        if (!p_path) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "read requies a path");
+        }
+        std::string full_path = sss::path::full_of_copy(*p_path);
+        if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "path `" << *p_path << "` not to file");
+        }
+        // varlisp::List content;
+        // std::string line;
+        std::string content;
+        sss::path::file2string(full_path, content);
+
+        // 对于小文件，其判断可能出错
+        // ensure_utf8(content, "cp936,utf8");
+
+        return content;
+    }
+
+    Object eval_write(varlisp::Environment& env, const varlisp::List& args)
+    {
+        Object content = boost::apply_visitor(eval_visitor(env), args.head);
+
+        const std::string *p_content = boost::get<std::string>(&content);
+        if (!p_content) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "write requies content to parsing");
+        }
+        Object path = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        const std::string *p_path = boost::get<std::string>(&path);
+        if (!p_path) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "write requies path to write");
+        }
+        std::string full_path = sss::path::full_of_copy(*p_path);
+        sss::path::mkpath(sss::path::dirname(full_path));
+        std::ofstream ofs(full_path, std::ios_base::out | std::ios_base::binary);
+        if (!ofs.good()) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "write failed open file to write");
+        }
+        ofs << *p_content;
+        return Object();
+    }
+
+    Object eval_split(varlisp::Environment& env, const varlisp::List& args)
+    {
+    }
+
+    Object eval_zip(varlisp::Environment& env, const varlisp::List& args)
+    {
+    }
+
+    Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
+    {
+        Object url = boost::apply_visitor(eval_visitor(env), args.head);
+        const std::string *p_url = boost::get<std::string>(&url);
+        if (!p_url) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "http-get requie url for downloading!");
+        }
+
+        std::ostringstream oss;
+        ss1x::http::Headers headers;
+        ss1x::asio::getFile(oss, headers, *p_url);
+
+        std::string content = oss.str();
+        std::string charset = headers.get("Content-Type", "charset");
+        if (charset.empty()) {
+            charset = "cp936,utf8";
+        }
+
+        ensure_utf8(content, charset);
+
+        return content;
+    }
+
+    Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
+    {
+        Object content = boost::apply_visitor(eval_visitor(env), args.head);
+        const std::string *p_content = boost::get<std::string>(&content);
+        if (!p_content) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "gumbo-query requies content to parsing");
+        }
+        Object query = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        const std::string *p_query = boost::get<std::string>(&query);
+        if (!p_query) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "gumbo-query requies query string");
+        }
+        std::ostringstream oss;
+        ss1x::util::html::queryText(oss,
+                                    *p_content,
+                                    *p_query);
+
+        return oss.str();
     }
 
     // 参数格式；
@@ -204,6 +359,15 @@ namespace varlisp {
             {">=",      2,  2, &eval_ge},
             {"<=",      2,  2, &eval_le},
             {"eval",    1,  2, &eval_eval},
+
+            {"read",    1,  1, &eval_read},
+            {"write",   2,  2, &eval_write},
+
+            {"split",   1,  1, &eval_split},
+            {"zip",     2,  2, &eval_zip},
+
+            {"http-get",        1,  1, &eval_http_get},
+            {"gumbo-query",     2,  2, &eval_gumbo_query},
         };
 
     void Builtin::print(std::ostream& o) const
@@ -211,7 +375,7 @@ namespace varlisp {
         o << "#<builtin:\"" << builtin_infos[this->m_type].name << "\">";
     }
 
-    Builtin::Builtin(type_t type)
+    Builtin::Builtin(int type)
         : m_type(type)
     {
     }
@@ -239,20 +403,29 @@ namespace varlisp {
 
     void Builtin::regist_builtin_function(Environment& env)
     {
-        env["+"] = varlisp::Builtin(varlisp::Builtin::TYPE_ADD);
-        env["-"] = varlisp::Builtin(varlisp::Builtin::TYPE_SUB);
-        env["*"] = varlisp::Builtin(varlisp::Builtin::TYPE_MUL);
-        env["/"] = varlisp::Builtin(varlisp::Builtin::TYPE_DIV);
+        env["+"]    = varlisp::Builtin(varlisp::TYPE_ADD);
+        env["-"]    = varlisp::Builtin(varlisp::TYPE_SUB);
+        env["*"]    = varlisp::Builtin(varlisp::TYPE_MUL);
+        env["/"]    = varlisp::Builtin(varlisp::TYPE_DIV);
 
-        env["^"] = varlisp::Builtin(varlisp::Builtin::TYPE_POW);
+        env["^"]    = varlisp::Builtin(varlisp::TYPE_POW);
 
-        env["="] = varlisp::Builtin(varlisp::Builtin::TYPE_EQ);
+        env["="]    = varlisp::Builtin(varlisp::TYPE_EQ);
 
-        env[">"] = varlisp::Builtin(varlisp::Builtin::TYPE_GT);
-        env["<"] = varlisp::Builtin(varlisp::Builtin::TYPE_LT);
-        env[">="] = varlisp::Builtin(varlisp::Builtin::TYPE_GE);
-        env["<="] = varlisp::Builtin(varlisp::Builtin::TYPE_LE);
+        env[">"]    = varlisp::Builtin(varlisp::TYPE_GT);
+        env["<"]    = varlisp::Builtin(varlisp::TYPE_LT);
+        env[">="]   = varlisp::Builtin(varlisp::TYPE_GE);
+        env["<="]   = varlisp::Builtin(varlisp::TYPE_LE);
 
-        env["eval"] = varlisp::Builtin(varlisp::Builtin::TYPE_EVAL);
+        env["eval"] = varlisp::Builtin(varlisp::TYPE_EVAL);
+
+        env["read"] = varlisp::Builtin(varlisp::TYPE_READ);
+        env["write"] = varlisp::Builtin(varlisp::TYPE_WRITE);
+
+        env["split"] = varlisp::Builtin(varlisp::TYPE_SPLIT);
+        env["zip"] = varlisp::Builtin(varlisp::TYPE_ZIP);
+
+        env["http-get"]     = varlisp::Builtin(varlisp::TYPE_HTTP_GET);
+        env["gumbo-query"]  = varlisp::Builtin(varlisp::TYPE_GUMBO_QUERY);
     }
 } // namespace varlisp

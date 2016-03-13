@@ -17,27 +17,8 @@ namespace varlisp {
 
     struct Builtin
     {
-        enum type_t {
-            TYPE_ADD,
-            TYPE_SUB,
-            TYPE_MUL,
-            TYPE_DIV,
-
-            TYPE_POW,
-
-            TYPE_EQ,
-
-            TYPE_GT,
-            TYPE_LT,
-
-            TYPE_GE,
-            TYPE_LE,
-
-            TYPE_EVAL,
-        };
-
     public:
-        explicit Builtin(type_t type);
+        explicit Builtin(int type);
         ~Builtin() = default;
 
     public:
@@ -68,7 +49,7 @@ namespace varlisp {
         Object eval(varlisp::Environment& env, const varlisp::List& args) const;
 
     private:
-        type_t m_type;
+        int m_type;
     };
 
     inline std::ostream& operator << (std::ostream& o, const Builtin& b)
