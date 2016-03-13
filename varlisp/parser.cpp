@@ -60,8 +60,8 @@ namespace varlisp {
         size_t token_cnt = 0;
         int parenthese_balance = 0;
         while (true) {
-            static varlisp::Token left(varlisp::left_parenthese);
-            static varlisp::Token right(varlisp::right_parenthese);
+            static const varlisp::Token left(varlisp::left_parenthese);
+            static const varlisp::Token right(varlisp::right_parenthese);
             varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
             if (!tok.which()) {
                 break;
@@ -96,47 +96,40 @@ namespace varlisp {
     Object Parser::parseExpression()
     {
         SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-        varlisp::Token tok;
-        while (tok = this->m_toknizer.top(), tok.which())
-        {
-            switch(tok.which()) {
-            case 0:
-                break;
+        varlisp::Token tok = this->m_toknizer.top();
 
-            case 1:
-                if (tok == Token(varlisp::left_parenthese)) {
-                    return this->parseList();
-                }
-                else {
-                    SSS_POSTION_THROW(std::runtime_error,
-                                      "unexpect ')'");
-                }
-                break;
-
-            case 2:
-                this->m_toknizer.consume();
-                return varlisp::Object(boost::get<bool>(tok));
-
-            case 3:
-                this->m_toknizer.consume();
-                return varlisp::Object(boost::get<int>(tok));
-
-            case 4:
-                this->m_toknizer.consume();
-                return varlisp::Object(boost::get<double>(tok));
-
-            case 5:
-                this->m_toknizer.consume();
-                // TODO 需要去掉引号，处理转义
-                return varlisp::Object(boost::get<std::string>(tok));
-
-            case 6:
-                this->m_toknizer.consume();
-                // symbol
-                return varlisp::Object(boost::get<varlisp::symbol>(tok));
+        if (const varlisp::parenthese_t * p_v = boost::get<varlisp::parenthese_t>(&tok)) {
+            if (*p_v != varlisp::left_parenthese) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "unexpect ')'");
             }
+            return this->parseList();
         }
-        return varlisp::Object();
+        else if (const bool * p_v = boost::get<bool>(&tok)) {
+            this->m_toknizer.consume();
+            return varlisp::Object(*p_v);
+        }
+        else if (const int * p_v = boost::get<int>(&tok)) {
+            this->m_toknizer.consume();
+            return varlisp::Object(*p_v);
+        }
+        else if (const double * p_v = boost::get<double>(&tok)) {
+            this->m_toknizer.consume();
+            return varlisp::Object(*p_v);
+        }
+        else if (const std::string * p_v = boost::get<std::string>(&tok)) {
+            this->m_toknizer.consume();
+            return varlisp::Object(*p_v);
+        }
+        else if (const varlisp::symbol * p_v = boost::get<varlisp::symbol>(&tok)) {
+            this->m_toknizer.consume();
+            return varlisp::Object(*p_v);
+        }
+        else {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "connot handle boost::variant which() == "
+                              << tok.which());
+        }
     }
 
     // FIXME
@@ -254,6 +247,26 @@ namespace varlisp {
         return ret;
     }
 
+    int parseParamVector(varlisp::Tokenizer& toknizer, std::vector<std::string>& args)
+    {
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+        int old_len = args.size();
+        while (true) {
+            Token tok = toknizer.lookahead();
+            if (!boost::get<varlisp::symbol>(&tok)) {
+                break;
+            }
+            const std::string& name = boost::get<varlisp::symbol>(tok).m_data;
+            if (!std::isalpha(name[0])) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "we need a variable name here, not `" << name << "`");
+            }
+            args.push_back(name);
+            toknizer.consume();
+        }
+        return args.size() - old_len;
+    }
+
     Object Parser::parseSpecialDefine()
     {
         SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
@@ -262,27 +275,70 @@ namespace varlisp {
                               "expect 'quote'");
         }
 
-        varlisp::symbol name;
-        try {
-            name = boost::get<varlisp::symbol>(this->m_toknizer.lookahead());
-        }
-        catch (const boost::bad_get& e) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "we need a variable name here, not `" << this->m_toknizer.lookahead() << "`");
-        }
-        if (!std::isalpha(name.m_data[0])) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "we need a variable name here, not `" << name.m_data << "`");
-        }
-        this->m_toknizer.consume();
-        varlisp::Object value = this->parseExpression();
+        varlisp::Token tok = this->m_toknizer.lookahead();
 
-        if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "expect ')'");
-        }
+        if (const varlisp::symbol *p_name = boost::get<varlisp::symbol>(&tok)) {
+            if (!std::isalpha(p_name->m_data[0])) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "we need a variable name here, not `"
+                                  << p_name->m_data << "`");
+            }
+            this->m_toknizer.consume();
+            varlisp::Object value = this->parseExpression();
 
-        return Define(name, value);
+            if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "expect ')'");
+            }
+
+            return Define(*p_name, value);
+        }
+        else if (const varlisp::parenthese_t *p_v = boost::get<varlisp::parenthese_t>(&tok)) {
+            if (*p_v != varlisp::left_parenthese) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "expect '('");
+            }
+            this->m_toknizer.consume();
+
+            tok = this->m_toknizer.lookahead();
+            if (varlisp::symbol * p_symbol = boost::get<varlisp::symbol>(&tok)) {
+                if (!std::isalpha(p_symbol->m_data[0])) {
+                    SSS_POSTION_THROW(std::runtime_error,
+                                      "we need a variable name here, not `"
+                                      << p_symbol->m_data << "`");
+                }
+                this->m_toknizer.consume();
+
+                std::vector<std::string> args;
+                parseParamVector(m_toknizer, args);
+
+                if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+                    SSS_POSTION_THROW(std::runtime_error,
+                                      "expect ')'");
+                }
+
+                std::vector<Object> body;
+                while (true) {
+                    varlisp::Token tok = this->m_toknizer.lookahead(0);
+                    if (tok == varlisp::Token(varlisp::right_parenthese)) {
+                        break;
+                    }
+                    body.push_back(this->parseExpression());
+                }
+
+                if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+                    SSS_POSTION_THROW(std::runtime_error,
+                                      "expect ')'");
+                }
+                varlisp::Lambda lambda(std::move(args), std::move(body));
+
+                return varlisp::Define(*p_symbol, lambda);
+            }
+            else {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "expect a valid func-name");
+            }
+        }
     }
 
     Object Parser::parseSpecialLambda()
@@ -296,19 +352,9 @@ namespace varlisp {
             SSS_POSTION_THROW(std::runtime_error,
                               "expect '('");
         }
-        while (true) {
-            Token tok = this->m_toknizer.lookahead();
-            if (!boost::get<varlisp::symbol>(&tok)) {
-                break;
-            }
-            const std::string& name = boost::get<varlisp::symbol>(tok).m_data;
-            if (!std::isalpha(name[0])) {
-                SSS_POSTION_THROW(std::runtime_error,
-                                  "we need a variable name here, not `" << name << "`");
-            }
-            args.push_back(name);
-            this->m_toknizer.consume();
-        }
+
+        parseParamVector(m_toknizer, args);
+
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
             SSS_POSTION_THROW(std::runtime_error,
                               "expect ')'");
@@ -324,7 +370,6 @@ namespace varlisp {
         // // 貌似 Lambda的body部分，可以有很多语句；
         // varlisp::Object body = this->parseList();
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-            // std::cout << body << std::endl;
             SSS_POSTION_THROW(std::runtime_error,
                               "expect ')'");
         }
