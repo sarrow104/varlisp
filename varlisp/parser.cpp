@@ -40,7 +40,12 @@ namespace varlisp {
                 const auto res = boost::apply_visitor(eval_visitor(env), expr);
                 // std::cout << expr << " = " << res << std::endl;
                 if (res.which()) {
-                    std::cout << res << std::endl;
+#if 1
+                    boost::apply_visitor(print_visitor(std::cout), res);
+                    std::cout << std::endl;
+#else
+                    std::cout << res.which() << " " << res << std::endl;
+#endif
                 }
             }
             catch (std::runtime_error& e) {
@@ -149,12 +154,24 @@ namespace varlisp {
 
 #define define_builtin_symbol(a) static const varlisp::Token tok_##a(varlisp::symbol(#a));
         define_builtin_symbol(if);
+        define_builtin_symbol(cond);
+        define_builtin_symbol(and);
+        define_builtin_symbol(or);
         define_builtin_symbol(define);
         define_builtin_symbol(lambda);
 #undef  define_builtin_symbol
 
         if (next == tok_if) {
             return this->parseSpecialIf();
+        }
+        else if (next == tok_cond) {
+            return this->parseSpecialCond();
+        }
+        else if (next == tok_and) {
+            return parseSpecialAnd();
+        }
+        else if (next == tok_or) {
+            return parseSpecialOr();
         }
         else if (next == tok_define) {
             return this->parseSpecialDefine();
@@ -231,12 +248,7 @@ namespace varlisp {
         }
         Object condition = parseExpression(); 
         Object consequent = parseExpression();
-        Object alternative;
-
-        varlisp::Token tok = this->m_toknizer.lookahead();
-        if (!(tok == varlisp::Token(varlisp::right_parenthese))) {
-            alternative = parseExpression();
-        }
+        Object alternative = parseExpression();
 
         Object ret = varlisp::IfExpr(condition, consequent, alternative);
 
@@ -245,6 +257,90 @@ namespace varlisp {
                               "expect ')'");
         }
         return ret;
+    }
+
+    Object Parser::parseSpecialCond()
+    {
+        if (!this->m_toknizer.consume(varlisp::symbol("cond"))) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "expect 'cond'");
+        }
+        bool has_else_clause = false;
+        std::vector<std::pair<Object, Object> > conditions;
+
+        while (true) {
+            varlisp::Token tok = this->m_toknizer.lookahead(0);
+            if (!(tok == varlisp::Token(varlisp::left_parenthese))) {
+                break;
+            }
+            this->m_toknizer.consume();
+            Object predict  = this->parseExpression();
+            Object expr     = this->parseExpression();
+            conditions.emplace_back(predict, expr);
+            if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "expect ')'");
+            }
+            if (const varlisp::symbol * pv = boost::get<varlisp::symbol>(&predict)) {
+                if (*pv == varlisp::symbol("else")) {
+                    has_else_clause = true;
+                    break;
+                }
+            }
+        }
+        if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "expect ')'");
+        }
+
+        return varlisp::Cond(conditions);
+    }
+
+    Object Parser::parseSpecialAnd()
+    {
+        if (!this->m_toknizer.consume(varlisp::symbol("and"))) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "expect 'and'");
+        }
+
+        std::vector<Object> conditions;
+
+        while (true) {
+            varlisp::Token tok = this->m_toknizer.lookahead(0);
+            if (tok == varlisp::Token(varlisp::right_parenthese)) {
+                break;
+            }
+            conditions.emplace_back(this->parseExpression());
+        }
+        if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "expect ')'");
+        }
+
+        return varlisp::LogicAnd(conditions);
+    }
+
+    Object Parser::parseSpecialOr()
+    {
+        if (!this->m_toknizer.consume(varlisp::symbol("or"))) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "expect 'or'");
+        }
+        std::vector<Object> conditions;
+
+        while (true) {
+            varlisp::Token tok = this->m_toknizer.lookahead(0);
+            if (tok == varlisp::Token(varlisp::right_parenthese)) {
+                break;
+            }
+            conditions.emplace_back(this->parseExpression());
+        }
+        if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "expect ')'");
+        }
+
+        return varlisp::LogicOr(conditions);
     }
 
     int parseParamVector(varlisp::Tokenizer& toknizer, std::vector<std::string>& args)

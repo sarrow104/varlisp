@@ -56,6 +56,9 @@ namespace varlisp {
         Object parseList();
 
         Object parseSpecialIf();
+        Object parseSpecialCond();
+        Object parseSpecialAnd();
+        Object parseSpecialOr();
         Object parseSpecialDefine();
         Object parseSpecialLambda();
 
