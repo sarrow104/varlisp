@@ -32,6 +32,9 @@ struct List;
 struct Quote;
 struct Builtin;
 struct Lambda;
+struct Cond;
+struct LogicAnd;
+struct LogicOr;
 
 typedef boost::variant<
         Empty,              // 0
@@ -43,8 +46,11 @@ typedef boost::variant<
         boost::recursive_wrapper<Builtin>,  // 6
         boost::recursive_wrapper<Define>,   // 7
         boost::recursive_wrapper<IfExpr>,   // 8
-        boost::recursive_wrapper<List>,     // 9  // NOTE quote-list只是作为一种函数存在！
-        boost::recursive_wrapper<Lambda>    // 10
+        boost::recursive_wrapper<Cond>,     // 9
+        boost::recursive_wrapper<LogicAnd>, // 10
+        boost::recursive_wrapper<LogicOr>,  // 11
+        boost::recursive_wrapper<List>,     // 12  // NOTE quote-list只是作为一种函数存在！
+        boost::recursive_wrapper<Lambda>    // 13
         > Object;
 } // namespace varlisp
 
@@ -53,6 +59,9 @@ typedef boost::variant<
 #include "list.hpp"
 #include "builtin.hpp"
 #include "lambda.hpp"
+#include "condition.hpp"
+#include "logic_and.hpp"
+#include "logic_or.hpp"
 
 std::ostream& operator << (std::ostream& o, const varlisp::Object& obj);
 
