@@ -40,6 +40,8 @@ namespace varlisp {
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, *this);
         Environment inner(&env);
         if (this->args.size() != true_args.length()) {
+            std::cout << *this << std::endl;
+            std::cout << true_args << std::endl;
             SSS_POSTION_THROW(std::runtime_error,
                               "expect " << this->args.size() << ", but given " << true_args.length());
         }
