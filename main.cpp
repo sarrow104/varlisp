@@ -33,7 +33,7 @@ int main (int argc, char *argv[])
     (void) argc;
     (void) argv;
 
-#if 1
+#if 0
     varlisp::Interpreter interpreter;
 
     linenoise::SetHistoryMaxLen(100);
@@ -44,6 +44,7 @@ int main (int argc, char *argv[])
         interpreter.retrieve_symbols(current_symbols);
         current_symbols.push_back("lambda ");
         current_symbols.push_back("if ");
+        current_symbols.push_back("cond ");
         current_symbols.push_back("list ");
         current_symbols.push_back("define ");
         current_symbols.push_back("quit) ");
@@ -130,11 +131,21 @@ int main (int argc, char *argv[])
     }
 
 #else
+    // TODO
+    // preload functions
     // std::string scripts = "(+ 1 2)";
     // std::string scripts = "(define a (lambda (x) (* x 2)))";
     varlisp::Interpreter interpreter;
     // interpreter.eval("(define i 0)");
-    interpreter.eval("(define (a x) (* x 2))");
+    interpreter.eval("(define (sqrt-iter guess x) (if (good-enough guess x) guess (sqrt-iter (improve guess x) x)))");
+    interpreter.eval("(define (improve guess x) (average guess (/ x guess)))");
+    interpreter.eval("(define (average x y) (/ (+ x y) 2))");
+    interpreter.eval("(define (good-enough guess x) (< (abs (- (square guess) x)) 0.001))");
+    interpreter.eval("(define (sqrt x) (sqrt-iter 1.0 x))");
+    interpreter.eval("(define (square x) (* x x))");
+    interpreter.eval("(define (abs x) (if (< x 0) (- x) x))");
+    interpreter.eval("(sqrt 9)");
+
     // interpreter.eval("(define fibonacci (lambda (n) (define iter (lambda (i n1 n2) (if (= i 0) n2 (iter (- i 1) n2 (+ n1 n2))))) (iter n 0 1)))");
     // interpreter.eval("(fibonacci 10)");
     // interpreter.eval("(define x 3)");
