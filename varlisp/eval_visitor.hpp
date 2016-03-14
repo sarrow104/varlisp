@@ -3,15 +3,14 @@
 
 #include "object.hpp"
 
-#include "environment.hpp"
-
 #include <sss/util/PostionThrow.hpp>
 
 namespace varlisp {
+    struct Environment;
 struct eval_visitor : boost::static_visitor<Object>
 {
     Environment & m_env;
-    eval_visitor(Environment& env)
+    explicit eval_visitor(Environment& env)
         : m_env(env)
     {
     }
@@ -19,31 +18,46 @@ struct eval_visitor : boost::static_visitor<Object>
     template <typename T>
     Object operator() (const T& v) const
     {
-        return v;
+        return v.eval(m_env);
     }
+
+    Object operator() (const varlisp::symbol& s) const;
+    Object operator() (const Define& d) const;
 
     Object operator() (const Empty& ) const
     {
         return Object();
     }
 
-    Object operator() (const varlisp::symbol& s) const
+    Object operator() (bool v) const
     {
-        Object * it = m_env.find(s.m_data);
-        if (!it) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "symbol " << s.m_data << " not exsist");
-        }
-        return *it;
+        return v;
     }
 
-    Object operator() (const Define& d) const;
+    Object operator() (int v) const
+    {
+        return v;
+    }
 
-    Object operator() (const IfExpr& i) const;
+    Object operator() (double v) const
+    {
+        return v;
+    }
 
-    Object operator() (const List& l) const;
+    Object operator() (const std::string v) const
+    {
+        return v;
+    }
 
-    // Object operator() (const Lambda& l) const;
+    Object operator() (const varlisp::Builtin& v) const
+    {
+        return v;
+    }
+
+    Object operator() (const varlisp::Lambda& v) const
+    {
+        return v;
+    }
 };
 } // namespace varlisp
 
