@@ -150,6 +150,13 @@ namespace varlisp {
             m_beg++;
         }
 
+        rule Comment_p
+            = ss1x::parser::char_p(';') >> *(ss1x::parser::char_ - ss1x::parser::char_p('\n') - ss1x::parser::sequence("\r\n"))
+            >> &(ss1x::parser::char_p('\n') | ss1x::parser::sequence("\r\n") | ss1x::parser::eof_p);
+
+        rule Spaces_p
+            = +ss1x::parser::space_p;
+
         // rule Expression_p;
         rule TokenEnd_p
             = ss1x::parser::space_p || ss1x::parser::char_set_p("()") || ss1x::parser::eof_p;
@@ -159,6 +166,7 @@ namespace varlisp {
                                                                        ss1x::parser::rule::matched_value_t) {
                 tok = int(ss1x::parser::util::parseUint32_t(it_beg, it_end));
             })];
+
         rule Double_p = (double_p > &TokenEnd_p)[ss1x::parser::rule::ActionT([&tok](StrIterator beg,
                                                                                     StrIterator end,
                                                                                     ss1x::parser::rule::matched_value_t v) {
@@ -212,29 +220,28 @@ namespace varlisp {
             })];
 
         rule BoolTure_p
-            = (ss1x::parser::sequence("#t") >> !(ss1x::parser::alnum_p || ss1x::parser::char_p('-'))
-            > &TokenEnd_p)[ss1x::parser::rule::ActionT([&tok](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
+            = (ss1x::parser::char_p('#') >> ss1x::parser::char_set_p("Tt") > !(ss1x::parser::alnum_p | ss1x::parser::char_p('-')))
+            [ss1x::parser::rule::ActionT([&tok](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
                 tok = true;
-;
             })];
 
         rule BoolFalse_p
-            = (ss1x::parser::sequence("#f") >> !(ss1x::parser::alnum_p || ss1x::parser::char_p('-'))
-            > &TokenEnd_p)[ss1x::parser::rule::ActionT([&tok](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
+            = (ss1x::parser::char_p('#') >> ss1x::parser::char_set_p("Ff") > !(ss1x::parser::alnum_p | ss1x::parser::char_p('-')))
+            [ss1x::parser::rule::ActionT([&tok](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
                 tok = false;
-;
             })];
 
         rule Token_p
-            = *ss1x::parser::space_p
-            >> (  refer(Double_p)
-                | refer(Integer_p)
-                | refer(Symbol_p)
-                | refer(String_p)
-                | refer(LeftParen_p)
-                | refer(RightParent_p)
-                | refer(BoolTure_p)
-                | refer(BoolFalse_p));
+            = (  refer(Spaces_p)
+               | refer(Comment_p)
+               | refer(Double_p)
+               | refer(Integer_p)
+               | refer(Symbol_p)
+               | refer(String_p)
+               | refer(LeftParen_p)
+               | refer(RightParent_p)
+               | refer(BoolTure_p)
+               | refer(BoolFalse_p));
 
         if (Token_p.match(this->m_beg, this->m_end)) {
             SSS_LOG_EXPRESSION(sss::log::log_DEBUG, tok);
