@@ -22,7 +22,6 @@ struct eval_visitor : boost::static_visitor<Object>
     }
 
     Object operator() (const varlisp::symbol& s) const;
-    Object operator() (const Define& d) const;
 
     Object operator() (const Empty& ) const
     {

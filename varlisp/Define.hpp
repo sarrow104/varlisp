@@ -5,6 +5,8 @@
 
 namespace varlisp {
     
+    struct Environment;
+
 struct Define
 {
     varlisp::symbol name;
@@ -26,6 +28,8 @@ struct Define
 
     Define(Define&& rhs) = default;
     Define& operator=(Define&& rhs) = default;
+
+    Object eval(Environment& env) const;
 
     void print(std::ostream& o) const;
 };

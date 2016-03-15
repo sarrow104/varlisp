@@ -16,11 +16,5 @@ namespace varlisp {
         }
         return *it;
     }
-
-    Object eval_visitor::operator() (const Define& d) const
-    {
-        m_env[d.name.m_data] = boost::apply_visitor(eval_visitor(m_env), d.value);
-        return Object();
-    }
     
 } // namespace varlisp
