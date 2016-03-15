@@ -34,7 +34,9 @@ namespace varlisp {
         Parser& operator = (const Parser& ) = default;
 
     public:
-        int parse(varlisp::Environment & env, const std::string& scripts);
+        int parse(varlisp::Environment & env, const std::string& scripts, bool is_silent = false);
+
+        int retrieve_symbols(std::vector<std::string>& symbols, const char * prefix) const;
 
         /**
          * @brief verify '( ') balance

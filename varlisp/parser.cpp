@@ -15,9 +15,30 @@
 
 namespace varlisp {
 
+    class Tokenizer_stat_wrapper
+    {
+    public:
+        Tokenizer&  m_tz;
+        bool        m_active;
+        Tokenizer_stat_wrapper(Tokenizer& tz, bool is_active)
+            : m_tz(tz), m_active(is_active)
+        {
+            if (m_active) {
+                m_tz.push();
+            }
+        }
+
+        ~Tokenizer_stat_wrapper()
+        {
+            if (m_active) {
+                m_tz.pop();
+            }
+        }
+    };
+
     // scripts
     //    -> *Expression
-    int Parser::parse(varlisp::Environment& env, const std::string& scripts)
+    int Parser::parse(varlisp::Environment& env, const std::string& scripts, bool is_silent)
     {
         SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, scripts);
@@ -29,6 +50,8 @@ namespace varlisp {
 
         bool is_balance = true;
 
+        Tokenizer_stat_wrapper(m_toknizer, is_silent);
+
         while (is_balance && (m_toknizer.top().which()))
         {
             try {
@@ -39,7 +62,7 @@ namespace varlisp {
                 auto expr = this->parseExpression();
                 const auto res = boost::apply_visitor(eval_visitor(env), expr);
                 // std::cout << expr << " = " << res << std::endl;
-                if (res.which()) {
+                if (!is_silent && res.which()) {
 #if 1
                     boost::apply_visitor(print_visitor(std::cout), res);
                     std::cout << std::endl;
@@ -57,6 +80,25 @@ namespace varlisp {
             }
         }
         return is_balance;
+    }
+
+    int Parser::retrieve_symbols(std::vector<std::string>& symbols, const char * prefix) const
+    {
+        this->m_toknizer.retrieve_symbols(symbols, prefix);
+        const char * keywords[] = {
+            "if",
+            "else",
+            "cond",
+            "and",
+            "or",
+            "define",
+            "lambda",
+        };
+        for (const auto * item : keywords) {
+            if (sss::is_begin_with(item, prefix)) {
+                symbols.push_back(item);
+            }
+        }
     }
 
     bool Parser::balance_preread()
