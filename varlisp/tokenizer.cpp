@@ -36,7 +36,7 @@ namespace varlisp {
             = ss1x::parser::space_p || ss1x::parser::char_set_p("()") || ss1x::parser::eof_p;
 
         this->Integer_p
-            = (+digit_p)[ss1x::parser::rule::ActionT([&](StrIterator it_beg,
+            = (+digit_p >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](StrIterator it_beg,
                                                          StrIterator it_end,
                                                          ss1x::parser::rule::matched_value_t) {
                 tok = int(ss1x::parser::util::parseUint32_t(it_beg, it_end));
@@ -188,8 +188,8 @@ namespace varlisp {
         this->Token_p
             = (  refer(Spaces_p)
                | refer(Comment_p)
-               | refer(Double_p)
                | refer(Integer_p)
+               | refer(Double_p)
                | refer(Symbol_p)
                | refer(String_p)
                | refer(RawString_p)
