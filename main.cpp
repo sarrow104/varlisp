@@ -33,21 +33,13 @@ int main (int argc, char *argv[])
     (void) argc;
     (void) argv;
 
-#if 0
+#if 1
     varlisp::Interpreter interpreter;
+    interpreter.load("init.varlisp");
 
     linenoise::SetHistoryMaxLen(100);
     linenoise::SetCompletionCallback([&interpreter](const char* editBuffer,
                                                     std::vector<std::string>& completions) {
-
-        std::vector<std::string> current_symbols;
-        interpreter.retrieve_symbols(current_symbols);
-        current_symbols.push_back("lambda ");
-        current_symbols.push_back("if ");
-        current_symbols.push_back("cond ");
-        current_symbols.push_back("list ");
-        current_symbols.push_back("define ");
-        current_symbols.push_back("quit) ");
 
         const char * last_identifier = find_identifier(editBuffer);
         if (!last_identifier) {
@@ -58,10 +50,12 @@ int main (int argc, char *argv[])
             return;
         }
         std::string prefix = std::string(editBuffer, std::distance(editBuffer, last_identifier));
-        for (auto symbol : current_symbols) {
-            if (sss::is_begin_with(symbol, last_identifier)) {
-                completions.push_back(prefix + symbol + " ");
-            }
+        interpreter.retrieve_symbols(completions, last_identifier);
+        for (auto& symbol : completions) {
+            symbol = prefix + symbol + " ";
+        }
+        if (sss::is_begin_with("quit", last_identifier)) {
+            completions.push_back(prefix + "quit) ");
         }
     });
 
