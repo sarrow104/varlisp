@@ -36,7 +36,11 @@ namespace varlisp {
             return m_status == status;
         }
 
+        void load(const std::string& path);
+        void silent(const std::string& script);
+
         int retrieve_symbols(std::vector<std::string>& symbols) const;
+        int retrieve_symbols(std::vector<std::string>& symbols, const char * prefix) const;
 
         /**
          * @brief 传入一行文本；并求值；

@@ -3,8 +3,11 @@
 #include "builtin.hpp"
 
 #include <sss/regex/cregex.hpp>
+#include <sss/path.hpp>
 #include <sss/log.hpp>
+#include <sss/utlstring.hpp>
 
+#include <algorithm>
 #include <memory>
 
 namespace varlisp {
@@ -37,11 +40,45 @@ namespace varlisp {
         return ret;
     }
 
+    void Interpreter::load(const std::string& path)
+    {
+        std::string full_path = sss::path::full_of_copy(path);
+        if (!sss::path::filereadable(full_path)) {
+            std::cerr << "load " << path << " failed." << std::endl;
+        }
+        std::string content;
+        sss::path::file2string(full_path, content);
+        if (content.empty()) {
+            return;
+        }
+        std::cout << "loading " << full_path << " ...";
+        this->silent(content);
+        std::cout << " succeed." << std::endl;
+    }
+
+    void Interpreter::silent(const std::string& script)
+    {
+        this->m_parser.parse(m_env, script, true);
+    }
+
     int Interpreter::retrieve_symbols(std::vector<std::string>& symbols) const
     {
         for (Environment::const_iterator it = m_env.begin(); it != m_env.end(); ++it) {
             symbols.push_back(it->first);
         }
+    }
+
+    int Interpreter::retrieve_symbols(std::vector<std::string>& symbols, const char * prefix) const
+    {
+        this->m_parser.retrieve_symbols(symbols, prefix);
+        for (const auto & item : this->m_env) {
+            if (sss::is_begin_with(item.first, prefix)) {
+                symbols.push_back(item.first);
+            }
+        }
+        std::sort(symbols.begin(), symbols.end());
+        auto last = std::unique(symbols.begin(), symbols.end());
+        symbols.erase(last, symbols.end());
     }
 
 } // namespace varlisp
