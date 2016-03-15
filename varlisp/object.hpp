@@ -5,6 +5,8 @@
 #include <boost/variant.hpp>
 #include <boost/variant/recursive_wrapper.hpp>
 
+#include <sss/regex/cregex.hpp>
+
 #include "symbol.hpp"
 
 namespace varlisp {
@@ -42,15 +44,16 @@ typedef boost::variant<
         int,                // 2
         double,             // 3
         std::string,        // 4
-        symbol,             // 5
-        boost::recursive_wrapper<Builtin>,  // 6
-        boost::recursive_wrapper<Define>,   // 7
-        boost::recursive_wrapper<IfExpr>,   // 8
-        boost::recursive_wrapper<Cond>,     // 9
-        boost::recursive_wrapper<LogicAnd>, // 10
-        boost::recursive_wrapper<LogicOr>,  // 11
-        boost::recursive_wrapper<List>,     // 12  // NOTE quote-list只是作为一种函数存在！
-        boost::recursive_wrapper<Lambda>    // 13
+        sss::regex::CRegex, // 5
+        symbol,             // 6
+        boost::recursive_wrapper<Builtin>,  // 7
+        boost::recursive_wrapper<Define>,   // 8
+        boost::recursive_wrapper<IfExpr>,   // 9
+        boost::recursive_wrapper<Cond>,     // 10
+        boost::recursive_wrapper<LogicAnd>, // 11
+        boost::recursive_wrapper<LogicOr>,  // 12
+        boost::recursive_wrapper<List>,     // 13  // NOTE quote-list只是作为一种函数存在！
+        boost::recursive_wrapper<Lambda>    // 14
         > Object;
 } // namespace varlisp
 

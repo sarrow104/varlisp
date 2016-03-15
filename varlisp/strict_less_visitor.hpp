@@ -36,6 +36,11 @@ namespace varlisp {
             throw std::runtime_error("Empty < Empty");
         }
 
+        bool operator() (const sss::regex::CRegex& lhs, const sss::regex::CRegex& rhs) const
+        {
+            throw std::runtime_error("CRegex < CRegex");
+        }
+
         template <typename T>
             bool operator() (const T& lhs, const T& rhs) const
             {

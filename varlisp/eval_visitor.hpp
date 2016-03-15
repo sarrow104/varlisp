@@ -23,6 +23,11 @@ struct eval_visitor : boost::static_visitor<Object>
 
     Object operator() (const varlisp::symbol& s) const;
 
+    Object operator() (const sss::regex::CRegex& v) const
+    {
+        return v;
+    }
+
     Object operator() (const Empty& ) const
     {
         return Object();

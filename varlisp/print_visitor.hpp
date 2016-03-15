@@ -39,6 +39,10 @@ namespace varlisp {
         {
             m_o << s.m_data;
         }
+
+        void operator() (const sss::regex::CRegex& reg) const
+        {
+        }
     };
 
 } // namespace varlisp
