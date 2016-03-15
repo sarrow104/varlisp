@@ -8,6 +8,8 @@
 
 #include <boost/variant.hpp>
 
+#include <ss1x/parser/oparser.hpp>
+
 #include "symbol.hpp"
 
 namespace varlisp {
@@ -125,9 +127,14 @@ namespace varlisp {
 
         void    clear();
 
+        int     retrieve_symbols(std::vector<std::string>& symbols, const char * prefix) const;
+
     public:
+        void    push();
+        void    pop();
 
     protected:
+        void    init();
         void    parse();
 
     private:
@@ -136,7 +143,32 @@ namespace varlisp {
         StrIterator         m_beg;
         StrIterator         m_end;
 
+        Token               tok;
+        std::string         str_stack;
+        ss1x::parser::rule  Comment_p;
+        ss1x::parser::rule  Spaces_p;
+        ss1x::parser::rule  TokenEnd_p;
+        ss1x::parser::rule  Integer_p;
+        ss1x::parser::rule  Double_p;
+        ss1x::parser::rule  Symbol_p;
+
+        ss1x::parser::rule  c_str_escapseq_p;
+        ss1x::parser::rule  String_p;
+        ss1x::parser::rule  RawString_p;
+        ss1x::parser::rule  LeftParen_p;
+        ss1x::parser::rule  RightParent_p;
+
+        ss1x::parser::rule  BoolTure_p;
+        ss1x::parser::rule  BoolFalse_p;
+        ss1x::parser::rule  Token_p;
+
         std::vector<Token>  m_tokens;
+
+        int                 m_swap_consumed;
+        std::string         m_swap_data;
+        StrIterator         m_swap_beg;
+        StrIterator         m_swap_end;
+        std::vector<Token>  m_swap_tokens;
     };
 
 } // namespace varlisp
