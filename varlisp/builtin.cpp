@@ -11,6 +11,8 @@
 #include <ss1x/asio/headers.hpp>
 #include <ss1x/asio/utility.hpp>
 
+#include <sss/spliter.hpp>
+
 #include "builtin.hpp"
 #include "cast2double_visitor.hpp"
 #include "eval_visitor.hpp"
@@ -43,7 +45,7 @@ namespace varlisp {
         TYPE_WRITE,
 
         TYPE_SPLIT,
-        TYPE_ZIP,
+        TYPE_JOIN,
 
         TYPE_HTTP_GET,
         TYPE_GUMBO_QUERY
@@ -110,9 +112,6 @@ namespace varlisp {
     Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
     {
         double mul = boost::apply_visitor(cast2double_visitor(env), args.head);
-        if (args.head.which() == 5) {
-            const Object& ref = env[boost::get<varlisp::symbol>(args.head).m_data];
-        }
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, mul);
         const List * p = &args.tail[0];
         while (mul && p && p->head.which()) {
@@ -283,12 +282,107 @@ namespace varlisp {
         return Object();
     }
 
+    /**
+     * @brief 拆分字符串
+     *
+     * @param [in]env
+     * @param [in]args 支持两个，参数，分别待切分字符串，和分割字符串；
+     *
+     * @return 分割之后的列表；
+     *
+     * TODO 支持正则表达式，确定sep!
+     * 需要三个参数；
+     * 其中第三个参数是表示正则的的symbol
+     */
     Object eval_split(varlisp::Environment& env, const varlisp::List& args)
     {
+        Object content = boost::apply_visitor(eval_visitor(env), args.head);
+
+        const std::string *p_content = boost::get<std::string>(&content);
+        if (!p_content) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "split requies content to split");
+        }
+        std::string sep(1, ' ');
+        if (args.length() == 2) {
+            Object sep_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+            const std::string *p_sep = boost::get<std::string>(&sep_obj);
+            if (!p_sep) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "sep using for split must a string");
+            }
+            sep = *p_sep;
+        }
+        varlisp::List ret;
+        std::string stem;
+        if (sep.length() == 1) {
+            sss::Spliter sp(*p_content, sep[0]);
+            List * p_list = &ret;
+            while (sp.fetch_next(stem)) {
+                if (p_list->head.which()) {
+                    p_list->tail.push_back(varlisp::List());
+                    p_list = &p_list->tail[0];
+                }
+                p_list->head = stem;
+            }
+        }
+        else {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "split: sep.length() >= 2, not support yet!");
+        }
+        return Object(ret);
     }
 
-    Object eval_zip(varlisp::Environment& env, const varlisp::List& args)
+    /**
+     * @brief join string list
+     *
+     * @param [in] env
+     * @param [in] args 第一个参数，必须是一个(list)；或者symbol
+     *
+     * @return 
+     */
+    Object eval_join(varlisp::Environment& env, const varlisp::List& args)
     {
+        const List * p_list = 0;
+
+        Object content = boost::apply_visitor(eval_visitor(env), args.head);
+
+        p_list = boost::get<varlisp::List>(&content);
+
+        if (!p_list) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "join: first must a list!");
+        }
+
+        std::string sep;
+        if (args.length() == 2) {
+            Object sep_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+            const std::string *p_sep = boost::get<std::string>(&sep_obj);
+            if (!p_sep) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "join: sep must be a string");
+            }
+            sep = *p_sep;
+        }
+
+        std::ostringstream oss;
+
+        bool is_first = true;
+        while (p_list && p_list->head.which()) {
+            const std::string * p_stem = boost::get<std::string>(&p_list->head);
+            if (!p_stem) {
+                break;
+            }
+            if (is_first) {
+                is_first = false;
+            }
+            else {
+                oss << sep;
+            }
+            oss << *p_stem;
+            p_list = p_list->tail.empty() ? 0 : &p_list->tail[0];
+        }
+        return Object(oss.str());
     }
 
     Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
@@ -364,7 +458,7 @@ namespace varlisp {
             {"write",   2,  2, &eval_write},
 
             {"split",   1,  1, &eval_split},
-            {"zip",     2,  2, &eval_zip},
+            {"join",     1,  2, &eval_join},
 
             {"http-get",        1,  1, &eval_http_get},
             {"gumbo-query",     2,  2, &eval_gumbo_query},
@@ -390,13 +484,15 @@ namespace varlisp {
         int arg_max = builtin_infos[m_type].max;
         if (arg_min > 0 && arg_length < arg_min) {
             SSS_POSTION_THROW(std::runtime_error,
-                              " need at least " << arg_min << " parameters. "
-                              << " but provided " << arg_length);
+                              builtin_infos[m_type].name
+                              << " need at least " << arg_min
+                              << " parameters. but provided " << arg_length);
         }
         if (arg_max > 0 && arg_length > arg_max) {
             SSS_POSTION_THROW(std::runtime_error,
-                              " need at most " << arg_max << " parameters."
-                              << " but provided " << arg_length);
+                              builtin_infos[m_type].name
+                              << " need at most " << arg_max
+                              << " parameters. but provided " << arg_length);
         }
         return builtin_infos[m_type].eval_fun(env, args);
     }
@@ -419,13 +515,16 @@ namespace varlisp {
 
         env["eval"] = varlisp::Builtin(varlisp::TYPE_EVAL);
 
-        env["read"] = varlisp::Builtin(varlisp::TYPE_READ);
-        env["write"] = varlisp::Builtin(varlisp::TYPE_WRITE);
+        env["read"]     = varlisp::Builtin(varlisp::TYPE_READ);
+        env["write"]    = varlisp::Builtin(varlisp::TYPE_WRITE);
 
-        env["split"] = varlisp::Builtin(varlisp::TYPE_SPLIT);
-        env["zip"] = varlisp::Builtin(varlisp::TYPE_ZIP);
+        env["split"]    = varlisp::Builtin(varlisp::TYPE_SPLIT);
+        env["join"]     = varlisp::Builtin(varlisp::TYPE_JOIN);
 
         env["http-get"]     = varlisp::Builtin(varlisp::TYPE_HTTP_GET);
         env["gumbo-query"]  = varlisp::Builtin(varlisp::TYPE_GUMBO_QUERY);
+
+        // reg-match
+        // reg-replace
     }
 } // namespace varlisp
