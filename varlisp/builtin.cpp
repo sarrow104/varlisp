@@ -54,6 +54,11 @@ namespace varlisp {
         TYPE_REGEX_MATCH,
         TYPE_REGEX_SEARCH,
         TYPE_REGEX_REPLACE,
+
+        TYPE_REGEX_SPLIT,
+        TYPE_REGEX_COLLECT,
+
+        TYPE_SUBSTR,
     };
 
     void ensure_utf8(std::string& content, const std::string& encodings)
@@ -324,10 +329,7 @@ namespace varlisp {
             sss::Spliter sp(*p_content, sep[0]);
             List * p_list = &ret;
             while (sp.fetch_next(stem)) {
-                if (p_list->head.which()) {
-                    p_list->tail.push_back(varlisp::List());
-                    p_list = &p_list->tail[0];
-                }
+                p_list = p_list->next_slot();
                 p_list->head = stem;
             }
         }
@@ -385,7 +387,7 @@ namespace varlisp {
                 oss << sep;
             }
             oss << *p_stem;
-            p_list = p_list->tail.empty() ? 0 : &p_list->tail[0];
+            p_list = p_list->next();
         }
         return Object(oss.str());
     }
@@ -491,27 +493,28 @@ namespace varlisp {
         int offset = 0;
         if (args.length() == 3) {
             Object offset_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
-            const int *p_offset = boost::get<int>(&offset_obj);
-            if (p_offset && *p_offset > 0 && *p_offset < p_content->length()) {
+            if (const int *p_offset = boost::get<int>(&offset_obj)) {
                 offset = *p_offset;
             }
-            else {
-                SSS_LOG_EXPRESSION(sss::log::log_ERROR, offset_obj.which());
+            else if (const double *p_offset = boost::get<double>(&offset_obj)){
+                offset = *p_offset;
             }
+        }
+
+        if (offset < 0) {
+            offset = 0;
+        }
+
+        if (offset > int(p_content->length())) {
+            offset = p_content->length();
         }
 
         varlisp::List ret;
 
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, offset);
-        SSS_LOG_EXPRESSION(sss::log::log_ERROR, p_content->c_str() + offset);
-
         if (p_reg->match(p_content->c_str() + offset)) {
             List * p_list = &ret;
             for (int i = 0; i < p_reg->submatch_count(); ++i) {
-                if (p_list->head.which()) {
-                    p_list->tail.push_back(varlisp::List());
-                    p_list = &p_list->tail[0];
-                }
+                p_list = p_list->next_slot();
                 p_list->head = p_reg->submatch(i);
             }
         }
@@ -520,7 +523,8 @@ namespace varlisp {
     }
 
     /**
-     * @brief (regex-replace reg target fmt)->string
+     * @brief
+     *      (regex-replace reg target fmt)->string
      *
      * @param [in]env
      * @param [in]args
@@ -555,6 +559,170 @@ namespace varlisp {
         return out;
     }
 
+    /**
+     * @brief
+     *      (regex-split sep-reg "target-string")
+     *
+     * @param [in] env
+     * @param [in] args
+     *
+     * @return
+     */
+    Object eval_regex_split(varlisp::Environment& env, const varlisp::List& args)
+    {
+        Object reg_obj = boost::apply_visitor(eval_visitor(env), args.head);
+        sss::regex::CRegex *p_reg = boost::get<sss::regex::CRegex>(&reg_obj);
+        if (!p_reg) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "regex-replace: regex obj");
+        }
+
+        Object target = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        const std::string *p_content = boost::get<std::string>(&target);
+        if (!p_content) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "regex-replace: need one target string to replace");
+        }
+
+        const char * str_beg = p_content->c_str();
+        varlisp::List ret;
+        List * p_list = &ret;
+
+        while (str_beg && *str_beg && p_reg->match(str_beg)) {
+            p_list = p_list->next_slot();
+
+            p_list->head = std::string(str_beg,
+                                       str_beg + p_reg->submatch_start(0));
+
+            str_beg += p_reg->submatch_end(0);
+        }
+
+        if (str_beg && *str_beg) {
+            p_list = p_list->next_slot();
+            p_list->head = std::string(str_beg);
+        }
+
+        return ret;
+    }
+
+    /**
+     * @brief
+     *      (regex-collect reg "target-string")
+     *      (regex-collect reg "target-string" "fmt-string")
+     *
+     * @param [in] env
+     * @param [in] args
+     *
+     * @return 
+     */
+    Object eval_regex_collect(varlisp::Environment& env, const varlisp::List& args)
+    {
+        Object reg_obj = boost::apply_visitor(eval_visitor(env), args.head);
+        sss::regex::CRegex *p_reg = boost::get<sss::regex::CRegex>(&reg_obj);
+        if (!p_reg) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "regex-replace: regex obj");
+        }
+
+        Object target = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        const std::string *p_content = boost::get<std::string>(&target);
+        if (!p_content) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "regex-replace: need one target string to replace");
+        }
+        const std::string *p_fmt = 0;
+        if (args.length() == 3) {
+            Object fmt_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
+            p_fmt = boost::get<std::string>(&fmt_obj);
+        }
+
+        const char * str_beg = p_content->c_str();
+        varlisp::List ret;
+        List * p_list = &ret;
+
+        while (str_beg && *str_beg && p_reg->match(str_beg)) {
+            p_list = p_list->next_slot();
+            str_beg += p_reg->submatch_start(0);
+
+            if (p_fmt) {
+                std::ostringstream oss;
+                for (std::string::size_type i = 0; i != p_fmt->length(); ++ i) {
+                    if (p_fmt->at(i) == '\\' && i + 1 != p_fmt->length() && std::isdigit(p_fmt->at(i + 1))) {
+                        int index = p_fmt->at(i + 1) - '0';
+                        oss.write(str_beg + p_reg->submatch_start(index),
+                                  p_reg->submatch_consumed(index));
+                        ++i;
+                    }
+                    else {
+                        oss << p_fmt->at(i);
+                    }
+                }
+                p_list->head = oss.str();
+            }
+            else {
+                p_list->head = std::string(str_beg,
+                                           str_beg + p_reg->submatch_consumed(0));
+            }
+            str_beg += p_reg->submatch_consumed(0);
+        }
+
+        return ret;
+    }
+
+    /**
+     * @brief
+     *    (substr "target-string" offset)
+     *    (substr "target-string" offset length)
+     *
+     * @param [in] env
+     * @param [in] args
+     *
+     * @return 
+     */
+    Object eval_substr(varlisp::Environment& env, const varlisp::List& args)
+    {
+        Object target = boost::apply_visitor(eval_visitor(env), args.head);
+        const std::string *p_content = boost::get<std::string>(&target);
+        if (!p_content) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "regex-search: need one target string to search");
+        }
+
+        int offset = 0;
+        Object offset_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        if (const int *p_offset = boost::get<int>(&offset_obj)) {
+            offset = *p_offset;
+        }
+        else if (const double *p_offset = boost::get<double>(&offset_obj)){
+            offset = *p_offset;
+        }
+
+        if (offset < 0) {
+            offset = 0;
+        }
+        if (offset > int(p_content->length())) {
+            offset = p_content->length();
+        }
+
+        int length = -1;
+        if (args.length() == 3) {
+            Object length_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
+            if (const int *p_length = boost::get<int>(&length_obj)) {
+                length = *p_length;
+            }
+            else if (const double *p_length = boost::get<double>(&length_obj)){
+                length = *p_length;
+            }
+        }
+
+        if (length < 0) {
+            return p_content->substr(offset);
+        }
+        else {
+            return p_content->substr(offset, length);
+        }
+    }
+
     // 参数格式；
     // 闭区间；-1表示无穷
     struct builtin_info_t {
@@ -581,7 +749,7 @@ namespace varlisp {
             {"read",    1,  1, &eval_read},
             {"write",   2,  2, &eval_write},
 
-            {"split",   1,  1, &eval_split},
+            {"split",   1,  2, &eval_split},
             {"join",     1,  2, &eval_join},
 
             {"http-get",     1,  1, &eval_http_get},
@@ -591,6 +759,11 @@ namespace varlisp {
             {"regex-match",     2,  2, &eval_regex_match},
             {"regex-search",    2,  3, &eval_regex_search},
             {"regex-replace",   3,  3, &eval_regex_replace},
+
+            {"regex-split",     2,  2, &eval_regex_split},
+            {"regex-collect",   2,  3, &eval_regex_collect},
+
+            {"substr",   2, 3,  &eval_substr}
         };
 
     void Builtin::print(std::ostream& o) const
@@ -653,9 +826,14 @@ namespace varlisp {
         env["http-get"]     = varlisp::Builtin(varlisp::TYPE_HTTP_GET);
         env["gumbo-query"]  = varlisp::Builtin(varlisp::TYPE_GUMBO_QUERY);
 
-        env["regex"]  = varlisp::Builtin(varlisp::TYPE_REGEX);
+        env["regex"]        = varlisp::Builtin(varlisp::TYPE_REGEX);
         env["regex-match"]  = varlisp::Builtin(varlisp::TYPE_REGEX_MATCH);
-        env["regex-search"]  = varlisp::Builtin(varlisp::TYPE_REGEX_SEARCH);
-        env["regex-replace"]  = varlisp::Builtin(varlisp::TYPE_REGEX_REPLACE);
+        env["regex-search"] = varlisp::Builtin(varlisp::TYPE_REGEX_SEARCH);
+        env["regex-replace"]= varlisp::Builtin(varlisp::TYPE_REGEX_REPLACE);
+
+        env["regex-split"]  = varlisp::Builtin(varlisp::TYPE_REGEX_SPLIT);
+        env["regex-collect"]= varlisp::Builtin(varlisp::TYPE_REGEX_COLLECT);
+
+        env["substr"]       = varlisp::Builtin(varlisp::TYPE_SUBSTR);
     }
 } // namespace varlisp
