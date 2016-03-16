@@ -39,6 +39,31 @@ namespace varlisp {
         void print(std::ostream& o) const;
         void print_impl(std::ostream& o) const;
 
+        List * next_slot()
+        {
+            List * p_list = this;
+            if (p_list->head.which()) {
+                p_list->tail.push_back(varlisp::List());
+                p_list = &p_list->tail[0];
+            }
+            return p_list;
+        }
+
+        const List * next() const
+        {
+            return this->tail.empty() ? 0 : &this->tail[0];
+        }
+
+        void assign(const Object& value)
+        {
+            this->head = value;
+        }
+
+        // void assign(Object&& value)
+        // {
+        //     std::swap(this->head, std::move(value));
+        // }
+
         bool is_empty() const {
             return this->head.which() == 0 && this->tail.empty();
         }
