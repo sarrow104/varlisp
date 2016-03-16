@@ -28,6 +28,15 @@ const char * find_identifier(const char *buf)
     return ret;
 }
 
+int get_indent(const std::string& line)
+{
+    int indent = 0;
+    while (indent < int(line.length()) && std::isblank(line[indent])) {
+        indent ++;
+    }
+    return indent;
+}
+
 int main (int argc, char *argv[])
 {
     (void) argc;
@@ -71,9 +80,11 @@ int main (int argc, char *argv[])
     varlisp::Interpreter::status_t st = varlisp::Interpreter::status_OK;
 
     std::string last_command;
+    int indent = 0;
 
     while (st != varlisp::Interpreter::status_ERROR && st != varlisp::Interpreter::status_QUIT) {
-        auto line = linenoise::Readline(st == varlisp::Interpreter::status_UNFINISHED ? ": " : "> ");
+        auto line = linenoise::Readline(st == varlisp::Interpreter::status_UNFINISHED ? ": " : "> ", indent);
+        indent = get_indent(line);
 
         switch (st) {
         case varlisp::Interpreter::status_UNFINISHED:
@@ -114,6 +125,7 @@ int main (int argc, char *argv[])
                 // Save history
                 linenoise::SaveHistory(hist_path.c_str());
                 last_command.resize(0);
+                indent = 0;
             }
         }
         if (st == varlisp::Interpreter::status_ERROR) {
