@@ -45,10 +45,10 @@ extra builin-function list:
 ## sample output
 
 ```lisp
-\> (regex-collect (regex "[0-9]+") "123 abc 1645 798a8709801")
+> (regex-collect (regex "[0-9]+") "123 abc 1645 798a8709801")
 ("123" "1645" "798" "8709801")
 
-\> (regex-split (regex "[a-zA-Z ]+") "123 abc 1645 798a8709801")
+> (regex-split (regex "[a-zA-Z ]+") "123 abc 1645 798a8709801")
 ("123" "1645" "798" "8709801")
 ```
 just a toy
