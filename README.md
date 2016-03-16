@@ -30,9 +30,6 @@ extra builin-function list:
   - (regex-search reg-obj "target-string" offset-in-number)
   - (regex-replace reg-obj "target-string" "format-string")
 
-  - (regex-replace reg-obj "target-string" "format-string")
-  - (regex-replace reg-obj "target-string" "format-string")
-
   - (regex-split sep-reg "target-string")
   - (regex-collect reg "target-string")
   - (regex-collect reg "target-string" "fmt-string")
