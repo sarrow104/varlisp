@@ -9,6 +9,7 @@
 #include "object.hpp"
 
 namespace varlisp {
+    class Interpreter;
     struct Environment : public std::map<std::string, Object>
     {
         typedef std::map<std::string, Object> BaseT;
@@ -25,6 +26,9 @@ namespace varlisp {
         Object*         find(const std::string& name);
         // Object& operator[](const std::string& name);
 
+        Interpreter * getInterpreter() const;
+        Interpreter * setInterpreter(Interpreter& interpreter);
+
         using BaseT::begin;
         using BaseT::end;
         using BaseT::cbegin;
@@ -33,6 +37,7 @@ namespace varlisp {
 
         explicit Environment(Environment * parent = 0);
         Environment * m_parent;
+        Interpreter * m_interpreter;
     };
 } // namespace varlisp
 
