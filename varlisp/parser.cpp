@@ -42,15 +42,15 @@ namespace varlisp {
     {
         SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, scripts);
-
-        // std::string scripts = "(list 12.5 abc 1.2 #f #t xy-z \"123\" )";
-        m_toknizer.append(scripts);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, is_silent);
 
         // std::cout << "Parser::" << __func__ << "(\"" << scripts << "\")" << std::endl;
 
         bool is_balance = true;
 
         Tokenizer_stat_wrapper(m_toknizer, is_silent);
+        // std::string scripts = "(list 12.5 abc 1.2 #f #t xy-z \"123\" )";
+        m_toknizer.append(scripts);
 
         while (is_balance && (m_toknizer.top().which()))
         {
@@ -120,6 +120,7 @@ namespace varlisp {
                 parenthese_balance --;
             }
             if (parenthese_balance < 0) {
+                this->m_toknizer.print_token_stack(std::cout);
                 this->m_toknizer.clear();
                 SSS_POSTION_THROW(std::runtime_error,
                                   "parenthese not balance!");
