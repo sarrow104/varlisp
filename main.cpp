@@ -44,7 +44,11 @@ int main (int argc, char *argv[])
 
 #if 1
     varlisp::Interpreter interpreter;
-    interpreter.load("init.varlisp");
+    std::string preload_script = sss::path::dirname(sss::path::getbin());
+    sss::path::append(preload_script, "init.varlisp");
+    if (sss::path::filereadable(preload_script)) {
+        interpreter.load(preload_script);
+    }
 
     linenoise::SetHistoryMaxLen(100);
     linenoise::SetCompletionCallback([&interpreter](const char* editBuffer,
