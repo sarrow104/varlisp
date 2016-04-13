@@ -29,10 +29,18 @@ namespace varlisp {
         using namespace ss1x::parser;
         this->Comment_p
             = (ss1x::parser::char_p(';') >> *(ss1x::parser::char_ - ss1x::parser::char_p('\n') - ss1x::parser::sequence("\r\n"))
-            >> &(ss1x::parser::char_p('\n') | ss1x::parser::sequence("\r\n") | ss1x::parser::eof_p)).name("Comment_p");
+            >> &(ss1x::parser::char_p('\n') | ss1x::parser::sequence("\r\n") | ss1x::parser::eof_p))
+            .name("Comment_p")
+            [ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
+                tok = varlisp::empty();
+            })];
 
         this->Spaces_p
-            = (+ss1x::parser::space_p).name("Spaces_p");
+            = (+ss1x::parser::space_p)
+            .name("Spaces_p")
+            [ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
+                tok = varlisp::empty();
+            })];
 
         // rule Expression_p;
         this->TokenEnd_p
@@ -149,10 +157,7 @@ namespace varlisp {
                      ) > ss1x::parser::char_p('"')
                )
                > &TokenEnd_p)[ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
-                // std::string s = ss1x::parser::rule::toString(v);
-                // TODO 转义等等问题
                 tok = str_stack;
-                // tok = s.substr(1, s.length() - 2);
             })].result(ss1x::parser::util::slice2string)).name("String_p");
 
         // RawString_p 可以考虑，用'"开头和"'结尾；因为就算是标准lisp中，也'也只是用作'()的标记；
@@ -167,13 +172,11 @@ namespace varlisp {
         this->LeftParen_p
             = (char_p('(')[ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
                 tok = varlisp::left_parenthese;
-                ;
             })]).name("LeftParen_p");
 
         this->RightParent_p
             = (char_p(')')[ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
                 tok = varlisp::right_parenthese;
-                ;
             })]).name("RightParent_p");
 
         this->BoolTrue_p
