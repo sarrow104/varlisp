@@ -20,6 +20,8 @@
 #include "environment.hpp"
 #include "strict_equal_visitor.hpp"
 #include "strict_less_visitor.hpp"
+#include "parser.hpp"
+#include "interpreter.hpp"
 
 namespace varlisp {
 
@@ -40,9 +42,11 @@ namespace varlisp {
         TYPE_LE,
 
         TYPE_EVAL,
+        TYPE_LOAD,
 
         TYPE_READ,
         TYPE_WRITE,
+        TYPE_WRITE_APPEND,
 
         TYPE_SPLIT,
         TYPE_JOIN,
@@ -242,6 +246,49 @@ namespace varlisp {
         return boost::apply_visitor(eval_visitor(env), first_res);
     }
 
+    // TODO
+    Object eval_load(varlisp::Environment& env, const varlisp::List& args)
+    {
+        // NOTE 既然 load是内建函数，那么load，就可以出现在任何地方；比如另外一个脚本；
+        // 而，我的解释器，对于脚本的load，本质上，是让内部的Tokenizer对象，
+        // push、pop一个额外的工作栈——但是，当前，只是，Tokenizer只拥有两个工作栈，相当于双缓冲区；
+        // 对于嵌套load的使用，这可能会力不从心！
+        //
+        // 于是，安全的作法有两种：
+        //      1. 让Tokenizer对象，成为真正的多栈的对象；
+        //      2. 按需要，临时构建Tokenizer对象，以供解析用——相当于有了Tokenizer的堆栈；
+        //
+        // NOTE 另外，在load的时候，是否需要新建一个Environment对象呢？
+        // 这是作用域的问题；即，对于(load "path/to/script")语句而言，新解析到
+        // 的标识符(对象、函数等等)，应该放到哪个Environment中呢？
+
+#if 1
+        Object path = boost::apply_visitor(eval_visitor(env), args.head);
+        const std::string *p_path = boost::get<std::string>(&path);
+        if (!p_path) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "read requies a path");
+        }
+        std::string full_path = sss::path::full_of_copy(*p_path);
+        if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "path `" << *p_path << "` not to file");
+        }
+        // varlisp::List content;
+        // std::string line;
+        std::string content;
+        sss::path::file2string(full_path, content);
+
+        varlisp::Interpreter * p_inter = env.getInterpreter();
+        if (!p_inter) {
+            SSS_POSTION_THROW(std::runtime_error, "env.getInterpreter return 0 ptr");
+        }
+        varlisp::Parser & parser = p_inter->get_parser();
+        parser.parse(env, content, true);
+#endif
+        return Object();
+    }
+
     Object eval_read(varlisp::Environment& env, const varlisp::List& args)
     {
         Object path = boost::apply_visitor(eval_visitor(env), args.head);
@@ -266,7 +313,7 @@ namespace varlisp {
         return content;
     }
 
-    Object eval_write(varlisp::Environment& env, const varlisp::List& args)
+    Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args, bool append)
     {
         Object content = boost::apply_visitor(eval_visitor(env), args.head);
 
@@ -283,13 +330,27 @@ namespace varlisp {
         }
         std::string full_path = sss::path::full_of_copy(*p_path);
         sss::path::mkpath(sss::path::dirname(full_path));
-        std::ofstream ofs(full_path, std::ios_base::out | std::ios_base::binary);
+        auto bit_op = std::ios_base::out | std::ios_base::binary;
+        if (append) {
+            bit_op |= std::ios_base::app;
+        }
+        std::ofstream ofs(full_path, bit_op);
         if (!ofs.good()) {
             SSS_POSTION_THROW(std::runtime_error,
                               "write failed open file to write");
         }
         ofs << *p_content;
         return Object();
+    }
+
+    Object eval_write(varlisp::Environment& env, const varlisp::List& args)
+    {
+        return eval_write_impl(env, args, false);
+    }
+
+    Object eval_write_append(varlisp::Environment& env, const varlisp::List& args)
+    {
+        return eval_write_impl(env, args, true);
     }
 
     /**
@@ -403,7 +464,23 @@ namespace varlisp {
 
         std::ostringstream oss;
         ss1x::http::Headers headers;
-        ss1x::asio::getFile(oss, headers, *p_url);
+
+        if (args.length() == 3) {
+            const std::string * p_proxy = boost::get<std::string>(&args.tail[0].head);
+            if (!p_proxy) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "http-get 2nd parameter must be proxy domain string!");
+            }
+            const int * p_port = boost::get<int>(&args.tail[0].tail[0].head);
+            if (!p_port) {
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "http-get 3rd parameter must be proxy port number!");
+            }
+            ss1x::asio::proxyGetFile(oss, headers, *p_proxy, *p_port, *p_url);
+        }
+        else {
+            ss1x::asio::getFile(oss, headers, *p_url);
+        }
 
         std::string content = oss.str();
         std::string charset = headers.get("Content-Type", "charset");
@@ -745,14 +822,16 @@ namespace varlisp {
             {">=",      2,  2, &eval_ge},
             {"<=",      2,  2, &eval_le},
             {"eval",    1,  2, &eval_eval},
+            {"load",    1,  1, &eval_load},
 
             {"read",    1,  1, &eval_read},
             {"write",   2,  2, &eval_write},
+            {"write-append", 2, 2, &eval_write_append},
 
             {"split",   1,  2, &eval_split},
             {"join",     1,  2, &eval_join},
 
-            {"http-get",     1,  1, &eval_http_get},
+            {"http-get",     1,  3, &eval_http_get},
             {"gumbo-query",  2,  2, &eval_gumbo_query},
 
             {"regex",           1,  1, &eval_regex},
@@ -816,9 +895,11 @@ namespace varlisp {
         env["<="]   = varlisp::Builtin(varlisp::TYPE_LE);
 
         env["eval"] = varlisp::Builtin(varlisp::TYPE_EVAL);
+        env["load"] = varlisp::Builtin(varlisp::TYPE_LOAD);
 
         env["read"]     = varlisp::Builtin(varlisp::TYPE_READ);
         env["write"]    = varlisp::Builtin(varlisp::TYPE_WRITE);
+        env["write-append"]    = varlisp::Builtin(varlisp::TYPE_WRITE_APPEND);
 
         env["split"]    = varlisp::Builtin(varlisp::TYPE_SPLIT);
         env["join"]     = varlisp::Builtin(varlisp::TYPE_JOIN);
