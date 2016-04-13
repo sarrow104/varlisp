@@ -36,6 +36,11 @@ namespace varlisp {
             return m_status == status;
         }
 
+        varlisp::Parser & get_parser()
+        {
+            return this->m_parser;
+        }
+
         void load(const std::string& path);
         void silent(const std::string& script);
 
