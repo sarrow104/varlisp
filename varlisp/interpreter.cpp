@@ -15,6 +15,7 @@ namespace varlisp {
             : m_status(status_OK)
         {
             Builtin::regist_builtin_function(this->m_env);
+            this->m_env.setInterpreter(*this);
         }
 
     Interpreter::status_t Interpreter::eval(const std::string& line)
