@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 
 #include <iostream>
 
@@ -116,7 +117,7 @@ namespace varlisp {
 
         int     consume_count() const
         {
-            return this->m_consumed;
+            return !this->m_consumed.empty() ? this->m_consumed.back() : 0;
         }
 
     public:
@@ -129,22 +130,27 @@ namespace varlisp {
 
         int     retrieve_symbols(std::vector<std::string>& symbols, const char * prefix) const;
 
+        void    print(std::ostream& o) const;
+        void    print_token_stack(std::ostream& o) const;
+
     public:
-        void    push();
+        void    push(const std::string& data = "");
         void    pop();
 
     protected:
-        void    init();
-        void    parse();
+        void    init(const std::string& data);
+        bool    parse();
 
     private:
-        int                 m_consumed;
-        std::string         m_data;
-        StrIterator         m_beg;
-        StrIterator         m_end;
+        std::vector<int>            m_consumed;
+        std::vector<std::string>    m_data;
+        std::vector<StrIterator>    m_beg;
+        std::vector<StrIterator>    m_end;
 
         Token               tok;
         std::string         str_stack;
+
+    //public:
         ss1x::parser::rule  Comment_p;
         ss1x::parser::rule  Spaces_p;
         ss1x::parser::rule  TokenEnd_p;
@@ -158,17 +164,19 @@ namespace varlisp {
         ss1x::parser::rule  LeftParen_p;
         ss1x::parser::rule  RightParent_p;
 
-        ss1x::parser::rule  BoolTure_p;
+        ss1x::parser::rule  BoolTrue_p;
         ss1x::parser::rule  BoolFalse_p;
         ss1x::parser::rule  Token_p;
+        ss1x::parser::rule  FallthrowError_p; // 当其他条件都匹配失败的时候，匹配这个，并消耗非空字符；
 
-        std::vector<Token>  m_tokens;
+    // private:
+        std::vector<std::vector<Token> >  m_tokens;
 
-        int                 m_swap_consumed;
-        std::string         m_swap_data;
-        StrIterator         m_swap_beg;
-        StrIterator         m_swap_end;
-        std::vector<Token>  m_swap_tokens;
+        // int                 m_swap_consumed;
+        // std::string         m_swap_data;
+        // StrIterator         m_swap_beg;
+        // StrIterator         m_swap_end;
+        // std::vector<Token>  m_swap_tokens;
     };
 
 } // namespace varlisp
