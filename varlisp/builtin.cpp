@@ -12,6 +12,7 @@
 #include <ss1x/asio/utility.hpp>
 
 #include <sss/spliter.hpp>
+#include <sss/colorlog.hpp>
 
 #include "builtin.hpp"
 #include "cast2double_visitor.hpp"
@@ -272,7 +273,7 @@ namespace varlisp {
         std::string full_path = sss::path::full_of_copy(*p_path);
         if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
             SSS_POSTION_THROW(std::runtime_error,
-                              "path `" << *p_path << "` not to file");
+                              "path `", *p_path, "` not to file");
         }
         // varlisp::List content;
         // std::string line;
@@ -285,6 +286,7 @@ namespace varlisp {
         }
         varlisp::Parser & parser = p_inter->get_parser();
         parser.parse(env, content, true);
+        COLOG_INFO("(load ", sss::raw_string(*p_path), " complete)");
 #endif
         return Object();
     }
@@ -300,7 +302,7 @@ namespace varlisp {
         std::string full_path = sss::path::full_of_copy(*p_path);
         if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
             SSS_POSTION_THROW(std::runtime_error,
-                              "path `" << *p_path << "` not to file");
+                              "path `" , *p_path , "` not to file");
         }
         // varlisp::List content;
         // std::string line;
@@ -340,6 +342,12 @@ namespace varlisp {
                               "write failed open file to write");
         }
         ofs << *p_content;
+        if (append) {
+            COLOG_INFO("(write-append ", sss::raw_string(*p_path), " complete)");
+        }
+        else {
+            COLOG_INFO("(write ", sss::raw_string(*p_path), " complete)");
+        }
         return Object();
     }
 
@@ -866,14 +874,14 @@ namespace varlisp {
         if (arg_min > 0 && arg_length < arg_min) {
             SSS_POSTION_THROW(std::runtime_error,
                               builtin_infos[m_type].name
-                              << " need at least " << arg_min
-                              << " parameters. but provided " << arg_length);
+                              , " need at least " , arg_min
+                              , " parameters. but provided " , arg_length);
         }
         if (arg_max > 0 && arg_length > arg_max) {
             SSS_POSTION_THROW(std::runtime_error,
                               builtin_infos[m_type].name
-                              << " need at most " << arg_max
-                              << " parameters. but provided " << arg_length);
+                              , " need at most " , arg_max
+                              , " parameters. but provided " , arg_length);
         }
         return builtin_infos[m_type].eval_fun(env, args);
     }

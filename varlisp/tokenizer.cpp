@@ -2,468 +2,484 @@
 
 #include <stdexcept>
 
+#include <sss/path.hpp>
 #include <sss/util/PostionThrow.hpp>
 #include <sss/util/StringSlice.hpp>
-#include <sss/path.hpp>
 
 #include <sss/Terminal.hpp>
 
 #include <ss1x/parser/oparser.hpp>
 #include <ss1x/parser/util.hpp>
 
-#define _POS_MSG_ sss::Terminal::dark << sss::path::basename(__FILE__) << ":" << __LINE__ << ":" << sss::Terminal::end << sss::Terminal::warning(__func__)
+#define _POS_MSG_                                                           \
+    sss::Terminal::dark << sss::path::basename(__FILE__) << ":" << __LINE__ \
+                        << ":" << sss::Terminal::end                        \
+                        << sss::Terminal::warning(__func__)
 
 namespace varlisp {
-    Tokenizer::Tokenizer()
-    {
-        this->init("");
-    }
-
-    Tokenizer::Tokenizer(const std::string& data)
-    {
-        this->init(data);
-    }
-
-    void    Tokenizer::init(const std::string& data)
-    {
-        using namespace ss1x::parser;
-        this->Comment_p
-            = (ss1x::parser::char_p(';') >> *(ss1x::parser::char_ - ss1x::parser::char_p('\n') - ss1x::parser::sequence("\r\n"))
-            >> &(ss1x::parser::char_p('\n') | ss1x::parser::sequence("\r\n") | ss1x::parser::eof_p))
-            .name("Comment_p")
-            [ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
+Tokenizer::Tokenizer() { this->init(""); }
+Tokenizer::Tokenizer(const std::string& data) { this->init(data); }
+void Tokenizer::init(const std::string& data)
+{
+    using namespace ss1x::parser;
+    this->Comment_p =
+        (ss1x::parser::char_p(';') >>
+         *(ss1x::parser::char_ - ss1x::parser::char_p('\n') -
+           ss1x::parser::sequence("\r\n")) >>
+         &(ss1x::parser::char_p('\n') | ss1x::parser::sequence("\r\n") |
+           ss1x::parser::eof_p))
+            .name("Comment_p")[ss1x::parser::rule::ActionT([&](
+                StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
                 tok = varlisp::empty();
             })];
 
-        this->Spaces_p
-            = (+ss1x::parser::space_p)
-            .name("Spaces_p")
-            [ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
+    this->Spaces_p =
+        (+ss1x::parser::space_p)
+            .name("Spaces_p")[ss1x::parser::rule::ActionT([&](
+                StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
                 tok = varlisp::empty();
             })];
 
-        // rule Expression_p;
-        this->TokenEnd_p
-            = (ss1x::parser::space_p || ss1x::parser::char_set_p("()") || ss1x::parser::eof_p).name("TokenEnd_p");
+    // rule Expression_p;
+    this->TokenEnd_p = (ss1x::parser::space_p ||
+                        ss1x::parser::char_set_p("()") || ss1x::parser::eof_p)
+                           .name("TokenEnd_p");
 
-        this->Integer_p
-            = ((+digit_p >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](StrIterator it_beg,
-                                                         StrIterator it_end,
-                                                         ss1x::parser::rule::matched_value_t) {
-                tok = int(ss1x::parser::util::parseUint32_t(it_beg, it_end));
-            })]).name("Integer_p");
+    this->Integer_p =
+        ((+digit_p >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+             StrIterator it_beg, StrIterator it_end,
+             ss1x::parser::rule::matched_value_t) {
+            tok = int(ss1x::parser::util::parseUint32_t(it_beg, it_end));
+        })]).name("Integer_p");
 
-        this->Double_p
-            = ((double_p > &TokenEnd_p)[ss1x::parser::rule::ActionT([&](StrIterator beg,
-                                                                       StrIterator end,
-                                                                       ss1x::parser::rule::matched_value_t v) {
-                tok = ss1x::parser::rule::toDouble(v);
-                ;
-            })].result(std::function<double(StrIterator,StrIterator)>(&util::slice2double))).name("Double_p");
+    this->Double_p =
+        ((double_p > &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+                                      StrIterator beg, StrIterator end,
+                                      ss1x::parser::rule::matched_value_t v) {
+             tok = ss1x::parser::rule::toDouble(v);
+             ;
+         })].result(std::function<double(StrIterator,
+                                         StrIterator)>(&util::slice2double)))
+            .name("Double_p");
 
+    this->Symbol_p =
+        ((+(ss1x::parser::punct_p - ss1x::parser::char_set_p("#()\"'")) |
+          ss1x::parser::alpha_p >>
+              *(ss1x::parser::alnum_p || ss1x::parser::char_p('-')) >
+              &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+                               StrIterator beg, StrIterator end,
+                               ss1x::parser::rule::matched_value_t v) {
+             tok = symbol(ss1x::parser::rule::toString(v));
+         })].result(ss1x::parser::util::slice2string))
+            .name("Symbol_p");
 
-        this->Symbol_p
-            = ((+(ss1x::parser::punct_p - ss1x::parser::char_set_p("#()\"'"))
-               | ss1x::parser::alpha_p >> *(ss1x::parser::alnum_p || ss1x::parser::char_p('-'))
-               > &TokenEnd_p)[ss1x::parser::rule::ActionT([&](StrIterator beg,
-                                                              StrIterator end,
-                                                              ss1x::parser::rule::matched_value_t v) {
-                   tok = symbol(ss1x::parser::rule::toString(v));
-               })].result(ss1x::parser::util::slice2string)).name("Symbol_p");
+    this->c_str_escapseq_p =
+        ((ss1x::parser::char_p('\\') >>
+          (ss1x::parser::char_set_p("\\abfnrtv'\"")[ss1x::parser::rule::ActionT(
+               [&](StrIterator beg, StrIterator, rule::matched_value_t) {
+                   switch (*beg) {
+                       case '\\':
+                           str_stack.push_back(*beg);
+                           break;
 
-        this->c_str_escapseq_p =
-            (( ss1x::parser::char_p('\\') >>
-             (   ss1x::parser::char_set_p("\\abfnrtv'\"")[ss1x::parser::rule::ActionT([&](StrIterator beg,StrIterator,rule::matched_value_t){
-                 switch (*beg) {
-                 case '\\':
-                     str_stack.push_back(*beg);
-                     break;
+                       case 'a':
+                           str_stack.push_back('\a');
+                           break;
+                       case 'b':
+                           str_stack.push_back('\b');
+                           break;
+                       case 'f':
+                           str_stack.push_back('\f');
+                           break;
+                       case 'n':
+                           str_stack.push_back('\n');
+                           break;
+                       case 'r':
+                           str_stack.push_back('\r');
+                           break;
+                       case 't':
+                           str_stack.push_back('\t');
+                           break;
+                       case 'v':
+                           str_stack.push_back('\v');
+                           break;
+                       case '\'':
+                           str_stack.push_back('\'');
+                           break;
+                       case '"':
+                           str_stack.push_back('"');
+                           break;
+                   }
+               })] |
+           (ss1x::parser::char_range_p('0', '3') >>
+            ss1x::parser::char_range_p('0', '7') >>
+            ss1x::parser::char_range_p('0', '7'))[ss1x::parser::rule::ActionT(
+               [&](StrIterator beg, StrIterator end, rule::matched_value_t) {
+                   uint8_t ch = 0u;
+                   while (beg != end) {
+                       ch *= 8;
+                       ch += *beg - '0';
+                       ++beg;
+                   }
+                   str_stack.push_back(ch);
+               })] |
+           (ss1x::parser::char_range_p('0', '7') ||
+            ss1x::parser::char_range_p('0', '7'))[ss1x::parser::rule::ActionT(
+               [&](StrIterator beg, StrIterator end, rule::matched_value_t) {
+                   uint8_t ch = 0u;
+                   while (beg != end) {
+                       ch *= 8;
+                       ch += *beg - '0';
+                       ++beg;
+                   }
+                   str_stack.push_back(ch);
+               })] |
+           (ss1x::parser::char_p('x') >
+            (ss1x::parser::xdigit_p || ss1x::parser::xdigit_p))
+               [ss1x::parser::rule::ActionT([&](
+                   StrIterator beg, StrIterator end, rule::matched_value_t) {
+                   uint8_t ch = 0u;
+                   ++beg;
+                   while (beg != end) {
+                       ch *= 16;
+                       ch += std::isdigit(*beg) ? (*beg - '0')
+                                                : ((*beg % 16) + 9);
+                       ++beg;
+                   }
+                   str_stack.push_back(ch);
+               })])))
+            .name("c_str_escapseq_p");
 
-                 case 'a':
-                     str_stack.push_back('\a');
-                     break;
-                 case 'b':
-                     str_stack.push_back('\b');
-                     break;
-                 case 'f':
-                     str_stack.push_back('\b');
-                     break;
-                 case 'n':
-                     str_stack.push_back('\n');
-                     break;
-                 case 'r':
-                     str_stack.push_back('\r');
-                     break;
-                 case 't':
-                     str_stack.push_back('\t');
-                     break;
-                 case 'v':
-                     str_stack.push_back('\v');
-                     break;
-                 case '\'':
-                     str_stack.push_back('\'');
-                     break;
-                 case '"':
-                     str_stack.push_back('"');
-                     break;
-                 }
-            })]
-              | (ss1x::parser::char_range_p('0', '3') >> ss1x::parser::char_range_p('0', '7') >> ss1x::parser::char_range_p('0', '7'))
-                  [ss1x::parser::rule::ActionT([&](StrIterator beg,StrIterator end,rule::matched_value_t){
-                      uint8_t ch = 0u;
-                      while (beg != end) {
-                          ch *= 8;
-                          ch += *beg - '0';
-                          ++beg;
-                      }
-                      str_stack.push_back(ch);
-                  })]
-              | (ss1x::parser::char_range_p('0', '7') || ss1x::parser::char_range_p('0', '7'))
-                  [ss1x::parser::rule::ActionT([&](StrIterator beg,StrIterator end,rule::matched_value_t){
-                      uint8_t ch = 0u;
-                      while (beg != end) {
-                          ch *= 8;
-                          ch += *beg - '0';
-                          ++beg;
-                      }
-                      str_stack.push_back(ch);
-                  })]
-              | (ss1x::parser::char_p('x') > (ss1x::parser::xdigit_p || ss1x::parser::xdigit_p))
-                  [ss1x::parser::rule::ActionT([&](StrIterator beg,StrIterator end,rule::matched_value_t){
-                      uint8_t ch = 0u;
-                      ++beg;
-                      while (beg != end) {
-                          ch *= 16;
-                          ch += std::isdigit(*beg) ? (*beg - '0') : ((*beg % 16) + 9);
-                          ++beg;
-                      }
-                      str_stack.push_back(ch);
-                  })]
-             )
-            )).name("c_str_escapseq_p");
+    this->String_p =
+        (((ss1x::parser::char_p('"')[ss1x::parser::rule::ActionT(
+               [&](StrIterator, StrIterator, rule::matched_value_t) {
+                   str_stack.resize(0);
+               })] >>
+           *((ss1x::parser::char_ - ss1x::parser::char_p('"') -
+              ss1x::parser::char_p('\\'))[ss1x::parser::rule::ActionT(
+                 [&](StrIterator beg, StrIterator end, rule::matched_value_t) {
+                     std::copy(beg, end, std::back_inserter(str_stack));
+                 })] |
+             ss1x::parser::refer(c_str_escapseq_p) |
+             (ss1x::parser::char_p('\\') >>
+              ss1x::parser::char_[ss1x::parser::rule::ActionT(
+                  [&](StrIterator beg, StrIterator end, rule::matched_value_t) {
+                      std::copy(beg, end, std::back_inserter(str_stack));
+                  })])) > ss1x::parser::char_p('"')) >
+          &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+                           StrIterator, StrIterator,
+                           ss1x::parser::rule::matched_value_t) {
+             tok = str_stack;
+         })].result(ss1x::parser::util::slice2string))
+            .name("String_p");
 
-        this->String_p
-            = (((ss1x::parser::char_p('"')[ss1x::parser::rule::ActionT([&](StrIterator,StrIterator,rule::matched_value_t){
-                str_stack.resize(0);
-            })]
-                >> *( (ss1x::parser::char_ - ss1x::parser::char_p('"') - ss1x::parser::char_p('\\'))
-                     [ss1x::parser::rule::ActionT([&](StrIterator beg,StrIterator end,rule::matched_value_t){
-                         std::copy(beg, end, std::back_inserter(str_stack));
-                     })]
-                     | ss1x::parser::refer(c_str_escapseq_p)
-                     | (ss1x::parser::char_p('\\') >> ss1x::parser::char_[ss1x::parser::rule::ActionT([&](StrIterator beg,StrIterator end,rule::matched_value_t){
-                         std::copy(beg, end, std::back_inserter(str_stack));
-                     })])
-                     ) > ss1x::parser::char_p('"')
-               )
-               > &TokenEnd_p)[ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
-                tok = str_stack;
-            })].result(ss1x::parser::util::slice2string)).name("String_p");
+    // RawString_p
+    // 可以考虑，用'"开头和"'结尾；因为就算是标准lisp中，也'也只是用作'()的标记；
+    this->RawString_p = ((sequence("'\"(") >> *(char_ - sequence(")\"'")) >
+                          sequence(")\"'"))[ss1x::parser::rule::ActionT([&](
+                             StrIterator beg, StrIterator end,
+                             ss1x::parser::rule::matched_value_t) {
+                            auto s = sss::util::make_slice(beg, end);
+                            s.shrink(3, 3);
+                            tok = s.str();
+                        })]).name("RawString_p");
 
-        // RawString_p 可以考虑，用'"开头和"'结尾；因为就算是标准lisp中，也'也只是用作'()的标记；
-        this->RawString_p
-            = ((sequence("'\"(") >> *(char_ - sequence(")\"'")) > sequence(")\"'"))
-            [ss1x::parser::rule::ActionT([&](StrIterator beg, StrIterator end, ss1x::parser::rule::matched_value_t) {
-                auto s = sss::util::make_slice(beg, end);
-                s.shrink(3, 3);
-                tok = s.str();
-            })]).name("RawString_p");
+    this->LeftParen_p =
+        (char_p('(')[ss1x::parser::rule::ActionT([&](
+             StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
+            tok = varlisp::left_parenthese;
+        })]).name("LeftParen_p");
 
-        this->LeftParen_p
-            = (char_p('(')[ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
-                tok = varlisp::left_parenthese;
-            })]).name("LeftParen_p");
+    this->RightParent_p =
+        (char_p(')')[ss1x::parser::rule::ActionT([&](
+             StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
+            tok = varlisp::right_parenthese;
+        })]).name("RightParent_p");
 
-        this->RightParent_p
-            = (char_p(')')[ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
-                tok = varlisp::right_parenthese;
-            })]).name("RightParent_p");
+    this->BoolTrue_p =
+        ((ss1x::parser::char_p('#') >> ss1x::parser::char_set_p("Tt") >
+          !(ss1x::parser::alnum_p | ss1x::parser::char_p('-')))
+             [ss1x::parser::rule::ActionT(
+                 [&](StrIterator, StrIterator,
+                     ss1x::parser::rule::matched_value_t v) { tok = true; })])
+            .name("BoolTrue_p");
 
-        this->BoolTrue_p
-            = ((ss1x::parser::char_p('#') >> ss1x::parser::char_set_p("Tt") > !(ss1x::parser::alnum_p | ss1x::parser::char_p('-')))
-            [ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
-                tok = true;
-            })]).name("BoolTrue_p");
+    this->BoolFalse_p =
+        ((ss1x::parser::char_p('#') >> ss1x::parser::char_set_p("Ff") >
+          !(ss1x::parser::alnum_p | ss1x::parser::char_p('-')))
+             [ss1x::parser::rule::ActionT(
+                 [&](StrIterator, StrIterator,
+                     ss1x::parser::rule::matched_value_t v) { tok = false; })])
+            .name("BoolFalse_p");
 
-        this->BoolFalse_p
-            = ((ss1x::parser::char_p('#') >> ss1x::parser::char_set_p("Ff") > !(ss1x::parser::alnum_p | ss1x::parser::char_p('-')))
-            [ss1x::parser::rule::ActionT([&](StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
-                tok = false;
-            })]).name("BoolFalse_p");
+    this->FallthrowError_p =
+        (+(ss1x::parser::char_ -
+           ss1x::parser::space_p)[ss1x::parser::rule::ActionT([&](
+             StrIterator beg, StrIterator end,
+             ss1x::parser::rule::matched_value_t) {
+            SSS_POSTION_THROW(std::runtime_error, "Un-recongnise string `"
+                                                      , std::string(beg, end)
+                                                      , "`");
+        })]).name("FallthrowError_p");
 
-        this->FallthrowError_p
-            = (+(ss1x::parser::char_ - ss1x::parser::space_p)
-               [ss1x::parser::rule::ActionT([&](StrIterator beg, StrIterator end, ss1x::parser::rule::matched_value_t) {
-                SSS_POSTION_THROW(std::runtime_error, "Un-recongnise string `" << std::string(beg, end) << "`");
-            })]).name("FallthrowError_p");
+    this->Token_p =
+        (refer(Spaces_p) | refer(Comment_p) | refer(Integer_p) |
+         refer(Double_p) | refer(Symbol_p) | refer(String_p) |
+         refer(RawString_p) | refer(LeftParen_p) | refer(RightParent_p) |
+         refer(BoolTrue_p) | refer(BoolFalse_p) | refer(FallthrowError_p));
 
-        this->Token_p
-            = (  refer(Spaces_p)
-               | refer(Comment_p)
-               | refer(Integer_p)
-               | refer(Double_p)
-               | refer(Symbol_p)
-               | refer(String_p)
-               | refer(RawString_p)
-               | refer(LeftParen_p)
-               | refer(RightParent_p)
-               | refer(BoolTrue_p)
-               | refer(BoolFalse_p)
-               | refer(FallthrowError_p));
+    this->push(data);
+}
 
-        this->push(data);
+Token Tokenizer::top()
+{
+    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+    return this->lookahead_nothrow(0);
+}
+
+bool Tokenizer::empty() const
+{
+    return this->m_tokens.empty() || this->m_tokens.back().empty();
+}
+
+/**
+ * @brief
+ *
+ * 负数的index没有意义；
+ *
+ * @param index
+ *
+ * @return
+ */
+Token Tokenizer::lookahead_nothrow(int index)
+{
+    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+    if (index < 0) {
+        return Token();
     }
 
-    Token   Tokenizer::top()
-    {
-        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-        return this->lookahead_nothrow(0);
-    }
-
-    bool    Tokenizer::empty() const
-    {
-        return this->m_tokens.empty() || this->m_tokens.back().empty();
-    }
-
-    /**
-     * @brief 
-     *
-     * 负数的index没有意义；
-     *
-     * @param index
-     *
-     * @return 
-     */
-    Token   Tokenizer::lookahead_nothrow(int index)
-    {
-        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-        if (index < 0) {
-            return Token();
+    while (this->m_beg < this->m_end &&
+           int(this->m_tokens.back().size()) < index + 1) {
+        if (!this->parse()) {
+            break;
         }
+    }
+    if (int(this->m_tokens.back().size()) < index + 1) {
+        return Token();
+    }
+    else {
+        return this->m_tokens.back()[index];
+    }
+}
 
-        while (this->m_beg < this->m_end && int(this->m_tokens.back().size()) < index + 1) {
-            if (!this->parse()) {
-                break;
+Token Tokenizer::lookahead(int index)
+{
+    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+    Token ret = lookahead_nothrow(index);
+    if (!ret.which()) {
+        SSS_POSTION_THROW(std::runtime_error, "not enough tokens");
+    }
+    return ret;
+}
+
+bool Tokenizer::consume()
+{
+    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+    if (!this->empty()) {
+#ifdef DEBUG
+        std::cout << _POS_MSG_ << "(" << sss::Terminal::error
+                  << this->m_tokens.back().front() << sss::Terminal::end
+                  << "); left = `"
+                  << sss::Terminal::error(
+                         std::string(this->m_beg.back(), this->m_end.back()))
+                  << "`" << std::endl;
+#endif
+        this->m_tokens.back().erase(this->m_tokens.back().begin());
+        this->m_consumed.back()++;
+        return true;
+    }
+    return false;
+}
+
+// NOTE
+// 貌似应该直接扔异常……
+bool Tokenizer::consume(parenthese_t paren)
+{
+    Token target(paren);
+    Token current_top = this->top();
+    if (current_top == target) {
+        this->consume();
+        return true;
+    }
+    return false;
+}
+
+bool Tokenizer::consume(const symbol& symbol)
+{
+    Token target(symbol);
+    Token current_top = this->top();
+    if (current_top == target) {
+        this->consume();
+        return true;
+    }
+    return false;
+}
+
+void Tokenizer::append(const std::string& scripts)
+{
+    if (scripts.empty()) {
+        return;
+    }
+    if (!this->m_data.back().empty()) {
+        size_t offset =
+            std::distance(this->m_data.back().cbegin(), m_beg.back());
+
+        if (offset) {
+#ifdef DEBUG
+            std::cout << _POS_MSG_ << " erase(\""
+                      << sss::Terminal::debug(
+                             this->m_data.back().substr(0, offset))
+                      << ");";
+#endif
+            this->m_data.back().erase(0, offset);
+#ifdef DEBUG
+            std::cout << "left(" << sss::Terminal::debug(this->m_data.back())
+                      << ")"
+                      << " @" << &this->m_data.back() << std::endl;
+#endif
+        }
+    }
+
+    this->m_data.back().append("\n");
+    // NOTE 这里的附加，从处理逻辑上来说，是一行一行地解析文本；
+    // 所以；额外增加一个换行符即可；
+    this->m_data.back().append(scripts);
+    m_beg.back() = this->m_data.back().cbegin();
+    m_end.back() = this->m_data.back().cend();
+#ifdef DEBUG
+    std::cout << _POS_MSG_
+              << " distance = " << std::distance(m_beg.back(), m_end.back())
+              << std::endl;
+#endif
+}
+
+size_t Tokenizer::tokens_size() const { return this->m_tokens.back().size(); }
+bool Tokenizer::is_eof() const
+{
+    return this->m_beg.empty() || this->m_beg.back() >= this->m_end.back();
+}
+
+void Tokenizer::push(const std::string& data)
+{
+#ifdef DEBUG
+    std::cout << _POS_MSG_ << "(\"" << data << "\")" << std::endl;
+    if (!this->m_consumed.empty()) {
+        std::cout << _POS_MSG_ << " left = `"
+                  << std::string(this->m_beg.back(), this->m_end.back()) << "`"
+                  << std::endl;
+    }
+    this->print_token_stack(std::cout);
+#endif
+    this->m_consumed.push_back(0);
+    this->m_data.push_back(data);
+    this->m_beg.push_back(this->m_data.back().begin());
+    this->m_end.push_back(this->m_data.back().end());
+    this->m_tokens.push_back(std::vector<Token>());
+}
+
+void Tokenizer::pop()
+{
+#ifdef DEBUG
+    std::cout << _POS_MSG_ << std::endl;
+#endif
+    this->m_consumed.pop_back();
+    this->m_data.pop_back();
+    this->m_beg.pop_back();
+    this->m_end.pop_back();
+    this->m_tokens.pop_back();
+}
+
+/**
+ * @brief 从字符串中，解析一个Token，并放入序列；
+ */
+bool Tokenizer::parse()
+{
+    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+    SSS_LOG_EXPRESSION(
+        sss::log::log_DEBUG,
+        sss::util::make_slice(this->m_beg.back(), this->m_end.back()));
+
+    // NOTE 不同元素(Token)之间，必须要有空白符，或者括号，作为间隔！
+
+    while (m_beg.back() < m_end.back() && std::isspace(*m_beg.back())) {
+        m_beg.back()++;
+    }
+
+    auto beg_sv = this->m_beg.back();
+    if (Token_p.match(this->m_beg.back(), this->m_end.back()) &&
+        this->tok.which()) {
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, this->tok);
+#ifdef DEBUG
+        std::cout << _POS_MSG_ << ".push_back(" << sss::Terminal::error
+                  << this->tok << sss::Terminal::end << ") from `"
+                  << sss::Terminal::error(
+                         std::string(beg_sv, this->m_beg.back()))
+                  << "`" << std::endl;
+#endif
+        this->m_tokens.back().push_back(this->tok);
+        this->tok = varlisp::empty();
+    }
+    return std::distance(beg_sv, this->m_beg.back());
+}
+
+int Tokenizer::retrieve_symbols(std::vector<std::string>& symbols,
+                                const char* prefix) const
+{
+    for (const auto& item : this->m_tokens.back()) {
+        if (const varlisp::symbol* ps = boost::get<varlisp::symbol>(&item)) {
+            if (sss::is_begin_with(ps->m_data, prefix)) {
+                symbols.push_back(ps->m_data);
             }
         }
-        if (int(this->m_tokens.back().size()) < index + 1) {
-            return Token();
-        }
-        else {
-            return this->m_tokens.back()[index];
-        }
     }
+}
 
-    Token   Tokenizer::lookahead(int index)
-    {
-        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-        Token ret = lookahead_nothrow(index);
-        if (!ret.which()) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "not enough tokens");
-        }
-        return ret;
-    }
+void Tokenizer::clear()
+{
+    this->m_data.back().clear();
+    this->m_beg.back() = this->m_data.back().begin();
+    this->m_end.back() = this->m_data.back().end();
+    this->m_tokens.back().clear();
+}
 
-    bool    Tokenizer::consume()
-    {
-        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-        if (!this->empty()) {
-#ifdef DEBUG
-            std::cout
-                << _POS_MSG_ << "("
-                << sss::Terminal::error << this->m_tokens.back().front() << sss::Terminal::end
-                << "); left = `" << sss::Terminal::error(std::string(this->m_beg.back(), this->m_end.back()))
-                << "`"
-                << std::endl;
-#endif
-            this->m_tokens.back().erase(this->m_tokens.back().begin());
-            this->m_consumed.back()++;
-            return true;
-        }
-        return false;
-    }
+void Tokenizer::print(std::ostream& o) const
+{
+    o << this->Token_p << std::endl;
+}
 
-    // NOTE
-    // 貌似应该直接扔异常……
-    bool    Tokenizer::consume(parenthese_t paren)
-    {
-        Token target(paren);
-        Token current_top = this->top();
-        if (current_top == target) {
-            this->consume();
-            return true;
-        }
-        return false;
-    }
+void Tokenizer::print_token_stack(std::ostream& o) const
+{
+    if (!this->m_tokens.empty()) {
+        o << _POS_MSG_ << " m_data = `" << this->m_data.back() << "`"
+          << std::endl;
 
-    bool    Tokenizer::consume(const symbol& symbol)
-    {
-        Token target(symbol);
-        Token current_top = this->top();
-        if (current_top == target) {
-            this->consume();
-            return true;
-        }
-        return false;
-    }
+        o << _POS_MSG_ << " offset = "
+          << std::distance(this->m_data.back().cbegin(), m_beg.back())
+          << std::endl;
 
-    void    Tokenizer::append(const std::string& scripts)
-    {
-        if (scripts.empty()) {
-            return;
-        }
-        if (!this->m_data.back().empty()) {
-            size_t offset = std::distance(this->m_data.back().cbegin(), m_beg.back());
+        o << _POS_MSG_ << " length = " << this->m_data.back().length()
+          << std::endl;
 
-            if (offset) {
-#ifdef DEBUG
-                std::cout
-                    << _POS_MSG_  << " erase(\"" << sss::Terminal::debug(this->m_data.back().substr(0, offset))
-                    << ");";
-#endif
-                this->m_data.back().erase(0, offset);
-#ifdef DEBUG
-                std::cout
-                    << "left(" << sss::Terminal::debug(this->m_data.back()) << ")"
-                    << " @" << &this->m_data.back()
-                    << std::endl;
-#endif
-            }
-        }
+        o << _POS_MSG_ << "(std::ostream&) " << this->m_tokens.size() << " "
+          << this->m_tokens.back().size() << std::endl;
 
-        this->m_data.back().append("\n");
-        // NOTE 这里的附加，从处理逻辑上来说，是一行一行地解析文本；
-        // 所以；额外增加一个换行符即可；
-        this->m_data.back().append(scripts);
-        m_beg.back() = this->m_data.back().cbegin();
-        m_end.back() = this->m_data.back().cend();
-#ifdef DEBUG
-        std::cout << _POS_MSG_ << " distance = " << std::distance(m_beg.back(), m_end.back()) << std::endl;
-#endif
-    }
-
-    size_t  Tokenizer::tokens_size() const
-    {
-        return this->m_tokens.back().size();
-    }
-
-    bool    Tokenizer::is_eof() const
-    {
-        return this->m_beg.empty() || this->m_beg.back() >= this->m_end.back();
-    }
-
-    void    Tokenizer::push(const std::string& data)
-    {
-#ifdef DEBUG
-        std::cout << _POS_MSG_ << "(\"" << data << "\")" << std::endl;
-        if (!this->m_consumed.empty()) {
-            std::cout << _POS_MSG_
-                << " left = `" << std::string(this->m_beg.back(), this->m_end.back()) << "`"
-                << std::endl;
-        }
-        this->print_token_stack(std::cout);
-#endif
-        this->m_consumed.push_back(0);
-        this->m_data.push_back(data);
-        this->m_beg.push_back(this->m_data.back().begin());
-        this->m_end.push_back(this->m_data.back().end());
-        this->m_tokens.push_back(std::vector<Token>());
-    }
-
-    void    Tokenizer::pop()
-    {
-#ifdef DEBUG
-        std::cout << _POS_MSG_ << std::endl;
-#endif
-        this->m_consumed.pop_back();
-        this->m_data.pop_back();
-        this->m_beg.pop_back();
-        this->m_end.pop_back();
-        this->m_tokens.pop_back();
-    }
-
-    /**
-     * @brief 从字符串中，解析一个Token，并放入序列；
-     */
-    bool    Tokenizer::parse()
-    {
-        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, sss::util::make_slice(this->m_beg.back(), this->m_end.back()));
-
-        // NOTE 不同元素(Token)之间，必须要有空白符，或者括号，作为间隔！
-
-        while (m_beg.back() < m_end.back() && std::isspace(*m_beg.back())) {
-            m_beg.back()++;
-        }
-
-        auto beg_sv = this->m_beg.back();
-        if (Token_p.match(this->m_beg.back(), this->m_end.back()) && this->tok.which()) {
-            SSS_LOG_EXPRESSION(sss::log::log_DEBUG, this->tok);
-#ifdef DEBUG
-            std::cout << _POS_MSG_
-                << ".push_back("
-                << sss::Terminal::error << this->tok << sss::Terminal::end
-                << ") from `" << sss::Terminal::error(std::string(beg_sv, this->m_beg.back())) << "`"
-                << std::endl;
-#endif
-            this->m_tokens.back().push_back(this->tok);
-            this->tok = varlisp::empty();
-        }
-        return std::distance(beg_sv, this->m_beg.back());
-    }
-
-    int     Tokenizer::retrieve_symbols(std::vector<std::string>& symbols, const char * prefix) const
-    {
-        for (const auto& item : this->m_tokens.back()) {
-            if (const varlisp::symbol * ps = boost::get<varlisp::symbol>(&item)) {
-                if (sss::is_begin_with(ps->m_data, prefix)) {
-                    symbols.push_back(ps->m_data);
-                }
-            }
+        int i = 0;
+        for (const auto& tok : this->m_tokens.back()) {
+            o << "\t[" << i++ << "] = " << tok << std::endl;
         }
     }
-
-    void    Tokenizer::clear()
-    {
-        this->m_data.back().clear();
-        this->m_beg.back() = this->m_data.back().begin();
-        this->m_end.back() = this->m_data.back().end();
-        this->m_tokens.back().clear();
+    else {
+        o << _POS_MSG_ << "(std::ostream&) empty stack" << std::endl;
     }
-
-    void Tokenizer::print(std::ostream& o) const
-    {
-        o << this->Token_p << std::endl;
-    }
-
-    void    Tokenizer::print_token_stack(std::ostream& o) const
-    {
-        if (!this->m_tokens.empty()) {
-            o << _POS_MSG_
-                << " m_data = `" << this->m_data.back() << "`"
-                << std::endl;
-
-            o << _POS_MSG_
-                << " offset = " << std::distance(this->m_data.back().cbegin(), m_beg.back())
-                << std::endl;
-
-            o << _POS_MSG_
-                << " length = " << this->m_data.back().length()
-                << std::endl;
-
-            o << _POS_MSG_
-                << "(std::ostream&) " << this->m_tokens.size()
-                << " " << this->m_tokens.back().size()
-                << std::endl;
-
-            int i = 0;
-            for (const auto& tok : this->m_tokens.back()) {
-                o << "\t[" << i++ << "] = " << tok << std::endl;
-            }
-        }
-        else {
-            o << _POS_MSG_ << "(std::ostream&) empty stack" << std::endl;
-        }
-    }
-} // namespace varlisp
+}
+}  // namespace varlisp

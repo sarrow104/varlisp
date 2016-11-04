@@ -12,7 +12,7 @@ namespace varlisp {
         Object * it = m_env.find(s.m_data);
         if (!it) {
             SSS_POSTION_THROW(std::runtime_error,
-                              "symbol " << s.m_data << " not exsist");
+                              "symbol " , s.m_data , " not exsist");
         }
         return *it;
     }

@@ -83,7 +83,7 @@ namespace varlisp {
             Object * p_func = env.find(name);
             if (!p_func) {
                 SSS_POSTION_THROW(std::runtime_error,
-                                  "Application "<< name << " not exist.");
+                                  "Application ", name , " not exist.");
             }
             const Object& invokable = *p_func;
 
@@ -96,7 +96,7 @@ namespace varlisp {
             }
             else {
                 SSS_POSTION_THROW(std::runtime_error,
-                                  "Application "<< name << " not invokable.");
+                                  "Application ", name , " not invokable.");
             }
         }
         else if (const varlisp::Lambda * pl = boost::get<varlisp::Lambda>(&funcObj)) {
@@ -106,7 +106,7 @@ namespace varlisp {
             std::ostringstream oss;
             boost::apply_visitor(print_visitor(oss), funcObj);
             SSS_POSTION_THROW(std::runtime_error,
-                              oss.str() << " not callable objct");
+                              oss.str() , " not callable objct");
         }
     }
 

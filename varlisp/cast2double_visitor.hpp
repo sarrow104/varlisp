@@ -41,7 +41,7 @@ namespace varlisp {
             Object * p_obj = m_env.find(s.m_data);
             if (!p_obj) {
                 SSS_POSTION_THROW(std::runtime_error,
-                                  "symbol " << s.m_data << " not exists!");
+                                  "symbol ", s.m_data, " not exists!");
             }
             return boost::apply_visitor(cast2double_visitor(m_env), *p_obj);
         }

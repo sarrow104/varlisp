@@ -176,7 +176,7 @@ namespace varlisp {
         else {
             SSS_POSTION_THROW(std::runtime_error,
                               "connot handle boost::variant which() == "
-                              << tok.which());
+                              , tok.which());
         }
     }
 
@@ -398,7 +398,7 @@ namespace varlisp {
             const std::string& name = boost::get<varlisp::symbol>(tok).m_data;
             if (!std::isalpha(name[0])) {
                 SSS_POSTION_THROW(std::runtime_error,
-                                  "we need a variable name here, not `" << name << "`");
+                                  "we need a variable name here, not `" , name , "`");
             }
             args.push_back(name);
             toknizer.consume();
@@ -420,7 +420,7 @@ namespace varlisp {
             if (!std::isalpha(p_name->m_data[0])) {
                 SSS_POSTION_THROW(std::runtime_error,
                                   "we need a variable name here, not `"
-                                  << p_name->m_data << "`");
+                                  , p_name->m_data , "`");
             }
             this->m_toknizer.consume();
             varlisp::Object value = this->parseExpression();
@@ -444,7 +444,7 @@ namespace varlisp {
                 if (!std::isalpha(p_symbol->m_data[0])) {
                     SSS_POSTION_THROW(std::runtime_error,
                                       "we need a variable name here, not `"
-                                      << p_symbol->m_data << "`");
+                                      , p_symbol->m_data , "`");
                 }
                 this->m_toknizer.consume();
 

@@ -9,6 +9,7 @@
 #include <sss/utlstring.hpp>
 #include <sss/algorithm.hpp>
 #include <sss/log.hpp>
+#include <sss/colorlog.hpp>
 
 #include "varlisp/interpreter.hpp"
 #include "varlisp/tokenizer.hpp"
@@ -42,6 +43,7 @@ int main (int argc, char *argv[])
     (void) argc;
     (void) argv;
 
+    sss::colog::set_log_elements(sss::colog::ls_TIME_NANO);
 #if 1
     varlisp::Interpreter interpreter;
     std::string preload_script = sss::path::dirname(sss::path::getbin());

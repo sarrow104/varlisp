@@ -43,7 +43,7 @@ namespace varlisp {
             std::cout << *this << std::endl;
             std::cout << true_args << std::endl;
             SSS_POSTION_THROW(std::runtime_error,
-                              "expect " << this->args.size() << ", but given " << true_args.length());
+                              "expect " , this->args.size() , ", but given " , true_args.length());
         }
         const varlisp::List * p = &true_args;
         bool need_exist = false;
@@ -53,11 +53,11 @@ namespace varlisp {
         {
             if (!p) {
                 SSS_POSTION_THROW(std::runtime_error,
-                                  "Not enough argument at " << i << "; name " << args[i]);
+                                  "Not enough argument at " , i , "; name " , args[i]);
             }
             if (!p->head.which()) {
                 SSS_POSTION_THROW(std::runtime_error,
-                                  "Empty argument at " << i << "; name " << args[i]);
+                                  "Empty argument at " , i , "; name " , args[i]);
             }
 
             // SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args[i]);
