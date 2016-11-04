@@ -53,6 +53,7 @@ int main (int argc, char *argv[])
     }
 
     linenoise::SetHistoryMaxLen(100);
+    linenoise::SetMultiLine(true); // linenoise默认是单行模式；此时，大段的输入，会导致响应变慢。
     linenoise::SetCompletionCallback([&interpreter](const char* editBuffer,
                                                     std::vector<std::string>& completions) {
 
@@ -89,6 +90,10 @@ int main (int argc, char *argv[])
     int indent = 0;
 
     while (st != varlisp::Interpreter::status_ERROR && st != varlisp::Interpreter::status_QUIT) {
+        // NOTE 缩进保持功能丢失了。
+        // 之前，我修改了，install 到 ~/extra/linenoise/ 下的 linenoise.hpp ，以支持 indent风格。
+        // 但是，我在 pull upstream，对linenoise的更新之后，忘记我对哪里，做过修改……
+        // 不过，好消息是，新的linenoise，对于tab补全遗留问题，做了修改。
         auto line = linenoise::Readline(st == varlisp::Interpreter::status_UNFINISHED ? ": " : "> ", indent);
         indent = get_indent(line);
 
