@@ -531,7 +531,7 @@ namespace varlisp {
     // (eval form2 user-initial-environment)
     // (eval form2)
     //
-    // 其中， user-initial-environment 用来制定解析的上下文；
+    // 其中， user-initial-environment 用来指定解析的上下文；
     //
     // 重定义 符号+ 的行为 为 "-"
     // ;; Confuse the initial environment, so that + will be
