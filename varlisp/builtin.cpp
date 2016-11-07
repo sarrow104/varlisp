@@ -1,128 +1,16 @@
+
 #include "builtin.hpp"
 #include "environment.hpp"
-
 #include <sss/util/PostionThrow.hpp>
 #include <sss/log.hpp>
+#include <sss/algorithm.hpp>
 
 namespace varlisp {
 
-enum type_t {
-    TYPE_CAR,
-    TYPE_CDR,
-
-    // »ù±¾ÊýÑ§ÔËËã
-    TYPE_ADD,
-    TYPE_SUB,
-    TYPE_MUL,
-    TYPE_DIV,
-
-    TYPE_POW,
-
-    // Âß¼­ÔËËã
-    TYPE_EQ,
-
-    TYPE_GT,
-    TYPE_LT,
-
-    TYPE_GE,
-    TYPE_LE,
-
-    // Ö´ÐÐ
-    TYPE_EVAL,
-    TYPE_LOAD,
-
-    // ÎÄ¼þ¶ÁÐ´
-    TYPE_READ,
-    TYPE_WRITE,
-    TYPE_WRITE_APPEND,
-
-    // ×Ö·û´®²ð·Ö£¬×éºÏ
-    TYPE_SPLIT,
-    TYPE_JOIN,
-
-    // ÍøÂç
-    TYPE_HTTP_GET,
-    // html ½âÎö
-    TYPE_GUMBO_QUERY,
-
-    // ÕýÔò±í´ïÊ½
-    TYPE_REGEX,
-    TYPE_REGEX_MATCH,
-    TYPE_REGEX_SEARCH,
-    TYPE_REGEX_REPLACE,
-
-    TYPE_REGEX_SPLIT,
-    TYPE_REGEX_COLLECT,
-
-    // ×Ö·û´®-»ñÈ¡×Ó´®
-    TYPE_SUBSTR,
-
-    TYPE_SHELL, // Ö´ÐÐshell½Å²½
-    TYPE_SHELL_CD, // ¸ü¸ÄÖ´ÐÐÂ·¾¶
-    TYPE_SHELL_LS, // Ã¶¾ÙÎÄ¼þ
-    TYPE_SHELL_PWD, // »ñÈ¡µ±Ç°Â·¾¶
-    TYPE_FNAMEMODIFY, // ÐÞ¸ÄÂ·¾¶´¦Àíº¯Êý
-
-    TYPE_GLOB,          // Ã¶¾Ù·ûºÏ¹æÔòµÄÎÄ¼þ£¬²¢Êä³ö
-    TYPE_GLOB_RECURSE,  // Ã¶¾Ù·ûºÏ¹æÔòµÄÎÄ¼þ£¬²¢Êä³ö
-};
-
-void Builtin::regist_builtin_function(Environment& env)
-{
-    env["car"]  = varlisp::Builtin(varlisp::TYPE_CAR);
-    env["cdr"]  = varlisp::Builtin(varlisp::TYPE_CDR);
-
-    env["+"]    = varlisp::Builtin(varlisp::TYPE_ADD);
-    env["-"]    = varlisp::Builtin(varlisp::TYPE_SUB);
-    env["*"]    = varlisp::Builtin(varlisp::TYPE_MUL);
-    env["/"]    = varlisp::Builtin(varlisp::TYPE_DIV);
-
-    env["^"]    = varlisp::Builtin(varlisp::TYPE_POW);
-
-    env["="]    = varlisp::Builtin(varlisp::TYPE_EQ);
-
-    env[">"]    = varlisp::Builtin(varlisp::TYPE_GT);
-    env["<"]    = varlisp::Builtin(varlisp::TYPE_LT);
-    env[">="]   = varlisp::Builtin(varlisp::TYPE_GE);
-    env["<="]   = varlisp::Builtin(varlisp::TYPE_LE);
-
-    env["eval"] = varlisp::Builtin(varlisp::TYPE_EVAL);
-    env["load"] = varlisp::Builtin(varlisp::TYPE_LOAD);
-
-    env["read"]     = varlisp::Builtin(varlisp::TYPE_READ);
-    env["write"]    = varlisp::Builtin(varlisp::TYPE_WRITE);
-    env["write-append"]    = varlisp::Builtin(varlisp::TYPE_WRITE_APPEND);
-
-    env["split"]    = varlisp::Builtin(varlisp::TYPE_SPLIT);
-    env["join"]     = varlisp::Builtin(varlisp::TYPE_JOIN);
-
-    env["http-get"]     = varlisp::Builtin(varlisp::TYPE_HTTP_GET);
-    env["gumbo-query"]  = varlisp::Builtin(varlisp::TYPE_GUMBO_QUERY);
-
-    env["regex"]        = varlisp::Builtin(varlisp::TYPE_REGEX);
-    env["regex-match"]  = varlisp::Builtin(varlisp::TYPE_REGEX_MATCH);
-    env["regex-search"] = varlisp::Builtin(varlisp::TYPE_REGEX_SEARCH);
-    env["regex-replace"]= varlisp::Builtin(varlisp::TYPE_REGEX_REPLACE);
-
-    env["regex-split"]  = varlisp::Builtin(varlisp::TYPE_REGEX_SPLIT);
-    env["regex-collect"]= varlisp::Builtin(varlisp::TYPE_REGEX_COLLECT);
-
-    env["substr"]       = varlisp::Builtin(varlisp::TYPE_SUBSTR);
-
-    env["shell"]        = varlisp::Builtin(varlisp::TYPE_SHELL);
-    env["shell-cd"]     = varlisp::Builtin(varlisp::TYPE_SHELL_CD);
-    env["shell-ls"]     = varlisp::Builtin(varlisp::TYPE_SHELL_LS);
-    env["shell-pwd"]    = varlisp::Builtin(varlisp::TYPE_SHELL_PWD);
-    env["fnamemodify"]  = varlisp::Builtin(varlisp::TYPE_FNAMEMODIFY);
-
-    env["glob"]         = varlisp::Builtin(varlisp::TYPE_GLOB);
-    env["glob-recurse"] = varlisp::Builtin(varlisp::TYPE_GLOB_RECURSE);
-}
-
 typedef Object (*eval_func_t)(varlisp::Environment& env, const varlisp::List& args);
 
-// ²ÎÊý¸ñÊ½£»
-// ±ÕÇø¼ä£»-1±íÊ¾ÎÞÇî
+// å‚æ•°æ ¼å¼ï¼›
+// é—­åŒºé—´ï¼›-1è¡¨ç¤ºæ— ç©·
 struct builtin_info_t {
     const char *    name;
     int             min;
@@ -171,55 +59,77 @@ Object eval_fnamemodify(varlisp::Environment& env, const varlisp::List& args);
 Object eval_glob(varlisp::Environment& env, const varlisp::List& args);
 Object eval_glob_recurse(varlisp::Environment& env, const varlisp::List& args);
 
-const builtin_info_t builtin_infos[]
-    = {
-        {"car",     1,  1, &eval_car},
-        {"cdr",     1,  1, &eval_cdr},
+const builtin_info_t builtin_infos[] = 
+{
+    {"car",         1,  1, &eval_car},
+    {"cdr",         1,  1, &eval_cdr},
 
-        {"+",       1, -1, &eval_add},
-        {"-",       1, -1, &eval_sub},
-        {"*",       2, -1, &eval_mul},
-        {"/",       2, -1, &eval_div},
-        {"^",       2,  2, &eval_pow},
-        {"=",       2,  2, &eval_eq},
-        {">",       2,  2, &eval_gt},
-        {"<",       2,  2, &eval_lt},
-        {">=",      2,  2, &eval_ge},
-        {"<=",      2,  2, &eval_le},
-        {"eval",    1,  2, &eval_eval},
-        {"load",    1,  1, &eval_load},
+    // åŸºæœ¬æ•°å­¦è¿ç®—
+    {"+",           1, -1, &eval_add},
+    {"-",           1, -1, &eval_sub},
+    {"*",           2, -1, &eval_mul},
+    {"/",           2, -1, &eval_div},
 
-        {"read",    1,  1, &eval_read},
-        {"write",   2,  2, &eval_write},
-        {"write-append", 2, 2, &eval_write_append},
+    {"^",           2,  2, &eval_pow},
 
-        {"split",   1,  2, &eval_split},
-        {"join",     1,  2, &eval_join},
+    // é€»è¾‘è¿ç®—
+    {"=",           2,  2, &eval_eq},
 
-        {"http-get",     1,  3, &eval_http_get},
-        {"gumbo-query",  2,  2, &eval_gumbo_query},
+    {">",           2,  2, &eval_gt},
+    {"<",           2,  2, &eval_lt},
+    {">=",          2,  2, &eval_ge},
+    {"<=",          2,  2, &eval_le},
 
-        {"regex",           1,  1, &eval_regex},        // ´Ó×Ö·û´®Éú³Éregex¶ÔÏó
-        {"regex-match",     2,  2, &eval_regex_match},  // 
-        {"regex-search",    2,  3, &eval_regex_search},
-        {"regex-replace",   3,  3, &eval_regex_replace},
+    // æ‰§è¡Œ
+    {"eval",        1,  2, &eval_eval},
+    {"load",        1,  1, &eval_load},
 
-        {"regex-split",     2,  2, &eval_regex_split},
-        {"regex-collect",   2,  3, &eval_regex_collect},
+    // æ–‡ä»¶è¯»å†™
+    {"read",        1,  1, &eval_read},
+    {"write",       2,  2, &eval_write},
+    {"write-append", 2, 2, &eval_write_append},
 
-        {"substr",      2,  3,  &eval_substr},
+    // å­—ç¬¦ä¸²æ‹†åˆ†ï¼Œç»„åˆ
+    {"split",       1,  2, &eval_split},
+    {"join",        1,  2, &eval_join},
 
-        {"shell",       1, -1,  &eval_shell}, // ÖÁÉÙÒ»¸ö²ÎÊý£»ËùÓÐ²ÎÊý£¬½²×éºÏ³ÉÒ»¸ö×Ö·û´®£¬ÓÃÀ´½»¸øshellÖ´ÐÐ£»È»ºó·µ»ØÊä³ö
-        {"cd",          1,  1,  &eval_cd},      // ÓÐÇÒÖ»ÄÜÓÐÒ»¸ö²ÎÊý£»¸ü¸ÄÖ´ÐÐÂ·¾¶¡ª¡ªÈçºÎÏÔÊ¾ÔÚtitle£¿
-        {"ls",          0, -1,  &eval_ls},      // ÔÊÐíÈÎÒâ¸ö¿ÉÒÔÀí½âÎªÂ·¾¶µÄ×Ö·û´®×÷Îª²ÎÊý£»Ã¶¾Ù³öËùÓÐÂ·¾¶
-                                                // NOTE ÐèÒª×¢ÒâµÄÊÇ£¬¾ÍËãÊÇshell-ls±¾Éí£¬ÆäÊµÒ²ÊÇ²»Ö§³ÖÍ¨Åä·ûµÄ£¡
-                                                // Ëü¿´ÆðÀ´Ö§³ÖÍ¨Åä·û£¬ÊÇÒòÎª'*'µÈ·ûºÅ£¬ÔÚ½»¸ølsÖ®Ç°£¬¾ÍÒÑ¾­±»"expand"ÁË£¡
-        {"pwd",         0,  0,  &eval_pwd},     // ÎÞ²ÎÊý£»´òÓ¡µ±Ç°Â·¾¶
-        {"fnamemodify", 2,  2,  &eval_fnamemodify}, // ÓÐÇÒÖ»ÄÜÁ½¸ö²ÎÊý£»·Ö±ðÊÇÂ·¾¶ºÍÐÞ¸Ä×Ö·û´®£»
+    // ç½‘ç»œ
+    {"http-get",     1,  3, &eval_http_get},
+    // html è§£æž
+    {"gumbo-query",  2,  2, &eval_gumbo_query},
 
-        {"glob",        1,  2,  &eval_glob}, // Ö§³Ö1µ½2¸ö²ÎÊý£»·Ö±ðÊÇÃ¶¾ÙÂ·¾¶ºÍÄ¿±ê¹æÔò(¿ÉÑ¡)£»
-        {"glob-recurse",1,  3,  &eval_glob_recurse}, // ²ÎÊýÍ¬ÉÏ£»µÚÈý¸ö¿ÉÑ¡²ÎÊý£¬Ö¸²éÕÒÉî¶È£»
-    };
+    // æ­£åˆ™è¡¨è¾¾å¼
+    {"regex",           1,  1, &eval_regex},        // ä»Žå­—ç¬¦ä¸²ç”Ÿæˆregexå¯¹è±¡
+    {"regex-match",     2,  2, &eval_regex_match},  // 
+    {"regex-search",    2,  3, &eval_regex_search},
+    {"regex-replace",   3,  3, &eval_regex_replace},
+
+    {"regex-split",     2,  2, &eval_regex_split},
+    {"regex-collect",   2,  3, &eval_regex_collect},
+
+    // å­—ç¬¦ä¸²-èŽ·å–å­ä¸²
+    {"substr",      2,  3,  &eval_substr},
+
+    {"shell",       1, -1,  &eval_shell}, // è‡³å°‘ä¸€ä¸ªå‚æ•°ï¼›æ‰€æœ‰å‚æ•°ï¼Œè®²ç»„åˆæˆä¸€ä¸ªå­—ç¬¦ä¸²ï¼Œç”¨æ¥äº¤ç»™shellæ‰§è¡Œï¼›ç„¶åŽè¿”å›žè¾“å‡º
+    {"shell-cd",    1,  1,  &eval_cd},    // æœ‰ä¸”åªèƒ½æœ‰ä¸€ä¸ªå‚æ•°ï¼›æ›´æ”¹æ‰§è¡Œè·¯å¾„â€”â€”å¦‚ä½•æ˜¾ç¤ºåœ¨titleï¼Ÿ
+    {"shell-ls",    0, -1,  &eval_ls},    // å…è®¸ä»»æ„ä¸ªå¯ä»¥ç†è§£ä¸ºè·¯å¾„çš„å­—ç¬¦ä¸²ä½œä¸ºå‚æ•°ï¼›æžšä¸¾å‡ºæ‰€æœ‰è·¯å¾„
+    // NOTE éœ€è¦æ³¨æ„çš„æ˜¯ï¼Œå°±ç®—æ˜¯shell-lsæœ¬èº«ï¼Œå…¶å®žä¹Ÿæ˜¯ä¸æ”¯æŒé€šé…ç¬¦çš„ï¼
+    // å®ƒçœ‹èµ·æ¥æ”¯æŒé€šé…ç¬¦ï¼Œæ˜¯å› ä¸º'*'ç­‰ç¬¦å·ï¼Œåœ¨äº¤ç»™lsä¹‹å‰ï¼Œå°±å·²ç»è¢«"expand"äº†ï¼
+    {"shell-pwd",   0,  0,  &eval_pwd},   // æ— å‚æ•°ï¼›æ‰“å°å½“å‰è·¯å¾„
+
+    {"fnamemodify", 2,  2,  &eval_fnamemodify}, // æœ‰ä¸”åªèƒ½ä¸¤ä¸ªå‚æ•°ï¼›åˆ†åˆ«æ˜¯è·¯å¾„å’Œä¿®æ”¹å­—ç¬¦ä¸²ï¼›
+
+    {"glob",        1,  2,  &eval_glob},  // æ”¯æŒ1åˆ°2ä¸ªå‚æ•°ï¼›åˆ†åˆ«æ˜¯æžšä¸¾è·¯å¾„å’Œç›®æ ‡è§„åˆ™(å¯é€‰)ï¼›
+    {"glob-recurse",1,  3,  &eval_glob_recurse}, // å‚æ•°åŒä¸Šï¼›ç¬¬ä¸‰ä¸ªå¯é€‰å‚æ•°ï¼ŒæŒ‡æŸ¥æ‰¾æ·±åº¦ï¼›
+};
+
+
+void Builtin::regist_builtin_function(Environment& env)
+{
+    for (size_t i = 0; i < sss::size(builtin_infos); ++i) {
+        env[builtin_infos[i].name] = varlisp::Builtin(i);
+    }
+}
 
 void Builtin::print(std::ostream& o) const
 {
@@ -240,16 +150,14 @@ Object Builtin::eval(varlisp::Environment& env, const varlisp::List& args) const
     int arg_min = builtin_infos[m_type].min;
     int arg_max = builtin_infos[m_type].max;
     if (arg_min > 0 && arg_length < arg_min) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          builtin_infos[m_type].name
-                          , " need at least " , arg_min
-                          , " parameters. but provided " , arg_length);
+        SSS_POSTION_THROW(std::runtime_error, builtin_infos[m_type].name,
+                          " need at least ", arg_min,
+                          " parameters. but provided ", arg_length);
     }
     if (arg_max > 0 && arg_length > arg_max) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          builtin_infos[m_type].name
-                          , " need at most " , arg_max
-                          , " parameters. but provided " , arg_length);
+        SSS_POSTION_THROW(std::runtime_error, builtin_infos[m_type].name,
+                          " need at most ", arg_max,
+                          " parameters. but provided ", arg_length);
     }
     return builtin_infos[m_type].eval_fun(env, args);
 }
