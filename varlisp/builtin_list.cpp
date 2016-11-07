@@ -38,7 +38,7 @@ Object eval_car(varlisp::Environment& env, const varlisp::List& args)
  *
  * @return 
  *
- * TODO FIXME Õâ¸öº¯Êı£¬ĞèÒªÀàËÆeval_car¸ÄÔì¡£
+ * TODO FIXME è¿™ä¸ªå‡½æ•°ï¼Œéœ€è¦ç±»ä¼¼eval_caræ”¹é€ ã€‚
  */
 Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
 {

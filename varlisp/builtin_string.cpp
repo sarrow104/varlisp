@@ -5,16 +5,16 @@
 
 namespace varlisp {
 /**
- * @brief ²ğ·Ö×Ö·û´®
+ * @brief æ‹†åˆ†å­—ç¬¦ä¸²
  *
  * @param [in]env
- * @param [in]args Ö§³ÖÁ½¸ö£¬²ÎÊı£¬·Ö±ğ´ıÇĞ·Ö×Ö·û´®£¬ºÍ·Ö¸î×Ö·û´®£»
+ * @param [in]args æ”¯æŒä¸¤ä¸ªï¼Œå‚æ•°ï¼Œåˆ†åˆ«å¾…åˆ‡åˆ†å­—ç¬¦ä¸²ï¼Œå’Œåˆ†å‰²å­—ç¬¦ä¸²ï¼›
  *
- * @return ·Ö¸îÖ®ºóµÄÁĞ±í£»
+ * @return åˆ†å‰²ä¹‹åçš„åˆ—è¡¨ï¼›
  *
- * TODO Ö§³ÖÕıÔò±í´ïÊ½£¬È·¶¨sep!
- * ĞèÒªÈı¸ö²ÎÊı£»
- * ÆäÖĞµÚÈı¸ö²ÎÊıÊÇ±íÊ¾ÕıÔòµÄµÄsymbol
+ * TODO æ”¯æŒæ­£åˆ™è¡¨è¾¾å¼ï¼Œç¡®å®šsep!
+ * éœ€è¦ä¸‰ä¸ªå‚æ•°ï¼›
+ * å…¶ä¸­ç¬¬ä¸‰ä¸ªå‚æ•°æ˜¯è¡¨ç¤ºæ­£åˆ™çš„çš„symbol
  */
 Object eval_split(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -56,7 +56,7 @@ Object eval_split(varlisp::Environment& env, const varlisp::List& args)
  * @brief join string list
  *
  * @param [in] env
- * @param [in] args µÚÒ»¸ö²ÎÊı£¬±ØĞëÊÇÒ»¸ö(list)£»»òÕßsymbol
+ * @param [in] args ç¬¬ä¸€ä¸ªå‚æ•°ï¼Œå¿…é¡»æ˜¯ä¸€ä¸ª(list)ï¼›æˆ–è€…symbol
  *
  * @return 
  */

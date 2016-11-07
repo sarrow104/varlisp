@@ -4,9 +4,9 @@
 #include "strict_less_visitor.hpp"
 
 namespace varlisp {
-// ¶ÔÓÚdrracketÀ´Ëµ£¬±È½ÏÔËËã·û£¬Ëü»áÖ±½ÓÒªÇó×ª»»µ½realÓò£»
-// Èç¹ûÊ§°Ü£¬ÔòÅ×³öÒì³££»
-// ¼´£¬lambdaº¯Ê½£¬Óë1.2ÊµÊýµÄ±È½Ï´óÐ¡£¬»á³ö´í£¬Å×³öÒì³££º
+// å¯¹äºŽdrracketæ¥è¯´ï¼Œæ¯”è¾ƒè¿ç®—ç¬¦ï¼Œå®ƒä¼šç›´æŽ¥è¦æ±‚è½¬æ¢åˆ°realåŸŸï¼›
+// å¦‚æžœå¤±è´¥ï¼Œåˆ™æŠ›å‡ºå¼‚å¸¸ï¼›
+// å³ï¼Œlambdaå‡½å¼ï¼Œä¸Ž1.2å®žæ•°çš„æ¯”è¾ƒå¤§å°ï¼Œä¼šå‡ºé”™ï¼ŒæŠ›å‡ºå¼‚å¸¸ï¼š
 // > (if (> fib 1) 1 2)
 // >: contract violation
 //   expected: real?
@@ -14,7 +14,7 @@ namespace varlisp {
 //   argument position: 1st
 //   other arguments...:
 //    1
-// ÆäÖÐ£º
+// å…¶ä¸­ï¼š
 // > (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))
 Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
 {

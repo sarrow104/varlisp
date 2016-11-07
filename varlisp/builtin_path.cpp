@@ -24,7 +24,7 @@ Object eval_fnamemodify(varlisp::Environment& env, const varlisp::List& args)
     return Object(sss::path::modify_copy(*p_path, *p_modifier));
 }
 
-// {"glob",        1,  2,  &eval_glob}, // Ö§³Ö1µ½2¸ö²ÎÊı£»·Ö±ğÊÇÃ¶¾ÙÂ·¾¶ºÍÄ¿±ê¹æÔò(¿ÉÑ¡)£»
+// {"glob",        1,  2,  &eval_glob}, // æ”¯æŒ1åˆ°2ä¸ªå‚æ•°ï¼›åˆ†åˆ«æ˜¯æšä¸¾è·¯å¾„å’Œç›®æ ‡è§„åˆ™(å¯é€‰)ï¼›
 Object eval_glob(varlisp::Environment& env, const varlisp::List& args)
 {
     Object path = boost::apply_visitor(eval_visitor(env), args.head);
@@ -65,7 +65,7 @@ Object eval_glob(varlisp::Environment& env, const varlisp::List& args)
     return Object(ret);
 }
 
-// {"glob-recurse", 1,  3,  &eval_glob_recurse}, // ²ÎÊıÍ¬ÉÏ£»µÚÈı¸ö¿ÉÑ¡²ÎÊı£¬Ö¸²éÕÒÉî¶È£»
+// {"glob-recurse", 1,  3,  &eval_glob_recurse}, // å‚æ•°åŒä¸Šï¼›ç¬¬ä¸‰ä¸ªå¯é€‰å‚æ•°ï¼ŒæŒ‡æŸ¥æ‰¾æ·±åº¦ï¼›
 Object eval_glob_recurse(varlisp::Environment& env, const varlisp::List& args)
 {
     Object path = boost::apply_visitor(eval_visitor(env), args.head);

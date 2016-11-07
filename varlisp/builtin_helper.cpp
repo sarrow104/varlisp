@@ -4,10 +4,10 @@
 namespace varlisp {
 const varlisp::List * getFirstListPtrFromArg(varlisp::Environment& env, const varlisp::List& args, Object& tmp)
 {
-    // NOTE List 的第一个元素是symbol 的list!
+    // NOTE List 鐨勭涓�涓厓绱犳槸symbol 鐨刲ist!
     const varlisp::List * _list = boost::get<varlisp::List>(&(args.head));
     if (!_list) {
-        // list变量，会少一个`list`的symbol，因此处理起来不同；
+        // list鍙橀噺锛屼細灏戜竴涓猔list`鐨剆ymbol锛屽洜姝ゅ鐞嗚捣鏉ヤ笉鍚岋紱
         tmp = boost::apply_visitor(eval_visitor(env), args.head);
         _list = boost::get<varlisp::List>(&tmp);
     }

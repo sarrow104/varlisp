@@ -12,18 +12,18 @@ namespace varlisp {
 // TODO
 Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 {
-    // NOTE ¼ÈÈ» loadÊÇÄÚ½¨º¯Êý£¬ÄÇÃ´load£¬¾Í¿ÉÒÔ³öÏÖÔÚÈÎºÎµØ·½£»±ÈÈçÁíÍâÒ»¸ö½Å±¾£»
-    // ¶ø£¬ÎÒµÄ½âÊÍÆ÷£¬¶ÔÓÚ½Å±¾µÄload£¬±¾ÖÊÉÏ£¬ÊÇÈÃÄÚ²¿µÄTokenizer¶ÔÏó£¬
-    // push¡¢popÒ»¸ö¶îÍâµÄ¹¤×÷Õ»¡ª¡ªµ«ÊÇ£¬µ±Ç°£¬Ö»ÊÇ£¬TokenizerÖ»ÓµÓÐÁ½¸ö¹¤×÷Õ»£¬Ïàµ±ÓÚË«»º³åÇø£»
-    // ¶ÔÓÚÇ¶Ì×loadµÄÊ¹ÓÃ£¬Õâ¿ÉÄÜ»áÁ¦²»´ÓÐÄ£¡
+    // NOTE æ—¢ç„¶ loadæ˜¯å†…å»ºå‡½æ•°ï¼Œé‚£ä¹ˆloadï¼Œå°±å¯ä»¥å‡ºçŽ°åœ¨ä»»ä½•åœ°æ–¹ï¼›æ¯”å¦‚å¦å¤–ä¸€ä¸ªè„šæœ¬ï¼›
+    // è€Œï¼Œæˆ‘çš„è§£é‡Šå™¨ï¼Œå¯¹äºŽè„šæœ¬çš„loadï¼Œæœ¬è´¨ä¸Šï¼Œæ˜¯è®©å†…éƒ¨çš„Tokenizerå¯¹è±¡ï¼Œ
+    // pushã€popä¸€ä¸ªé¢å¤–çš„å·¥ä½œæ ˆâ€”â€”ä½†æ˜¯ï¼Œå½“å‰ï¼Œåªæ˜¯ï¼ŒTokenizeråªæ‹¥æœ‰ä¸¤ä¸ªå·¥ä½œæ ˆï¼Œç›¸å½“äºŽåŒç¼“å†²åŒºï¼›
+    // å¯¹äºŽåµŒå¥—loadçš„ä½¿ç”¨ï¼Œè¿™å¯èƒ½ä¼šåŠ›ä¸ä»Žå¿ƒï¼
     //
-    // ÓÚÊÇ£¬°²È«µÄ×÷·¨ÓÐÁ½ÖÖ£º
-    //      1. ÈÃTokenizer¶ÔÏó£¬³ÉÎªÕæÕýµÄ¶àÕ»µÄ¶ÔÏó£»
-    //      2. °´ÐèÒª£¬ÁÙÊ±¹¹½¨Tokenizer¶ÔÏó£¬ÒÔ¹©½âÎöÓÃ¡ª¡ªÏàµ±ÓÚÓÐÁËTokenizerµÄ¶ÑÕ»£»
+    // äºŽæ˜¯ï¼Œå®‰å…¨çš„ä½œæ³•æœ‰ä¸¤ç§ï¼š
+    //      1. è®©Tokenizerå¯¹è±¡ï¼Œæˆä¸ºçœŸæ­£çš„å¤šæ ˆçš„å¯¹è±¡ï¼›
+    //      2. æŒ‰éœ€è¦ï¼Œä¸´æ—¶æž„å»ºTokenizerå¯¹è±¡ï¼Œä»¥ä¾›è§£æžç”¨â€”â€”ç›¸å½“äºŽæœ‰äº†Tokenizerçš„å †æ ˆï¼›
     //
-    // NOTE ÁíÍâ£¬ÔÚloadµÄÊ±ºò£¬ÊÇ·ñÐèÒªÐÂ½¨Ò»¸öEnvironment¶ÔÏóÄØ£¿
-    // ÕâÊÇ×÷ÓÃÓòµÄÎÊÌâ£»¼´£¬¶ÔÓÚ(load "path/to/script")Óï¾ä¶øÑÔ£¬ÐÂ½âÎöµ½
-    // µÄ±êÊ¶·û(¶ÔÏó¡¢º¯ÊýµÈµÈ)£¬Ó¦¸Ã·Åµ½ÄÄ¸öEnvironmentÖÐÄØ£¿
+    // NOTE å¦å¤–ï¼Œåœ¨loadçš„æ—¶å€™ï¼Œæ˜¯å¦éœ€è¦æ–°å»ºä¸€ä¸ªEnvironmentå¯¹è±¡å‘¢ï¼Ÿ
+    // è¿™æ˜¯ä½œç”¨åŸŸçš„é—®é¢˜ï¼›å³ï¼Œå¯¹äºŽ(load "path/to/script")è¯­å¥è€Œè¨€ï¼Œæ–°è§£æžåˆ°
+    // çš„æ ‡è¯†ç¬¦(å¯¹è±¡ã€å‡½æ•°ç­‰ç­‰)ï¼Œåº”è¯¥æ”¾åˆ°å“ªä¸ªEnvironmentä¸­å‘¢ï¼Ÿ
 
 #if 1
    Object path = boost::apply_visitor(eval_visitor(env), args.head);

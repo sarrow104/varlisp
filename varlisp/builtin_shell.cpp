@@ -7,15 +7,15 @@
 #include <sss/raw_print.hpp>
 
 namespace varlisp {
-// Ӧ����δ���shell-evalʱ��Ĳ�����
-// ���磬�û������ṩһ���������������ַ�����������ִ�е�����Լ�������
-// ��ʱ�������������أ��������ţ�Ȼ��ִ�У����군�ˡ�
+// 应该如何处理shell-eval时候的参数？
+// 比如，用户可能提供一个完整的命令行字符串——包括执行的命令，以及参数；
+// 此时，如果画蛇添足地，增加引号，然后执行，就完蛋了。
 //
-// ͬʱ��Ҳ�п�����Ҫִ�е�����Լ��ⲿ�����Ĳ������Ƿֿ��ġ����磬
-// ����һ���������Ǵ���·�����ַ��������һ��пո���ô���������ţ�
-// ���߽���ת�壬����һ������Ķ����ˡ�
+// 同时，也有可能需要执行的命令，以及外部参数的参数，是分开的。比如，
+// 其中一个参数，是代表路径的字符串，而且还有空格。那么，添加引号，
+// 或者进行转义，就是一个必须的动作了。
 //
-// ����Ȼ���������ֲ����ݵĹ�����ʽ��
+// 但显然，这是两种不兼容的工作方式。
 Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 {
     // TODO
@@ -33,7 +33,7 @@ Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
     COLOG_INFO("(shell-cd: ", sss::raw_string(*p_path), " complete)");
     return Object(sss::path::getcwd());
 }
-// {"ls",          0, -1,  &eval_ls},      // �����������������Ϊ·�����ַ�����Ϊ������ö�ٳ�����·��
+// {"ls",          0, -1,  &eval_ls},      // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
 Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
 {
     varlisp::List ret;

@@ -28,8 +28,8 @@ void ensure_utf8(std::string& content, const std::string& encodings)
 
 
 // TODO
-// ¶ÔÓÚÊ§°ÜµÄÏÂÔØ£¬Ó¦¸Ã¸æÖªÓÃ»§content-length£¬ÒÔ¼°ÖÕÖ¹ÔÚºÎ´¦(ÒÑ¾­½ÓÊÜµÄbytesÊı)
-// ÁíÍâ£¬ensure-utf£¬Ó¦¸Ã½»¸øÓÃ»§£¬¶ø²»ÊÇ×Ô¶¯Íê³É¡£
+// å¯¹äºå¤±è´¥çš„ä¸‹è½½ï¼Œåº”è¯¥å‘ŠçŸ¥ç”¨æˆ·content-lengthï¼Œä»¥åŠç»ˆæ­¢åœ¨ä½•å¤„(å·²ç»æ¥å—çš„bytesæ•°)
+// å¦å¤–ï¼Œensure-utfï¼Œåº”è¯¥äº¤ç»™ç”¨æˆ·ï¼Œè€Œä¸æ˜¯è‡ªåŠ¨å®Œæˆã€‚
 Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
     Object url = boost::apply_visitor(eval_visitor(env), args.head);

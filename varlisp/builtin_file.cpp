@@ -30,7 +30,7 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
     std::string content;
     sss::path::file2string(full_path, content);
 
-    // ¶ÔÓÚĞ¡ÎÄ¼ş£¬ÆäÅĞ¶Ï¿ÉÄÜ³ö´í
+    // å¯¹äºå°æ–‡ä»¶ï¼Œå…¶åˆ¤æ–­å¯èƒ½å‡ºé”™
     // ensure_utf8(content, "cp936,utf8");
 
     return content;
@@ -43,7 +43,7 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
  *           (write        item path)
  *           (write-append item path)
  *
- * Ô­Ñù£¬ÎŞ¸ñÊ½£»Ò²Ã»ÓĞ¶îÍâ²åÈë"sep-string"
+ * åŸæ ·ï¼Œæ— æ ¼å¼ï¼›ä¹Ÿæ²¡æœ‰é¢å¤–æ’å…¥"sep-string"
  *
  * @param env
  * @param args
