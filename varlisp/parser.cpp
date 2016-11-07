@@ -93,6 +93,7 @@ namespace varlisp {
             "or",
             "define",
             "lambda",
+            "list"
         };
         for (const auto * item : keywords) {
             if (sss::is_begin_with(item, prefix)) {
