@@ -4,7 +4,6 @@
 #include <boost/variant.hpp>
 
 #include "object.hpp"
-#include "util.hpp"
 
 namespace varlisp {
 
