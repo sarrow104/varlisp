@@ -53,7 +53,10 @@ int main (int argc, char *argv[])
     }
 
     linenoise::SetHistoryMaxLen(100);
-    linenoise::SetMultiLine(true); // linenoise默认是单行模式；此时，大段的输入，会导致响应变慢。
+
+    // NOTE linenoise默认是单行模式；此时，大段的输入，会导致响应变慢。
+    // 因此，修改为多行模式
+    linenoise::SetMultiLine(true);
     linenoise::SetCompletionCallback([&interpreter](const char* editBuffer,
                                                     std::vector<std::string>& completions) {
 
