@@ -3,8 +3,9 @@
 
 #include <boost/variant.hpp>
 
+#include <sss/raw_print.hpp>
+
 #include "object.hpp"
-#include "util.hpp"
 
 namespace varlisp {
 
@@ -32,7 +33,7 @@ namespace varlisp {
 
         void operator() (const std::string& v) const
         {
-            m_o << util::escape(v);
+            m_o << sss::raw_string(v);
         }
 
         void operator() (const varlisp::symbol& s) const
@@ -42,6 +43,7 @@ namespace varlisp {
 
         void operator() (const sss::regex::CRegex& reg) const
         {
+            m_o << '/' << reg.regstr() << '/';
         }
     };
 
