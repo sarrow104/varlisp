@@ -3,11 +3,15 @@
 
 #include <string>
 
+#include <sss/raw_print.hpp>
+#include <sstream>
+
 namespace varlisp {
     namespace util {
         inline std::string escape(const std::string& s) {
-            // TODO
-            return '"' + s + '"';
+            std::ostringstream oss;
+            oss << sss::raw_string(s);
+            return oss.str();
         }
     } // namespace util
 } // namespace varlisp
