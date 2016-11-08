@@ -5,8 +5,8 @@ namespace varlisp {
 /**
  * @brief (regex "regex-string") -> regex-obj
  *
- * @param env
- * @param args
+ * @param[in] env
+ * @param[in] args
  *
  * @return
  */
@@ -24,8 +24,8 @@ Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
 /**
  * @brief (regex-match reg-obj target-string) -> bool
  *
- * @param env
- * @param args
+ * @param[in] env
+ * @param[in] args
  *
  * @return
  */
@@ -48,8 +48,8 @@ Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
 /**
  * @brief (regex-search reg target offset = 0) -> (list sub0, sub1...)
  *
- * @param env
- * @param args
+ * @param[in] env
+ * @param[in] args
  *
  * @return
  */
@@ -88,7 +88,7 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
         offset = p_content->length();
     }
 
-    varlisp::List ret;
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
 
     if (p_reg->match(p_content->c_str() + offset)) {
         List *p_list = &ret;
@@ -163,7 +163,7 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
     }
 
     const char *str_beg = p_content->c_str();
-    varlisp::List ret;
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
     List *p_list = &ret;
 
     while (str_beg && *str_beg && p_reg->match(str_beg)) {
@@ -188,8 +188,8 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
  *      (regex-collect reg "target-string" "fmt-string")
  *          -> (list matched-sub1 matched-sub2 ...)
  *
- * @param [in] env
- * @param [in] args
+ * @param[in] env
+ * @param[in] args
  *
  * @return
  */
@@ -215,7 +215,7 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
     }
 
     const char *str_beg = p_content->c_str();
-    varlisp::List ret;
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
     List *p_list = &ret;
 
     while (str_beg && *str_beg && p_reg->match(str_beg)) {

@@ -3,6 +3,7 @@
 
 #include "object.hpp"
 
+#include <initializer_list>
 #include <stdexcept>
 #include <vector>
 
@@ -23,8 +24,17 @@ struct Environment;
 struct List {
     List() {}
     List(const Object& h, const List& t) : head(h) { tail.push_back(t); }
+    List(const List& l);
     explicit List(const Object& o) : head(o) {}
+    ~List() = default;
+
+    List& operator= (const List& l);
+
+    List(List&& m) = default;
+    List& operator= (List&& l) = default;
+
     Object head;
+    // NOTE 这本质上是 optional，而不是一个vector；我只会用到第一个元素；
     std::vector<List> tail;
 
     void print(std::ostream& o) const;
@@ -52,6 +62,29 @@ struct List {
         return this->head.which() == 0 && this->tail.empty();
     }
 
+    static List makeList(std::initializer_list<Object> l)
+    {
+        varlisp::List ret;
+        varlisp::List *p_list = &ret;
+        for (auto& item : l) {
+            p_list->head = item;
+            p_list = p_list->next_slot();
+        }
+        return ret;
+    }
+
+    static List makeSQuoteList(std::initializer_list<Object> l)
+    {
+        return makeList({Object{varlisp::symbol("list")}, makeList(std::move(l))});
+    }
+
+    bool is_squote() const;
+
+    void none_empty_squote_check() const;
+
+    Object car() const;
+    Object cdr() const;
+
     Object eval(Environment& env) const;
 
     size_t length() const;
@@ -63,6 +96,9 @@ struct List {
     // 当然，如果某一个节点head.which() == 0，那么tail.empty()也为真！
     void append(const Object& o);
     void append(Object&& o);
+
+    void push_front(const Object& o);
+    void swap(List& ref);
 };
 
 inline std::ostream& operator<<(std::ostream& o, const List& d)

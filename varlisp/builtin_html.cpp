@@ -5,6 +5,14 @@
 #include <sss/utlstring.hpp>
 
 namespace varlisp {
+/**
+ * @brief (gumbo-query "<html>" "selector-string")
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return "node->text"
+ */
 Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
 {
     Object content = boost::apply_visitor(eval_visitor(env), args.head);

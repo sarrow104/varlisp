@@ -3,32 +3,31 @@
 
 namespace varlisp {
 
-bool is_literal_list(const varlisp::List& l)
-{
-    bool is_literal = false;
-    if (l.length()) {
-        const varlisp::symbol* p_symbol =
-            boost::get<const varlisp::symbol>(&l.head);
-        if (p_symbol && *p_symbol == varlisp::symbol("list")) is_literal = true;
-    }
-    return is_literal;
-}
-
+/**
+ * @brief getFirstListPtrFromArg 
+ *
+ * 讲args的第一个参数，获取为一个squot-list；如果是可执行的序列，则求值后再判断
+ * 如果无法获得一个squot-list，则返回0；
+ *
+ * @param[in] env
+ * @param[in] args
+ * @param[in] obj
+ *
+ * @return
+ */
 const varlisp::List* getFirstListPtrFromArg(varlisp::Environment& env,
                                             const varlisp::List& args,
-                                            Object& tmp)
+                                            Object& obj)
 {
     // NOTE FIXME List 的第一个元素是symbol 的list!
-    const varlisp::List* _list = boost::get<varlisp::List>(&(args.head));
-    if (!_list) {
-        // list变量，会少一个`list`的symbol，因此处理起来不同；
-        tmp = boost::apply_visitor(eval_visitor(env), args.head);
-        _list = boost::get<varlisp::List>(&tmp);
+    const varlisp::List* p_list = boost::get<const varlisp::List>(&args.head);
+    if (p_list && !p_list->is_squote()) {
+        obj = p_list->eval(env);
+        p_list = boost::get<const varlisp::List>(&obj);
+        if (p_list && !p_list->is_squote()) {
+            p_list = 0;
+        }
     }
-    else {
-        // descard `list` symbol
-        _list = _list->next();
-    }
-    return _list;
+    return p_list;
 }
 }  // namespace varlisp

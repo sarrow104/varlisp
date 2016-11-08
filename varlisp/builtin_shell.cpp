@@ -16,11 +16,32 @@ namespace varlisp {
 // 或者进行转义，就是一个必须的动作了。
 //
 // 但显然，这是两种不兼容的工作方式。
+/**
+ * @brief
+ *      (shell "") -> '(stdout, stderr)
+ *      (shell "" arg1 arg2 arg3) -> '(stdout, stderr)
+ *
+ *  NOTE 不会对第一个参数进行转义！
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 {
     // TODO
+
     return Object{};
 }
+/**
+ * @brief (cd "path/to/go") -> "new-work-dir"
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
 {
     Object target_path = boost::apply_visitor(eval_visitor(env), args.head);
@@ -35,9 +56,17 @@ Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
 }
 // {"ls",          0, -1,  &eval_ls},      //
 // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
+/**
+ * @brief (ls "dir1" "dir2" ...) -> '("item1","item2", ...)
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
 {
-    varlisp::List ret;
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
     const List* p = &args;
     List* p_list = &ret;
     if (args.length()) {
@@ -75,12 +104,7 @@ Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
                                 "not exists)");
                     break;
             }
-            if (p->tail.empty()) {
-                p = 0;
-            }
-            else {
-                p = &p->tail[0];
-            }
+            p = p->next();
         }
     }
     else {
@@ -99,6 +123,15 @@ Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
     }
     return Object(ret);
 }
+
+/**
+ * @brief (pwd) -> "current-working-dir"
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_pwd(varlisp::Environment& env, const varlisp::List& args)
 {
     (void)env;

@@ -1,14 +1,18 @@
 #include "eval_visitor.hpp"
 #include "object.hpp"
 
+#include "builtin_helper.hpp"
+
 #include <sss/spliter.hpp>
 
 namespace varlisp {
 /**
  * @brief 拆分字符串
+ *      (split "string to split") -> '("part1","part2", ...)
+ *      (split "string to split" "seq-str") -> '("part1","part2", ...)
  *
- * @param [in]env
- * @param [in]args 支持两个，参数，分别待切分字符串，和分割字符串；
+ * @param[in] env
+ * @param[in] args 支持两个，参数，分别待切分字符串，和分割字符串；
  *
  * @return 分割之后的列表；
  *
@@ -35,7 +39,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
         }
         sep = *p_sep;
     }
-    varlisp::List ret;
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
     std::string stem;
     if (sep.length() == 1) {
         sss::Spliter sp(*p_content, sep[0]);
@@ -54,19 +58,19 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
 
 /**
  * @brief join string list
+ *      (join '("s1" "s2" ...)) -> "joined-text"
+ *      (join '("s1" "s2" ...) "seq") -> "joined-text"
  *
- * @param [in] env
- * @param [in] args 第一个参数，必须是一个(list)；或者symbol
+ * @param[in] env
+ * @param[in] args 第一个参数，必须是一个(list)；或者symbol
  *
  * @return
  */
 Object eval_join(varlisp::Environment &env, const varlisp::List &args)
 {
-    const List *p_list = 0;
 
-    Object content = boost::apply_visitor(eval_visitor(env), args.head);
-
-    p_list = boost::get<varlisp::List>(&content);
+    Object obj;
+    const List *p_list = getFirstListPtrFromArg(env, args, obj);
 
     if (!p_list) {
         SSS_POSTION_THROW(std::runtime_error, "join: first must a list!");
@@ -86,11 +90,13 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     std::ostringstream oss;
 
     bool is_first = true;
+    p_list = p_list->next();
     while (p_list && p_list->head.which()) {
         const std::string *p_stem = boost::get<std::string>(&p_list->head);
         Object obj;
         if (!p_stem) {
             obj = boost::apply_visitor(eval_visitor(env), p_list->head);
+            // 或许，这里不用限定类型——相当于序列化各个元素
             p_stem = boost::get<std::string>(&obj);
             if (!p_stem) {
                 break;
@@ -114,8 +120,8 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
  *    (substr "target-string" offset length)
  *      -> sub-str
  *
- * @param [in] env
- * @param [in] args
+ * @param[in] env
+ * @param[in] args
  *
  * @return
  */
@@ -130,7 +136,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 
     int offset = 0;
     Object offset_obj =
-        boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        boost::apply_visitor(eval_visitor(env), args.next()->next()->head);
     if (const int *p_offset = boost::get<int>(&offset_obj)) {
         offset = *p_offset;
     }
@@ -148,7 +154,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     int length = -1;
     if (args.length() == 3) {
         Object length_obj =
-            boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
+            boost::apply_visitor(eval_visitor(env), args.next()->next()->head);
         if (const int *p_length = boost::get<int>(&length_obj)) {
             length = *p_length;
         }

@@ -10,6 +10,18 @@
 
 namespace varlisp {
 
+/**
+ * @brief (load "path/to/lisp") -> nil
+ *
+ * TODO
+ * 由于载入之后的脚本，马上就被执行了——相当于从终端输入。那么，
+ * 从逻辑上，返回值应该是脚本中最后一条语句的值。
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
 Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 {
     // NOTE 既然

@@ -1,6 +1,3 @@
-#include <sss/log.hpp>
-#include <sstream>
-
 #include "list.hpp"
 #include "object.hpp"
 
@@ -8,7 +5,36 @@
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
 
+#include <sss/util/PostionThrow.hpp>
+#include <sss/log.hpp>
+
+#include <sstream>
+#include <stdexcept>
+
 namespace varlisp {
+
+
+List::List(const List& l)
+{
+    const List* p_l = &l;
+    List* p_this = this;
+    while (p_l && p_l->head.which()) {
+        p_this->head = p_l->head;
+        p_l = p_l->next();
+        if (p_l) {
+            p_this = p_this->next_slot();
+        }
+    }
+}
+
+List& List::operator= (const List& l)
+{
+    if (this != &l) {
+        List tmp{l};
+        this->swap(tmp);
+    }
+    return *this;
+}
 
 size_t List::length() const
 {
@@ -43,7 +69,7 @@ void List::append(const Object& o)
         p->head = o;
     }
     else {
-        p->tail.push_back(List(std::move(o)));
+        p->tail.push_back(List(o));
     }
     // std::cout << "after:" << *this << std::endl;
 }
@@ -68,6 +94,20 @@ void List::append(Object&& o)
         p->tail.push_back(List(std::move(o)));
     }
     // std::cout << "after:" << *this << std::endl;
+}
+
+void List::swap(List& ref)
+{
+    std::swap(this->head, ref.head);
+    std::swap(this->tail, ref.tail);
+}
+
+void List::push_front(const Object& o)
+{
+    List tmp;
+    tmp.swap(*this);
+    this->head = o;
+    tail.emplace_back(tmp);
 }
 
 Object eval_impl(Environment& env, const Object& funcObj, const List& args)
@@ -184,6 +224,41 @@ bool operator<(const List& lhs, const List& rhs)
 {
     // TODO FIXME
     return false;
+}
+
+bool List::is_squote() const {
+    if (this->head.which()) {
+        const varlisp::symbol* p_symbol =
+            boost::get<const varlisp::symbol>(&this->head);
+        if (p_symbol && *p_symbol == varlisp::symbol("list")) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void List::none_empty_squote_check() const
+{
+    if (!this->is_squote()) {
+        SSS_POSTION_THROW(std::runtime_error, "need squote-list; but", *this);
+    }
+    else if (this->length() < 2) {
+        SSS_POSTION_THROW(std::runtime_error, "need at least one object");
+    }
+}
+
+Object List::car() const
+{
+    none_empty_squote_check();
+    return this->next()->head;
+}
+
+Object List::cdr() const
+{
+    none_empty_squote_check();
+    return List({varlisp::symbol{"list"},*(this->next()->next())});
+
+    // return makeSQuoteList({*(this->next()->next())});
 }
 
 }  // namespace varlisp

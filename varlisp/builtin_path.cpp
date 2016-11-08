@@ -6,6 +6,14 @@
 #include <sss/path/name_filter.hpp>
 
 namespace varlisp {
+/**
+ * @brief (fnamemodify "path/string" "path modifier") -> "modified-fname"
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
 {
     Object path = boost::apply_visitor(eval_visitor(env), args.head);
@@ -13,20 +21,30 @@ Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
     const std::string *p_path = boost::get<std::string>(&path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "fnamemodify requies one path string");
+                          "fnamemodify: requies one path string");
     }
     Object modifier =
         boost::apply_visitor(eval_visitor(env), args.tail[0].head);
     const std::string *p_modifier = boost::get<std::string>(&modifier);
     if (!p_modifier) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "fnamemodify requies one path-modifier string");
+                          "fnamemodify: requies one path-modifier string");
     }
     return Object(sss::path::modify_copy(*p_path, *p_modifier));
 }
 
 // {"glob",        1,  2,  &eval_glob}, //
 // 支持1到2个参数；分别是枚举路径和目标规则(可选)；
+/**
+ * @brief
+ *       (glob "paht/to/explorer") -> '("fname1", "fname2", ...)
+ *       (glob "paht/to/explorer" "fname-filter") -> '("fname1", "fname2", ...)
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 {
     Object path = boost::apply_visitor(eval_visitor(env), args.head);
@@ -47,7 +65,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
         f.reset(new sss::path::name_filter_t(*p_filter));
     }
 
-    varlisp::List ret;
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
     List *p_list = &ret;
 
     sss::path::file_descriptor fd;
@@ -68,6 +86,17 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 
 // {"glob-recurse", 1,  3,  &eval_glob_recurse}, //
 // 参数同上；第三个可选参数，指查找深度；
+/**
+ * @brief
+ *      (glob-recurse "paht/to/explorer") -> '("fname1", "fname2", ...)
+ *      (glob-recurse "paht/to/explorer" "fname-filter") -> '("fname1", "fname2", ...)
+ *      (glob-recurse "paht/to/explorer" "fname-filter" depth) -> '("fname1", "fname2", ...)
+ *
+ * @param env
+ * @param args
+ *
+ * @return 
+ */
 Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
 {
     Object path = boost::apply_visitor(eval_visitor(env), args.head);
@@ -101,7 +130,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
         depth = *p_depth;
     }
 
-    varlisp::List ret;
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
     List *p_list = &ret;
 
     sss::path::file_descriptor fd;

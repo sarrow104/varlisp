@@ -28,22 +28,23 @@ struct LogicAnd;
 struct LogicOr;
 
 typedef boost::variant<
-    Empty,                               // 0
-    bool,                                // 1
-    int,                                 // 2
-    double,                              // 3
-    std::string,                         // 4
-    sss::regex::CRegex,                  // 5
-    symbol,                              // 6
-    boost::recursive_wrapper<Builtin>,   // 7
-    boost::recursive_wrapper<Define>,    // 8
-    boost::recursive_wrapper<IfExpr>,    // 9
-    boost::recursive_wrapper<Cond>,      // 10
-    boost::recursive_wrapper<LogicAnd>,  // 11
-    boost::recursive_wrapper<LogicOr>,   // 12
-    boost::recursive_wrapper<List>,      // 13  // NOTE
-                                     // quote-list只是作为一种函数存在！
-    boost::recursive_wrapper<Lambda>  // 14
+    Empty,                                  // 0
+    bool,                                   // 1
+    int,                                    // 2
+    double,                                 // 3
+    std::string,                            // 4
+    sss::regex::CRegex,                     // 5
+    symbol,                                 // 6
+    boost::recursive_wrapper<Builtin>,      // 7
+    boost::recursive_wrapper<Define>,       // 8
+    boost::recursive_wrapper<IfExpr>,       // 9
+    boost::recursive_wrapper<Cond>,         // 10
+    boost::recursive_wrapper<LogicAnd>,     // 11
+    boost::recursive_wrapper<LogicOr>,      // 12
+    boost::recursive_wrapper<List>,         // 13
+    // NOTE
+    // quote-list只是作为一种函数存在！
+    boost::recursive_wrapper<Lambda>        // 14
     >
     Object;
 }  // namespace varlisp

@@ -17,29 +17,16 @@ namespace varlisp {
 Object eval_car(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj;
-    const varlisp::List* _list = getFirstListPtrFromArg(env, args, obj);
-
-    if (!_list) {
-        SSS_POSTION_THROW(std::runtime_error, "(car: need List)");
+    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
+    if (!p_list) {
+        SSS_POSTION_THROW(std::runtime_error, "(car: need squote-List)");
     }
 
-    if (!_list->length()) {
-        SSS_POSTION_THROW(
-            std::runtime_error,
-            "(car: contract violation expected: pair?  given: '())");
-    }
-    // if (!varlisp::is_literal_list(*_list)) {
-    //     Object expr = *_list;
-    //     const varlisp::List * p_inner_list = boost::get<const
-    //     varlisp::List>(&expr);
-    //     obj = boost::apply_visitor(eval_visitor(env), expr);
-    // }
-
-    return _list->head;
+    return p_list->car();
 }
 
 /**
- * @brief (cdr (list item1 item2 ...)) -> (item2 item3 ...)
+ * @brief (cdr '(list item1 item2 ...)) -> '(item2 item3 ...)
  *
  * @param env
  * @param args
@@ -51,26 +38,11 @@ Object eval_car(varlisp::Environment& env, const varlisp::List& args)
 Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj;
-    const varlisp::List* _list = getFirstListPtrFromArg(env, args, obj);
-
-    if (!_list) {
-        SSS_POSTION_THROW(std::runtime_error, "(cdr: need List)");
+    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
+    if (!p_list) {
+        SSS_POSTION_THROW(std::runtime_error, "(cdr: need squote-List)");
     }
-    if (!_list->length()) {
-        SSS_POSTION_THROW(
-            std::runtime_error,
-            "(cdr: contract violation expected: pair?  given: '())");
-    }
-    varlisp::List ret;
-    List* p_list = &ret;
-
-    _list = _list->next();  // descard the first object
-    while (_list && _list->head.which()) {
-        p_list = p_list->next_slot();
-        p_list->head = _list->head;
-        _list = _list->next();
-    }
-    return ret;
+    return p_list->cdr();
 }
 
 }  // namespace varlisp

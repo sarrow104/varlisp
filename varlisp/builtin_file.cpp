@@ -11,6 +11,14 @@
 
 namespace varlisp {
 
+/**
+ * @brief (read "path/to/file")
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return "file-content"
+ */
 Object eval_read(varlisp::Environment& env, const varlisp::List& args)
 {
     Object path = boost::apply_visitor(eval_visitor(env), args.head);
@@ -43,18 +51,15 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
  *
  * 原样，无格式；也没有额外插入"sep-string"
  *
- * @param env
- * @param args
- * @param append
+ * @param[in] env
+ * @param[in] args
+ * @param[in] append
  *
- * @return
+ * @return bytes-writed
  */
 Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
                        bool append)
 {
-    Object obj;
-    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
-
     Object path = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
     const std::string* p_path = boost::get<std::string>(&path);
     if (!p_path) {
@@ -74,7 +79,12 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     }
 
     std::ofstream::pos_type pos = ofs.tellp();
+
+    Object obj;
+    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
+
     if (p_list) {
+        p_list = p_list->next();
         while (p_list && p_list->head.which()) {
             boost::apply_visitor(raw_stream_visitor(ofs, env), p_list->head);
             p_list = p_list->next();
@@ -94,7 +104,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
         COLOG_INFO("(write ", sss::raw_string(*p_path), "by ", int(write_cnt),
                    "bytes complete)");
     }
-    return Object();
+    return Object(int(write_cnt));
 }
 
 Object eval_write(varlisp::Environment& env, const varlisp::List& args)

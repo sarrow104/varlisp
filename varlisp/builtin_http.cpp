@@ -11,6 +11,7 @@
 
 namespace varlisp {
 
+// TODO 外部函数
 void ensure_utf8(std::string& content, const std::string& encodings)
 {
     std::string encoding = sss::Encoding::encodings(content, encodings);
@@ -29,6 +30,15 @@ void ensure_utf8(std::string& content, const std::string& encodings)
 // TODO
 // 对于失败的下载，应该告知用户content-length，以及终止在何处(已经接受的bytes数)
 // 另外，ensure-utf，应该交给用户，而不是自动完成。
+/**
+ * @brief
+ *        (http-get "url") -> "<html>"
+ *        (http-get "url" "proxy-url" proxy-port-number) -> "<html>"
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
     Object url = boost::apply_visitor(eval_visitor(env), args.head);
