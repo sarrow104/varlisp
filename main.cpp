@@ -173,6 +173,7 @@ int Interpret()
             st = varlisp::Interpreter::status_OK;
         }
     }
+    return EXIT_SUCCESS;
 }
 
 int main (int argc, char *argv[])
