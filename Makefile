@@ -36,10 +36,10 @@ gprof:
 	@mkdir -p Gprof
 	@cd Gprof && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Gprof .. && make
 
-run:
+run: release
 	@./$(TARGET)
 
-run-debug:
+run-debug: debug
 	@gdb ./$(TARGET_D)
 
 gprof-view: gprof
