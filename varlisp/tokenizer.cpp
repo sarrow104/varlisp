@@ -6,16 +6,15 @@
 #include <sss/util/PostionThrow.hpp>
 #include <sss/util/StringSlice.hpp>
 
-#include <sss/Terminal.hpp>
+#ifndef DEBUG
+#define SSS_COLOG_TURNOFF
+#endif
+
+// #include <sss/Terminal.hpp>
 #include <sss/colorlog.hpp>
 
 #include <ss1x/parser/oparser.hpp>
 #include <ss1x/parser/util.hpp>
-
-#define _POS_MSG_                                                           \
-    sss::Terminal::dark << sss::path::basename(__FILE__) << ":" << __LINE__ \
-                        << ":" << sss::Terminal::end                        \
-                        << sss::Terminal::warning(__func__)
 
 namespace varlisp {
 Tokenizer::Tokenizer() { this->init(""); }
@@ -355,9 +354,6 @@ bool Tokenizer::is_eof() const
 void Tokenizer::push(const std::string& data)
 {
     COLOG_DEBUG('(', data, ')');
-
-    std::cout << _POS_MSG_ << "(\"" << data << "\")" << std::endl;
-    COLOG_DEBUG('(', data, ')');
     if (!this->m_consumed.empty()) {
         COLOG_DEBUG("left = ", sss::raw_string(std::string(
                                    this->m_beg.back(), this->m_end.back())));
@@ -436,6 +432,7 @@ void Tokenizer::print(std::ostream& o) const
 
 void Tokenizer::print_token_stack(std::ostream& o) const
 {
+#ifdef DEBUG
     if (!this->m_tokens.empty()) {
         COLOG_DEBUG("m_data = ", this->m_data.back());
         COLOG_DEBUG("offset = ",
@@ -452,5 +449,6 @@ void Tokenizer::print_token_stack(std::ostream& o) const
     else {
         COLOG_DEBUG("(std::ostream&) empty stack");
     }
+#endif
 }
 }  // namespace varlisp
