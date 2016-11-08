@@ -13,51 +13,49 @@
 
 namespace varlisp {
 
-    struct Environment;
+struct Environment;
 
-    struct Builtin
+struct Builtin {
+public:
+    explicit Builtin(int type);
+    ~Builtin() = default;
+
+public:
+    Builtin(Builtin&&) = default;
+    Builtin& operator=(Builtin&&) = default;
+
+public:
+    Builtin(const Builtin&) = default;
+    Builtin& operator=(const Builtin&) = default;
+
+public:
+    static void regist_builtin_function(Environment& env);
+
+public:
+    void print(std::ostream& o) const;
+
+    bool operator==(const Builtin& rhs) const
     {
-    public:
-        explicit Builtin(int type);
-        ~Builtin() = default;
-
-    public:
-        Builtin(Builtin&& ) = default;
-        Builtin& operator = (Builtin&& ) = default;
-
-    public:
-        Builtin(const Builtin& ) = default;
-        Builtin& operator = (const Builtin& ) = default;
-
-    public:
-        static void regist_builtin_function(Environment& env);
-
-    public:
-        void print(std::ostream& o) const;
-
-        bool operator==(const Builtin& rhs) const
-        {
-            return this == &rhs || this->m_type == rhs.m_type;
-        }
-
-        bool operator<(const Builtin& rhs) const
-        {
-            return this != &rhs && this->m_type < rhs.m_type;
-        }
-
-    public:
-        Object eval(varlisp::Environment& env, const varlisp::List& args) const;
-
-    private:
-        int m_type;
-    };
-
-    inline std::ostream& operator << (std::ostream& o, const Builtin& b)
-    {
-        b.print(o);
-        return o;
+        return this == &rhs || this->m_type == rhs.m_type;
     }
-} // namespace varlisp
 
+    bool operator<(const Builtin& rhs) const
+    {
+        return this != &rhs && this->m_type < rhs.m_type;
+    }
+
+public:
+    Object eval(varlisp::Environment& env, const varlisp::List& args) const;
+
+private:
+    int m_type;
+};
+
+inline std::ostream& operator<<(std::ostream& o, const Builtin& b)
+{
+    b.print(o);
+    return o;
+}
+}  // namespace varlisp
 
 #endif /* __BUILTIN_HPP_1457656469__ */

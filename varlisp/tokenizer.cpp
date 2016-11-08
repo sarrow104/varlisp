@@ -7,6 +7,7 @@
 #include <sss/util/StringSlice.hpp>
 
 #include <sss/Terminal.hpp>
+#include <sss/colorlog.hpp>
 
 #include <ss1x/parser/oparser.hpp>
 #include <ss1x/parser/util.hpp>
@@ -217,9 +218,8 @@ void Tokenizer::init(const std::string& data)
            ss1x::parser::space_p)[ss1x::parser::rule::ActionT([&](
              StrIterator beg, StrIterator end,
              ss1x::parser::rule::matched_value_t) {
-            SSS_POSTION_THROW(std::runtime_error, "Un-recongnise string `"
-                                                      , std::string(beg, end)
-                                                      , "`");
+            SSS_POSTION_THROW(std::runtime_error, "Un-recongnise string `",
+                              std::string(beg, end), "`");
         })]).name("FallthrowError_p");
 
     this->Token_p =
@@ -286,14 +286,9 @@ bool Tokenizer::consume()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     if (!this->empty()) {
-#ifdef DEBUG
-        std::cout << _POS_MSG_ << "(" << sss::Terminal::error
-                  << this->m_tokens.back().front() << sss::Terminal::end
-                  << "); left = `"
-                  << sss::Terminal::error(
-                         std::string(this->m_beg.back(), this->m_end.back()))
-                  << "`" << std::endl;
-#endif
+        COLOG_DEBUG('(', this->m_tokens.back().front(), "); left = ",
+                    sss::raw_string(
+                        std::string(this->m_beg.back(), this->m_end.back())));
         this->m_tokens.back().erase(this->m_tokens.back().begin());
         this->m_consumed.back()++;
         return true;
@@ -335,18 +330,10 @@ void Tokenizer::append(const std::string& scripts)
             std::distance(this->m_data.back().cbegin(), m_beg.back());
 
         if (offset) {
-#ifdef DEBUG
-            std::cout << _POS_MSG_ << " erase(\""
-                      << sss::Terminal::debug(
-                             this->m_data.back().substr(0, offset))
-                      << ");";
-#endif
+            COLOG_DEBUG("erase(", this->m_data.back().substr(0, offset), ");");
             this->m_data.back().erase(0, offset);
-#ifdef DEBUG
-            std::cout << "left(" << sss::Terminal::debug(this->m_data.back())
-                      << ")"
-                      << " @" << &this->m_data.back() << std::endl;
-#endif
+            COLOG_DEBUG("left(", this->m_data.back(), "); @",
+                        &this->m_data.back());
         }
     }
 
@@ -356,11 +343,7 @@ void Tokenizer::append(const std::string& scripts)
     this->m_data.back().append(scripts);
     m_beg.back() = this->m_data.back().cbegin();
     m_end.back() = this->m_data.back().cend();
-#ifdef DEBUG
-    std::cout << _POS_MSG_
-              << " distance = " << std::distance(m_beg.back(), m_end.back())
-              << std::endl;
-#endif
+    COLOG_DEBUG("distance = ", std::distance(m_beg.back(), m_end.back()));
 }
 
 size_t Tokenizer::tokens_size() const { return this->m_tokens.back().size(); }
@@ -371,15 +354,16 @@ bool Tokenizer::is_eof() const
 
 void Tokenizer::push(const std::string& data)
 {
-#ifdef DEBUG
+    COLOG_DEBUG('(', data, ')');
+
     std::cout << _POS_MSG_ << "(\"" << data << "\")" << std::endl;
+    COLOG_DEBUG('(', data, ')');
     if (!this->m_consumed.empty()) {
-        std::cout << _POS_MSG_ << " left = `"
-                  << std::string(this->m_beg.back(), this->m_end.back()) << "`"
-                  << std::endl;
+        COLOG_DEBUG("left = ", sss::raw_string(std::string(
+                                   this->m_beg.back(), this->m_end.back())));
     }
-    this->print_token_stack(std::cout);
-#endif
+    // this->print_token_stack(std::cout);
+
     this->m_consumed.push_back(0);
     this->m_data.push_back(data);
     this->m_beg.push_back(this->m_data.back().begin());
@@ -389,9 +373,7 @@ void Tokenizer::push(const std::string& data)
 
 void Tokenizer::pop()
 {
-#ifdef DEBUG
-    std::cout << _POS_MSG_ << std::endl;
-#endif
+    COLOG_DEBUG("");
     this->m_consumed.pop_back();
     this->m_data.pop_back();
     this->m_beg.pop_back();
@@ -419,13 +401,8 @@ bool Tokenizer::parse()
     if (Token_p.match(this->m_beg.back(), this->m_end.back()) &&
         this->tok.which()) {
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, this->tok);
-#ifdef DEBUG
-        std::cout << _POS_MSG_ << ".push_back(" << sss::Terminal::error
-                  << this->tok << sss::Terminal::end << ") from `"
-                  << sss::Terminal::error(
-                         std::string(beg_sv, this->m_beg.back()))
-                  << "`" << std::endl;
-#endif
+        COLOG_DEBUG(".push_back(", this->tok, ") from ",
+                    sss::raw_string(std::string(beg_sv, this->m_beg.back())));
         this->m_tokens.back().push_back(this->tok);
         this->tok = varlisp::empty();
     }
@@ -460,26 +437,20 @@ void Tokenizer::print(std::ostream& o) const
 void Tokenizer::print_token_stack(std::ostream& o) const
 {
     if (!this->m_tokens.empty()) {
-        o << _POS_MSG_ << " m_data = `" << this->m_data.back() << "`"
-          << std::endl;
-
-        o << _POS_MSG_ << " offset = "
-          << std::distance(this->m_data.back().cbegin(), m_beg.back())
-          << std::endl;
-
-        o << _POS_MSG_ << " length = " << this->m_data.back().length()
-          << std::endl;
-
-        o << _POS_MSG_ << "(std::ostream&) " << this->m_tokens.size() << " "
-          << this->m_tokens.back().size() << std::endl;
+        COLOG_DEBUG("m_data = ", this->m_data.back());
+        COLOG_DEBUG("offset = ",
+                    std::distance(this->m_data.back().cbegin(), m_beg.back()));
+        COLOG_DEBUG("length = ", this->m_data.back().length());
+        COLOG_DEBUG("(std::ostream&) ", this->m_tokens.size(),
+                    this->m_tokens.back().size());
 
         int i = 0;
         for (const auto& tok : this->m_tokens.back()) {
-            o << "\t[" << i++ << "] = " << tok << std::endl;
+            COLOG_DEBUG("\t[ ", i++, "] = ", tok);
         }
     }
     else {
-        o << _POS_MSG_ << "(std::ostream&) empty stack" << std::endl;
+        COLOG_DEBUG("(std::ostream&) empty stack");
     }
 }
 }  // namespace varlisp

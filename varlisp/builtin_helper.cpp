@@ -1,11 +1,25 @@
-#include "object.hpp"
 #include "eval_visitor.hpp"
+#include "object.hpp"
 
 namespace varlisp {
-const varlisp::List * getFirstListPtrFromArg(varlisp::Environment& env, const varlisp::List& args, Object& tmp)
+
+bool is_literal_list(const varlisp::List& l)
 {
-    // NOTE List 的第一个元素是symbol 的list!
-    const varlisp::List * _list = boost::get<varlisp::List>(&(args.head));
+    bool is_literal = false;
+    if (l.length()) {
+        const varlisp::symbol* p_symbol =
+            boost::get<const varlisp::symbol>(&l.head);
+        if (p_symbol && *p_symbol == varlisp::symbol("list")) is_literal = true;
+    }
+    return is_literal;
+}
+
+const varlisp::List* getFirstListPtrFromArg(varlisp::Environment& env,
+                                            const varlisp::List& args,
+                                            Object& tmp)
+{
+    // NOTE FIXME List 的第一个元素是symbol 的list!
+    const varlisp::List* _list = boost::get<varlisp::List>(&(args.head));
     if (!_list) {
         // list变量，会少一个`list`的symbol，因此处理起来不同；
         tmp = boost::apply_visitor(eval_visitor(env), args.head);
@@ -17,4 +31,4 @@ const varlisp::List * getFirstListPtrFromArg(varlisp::Environment& env, const va
     }
     return _list;
 }
-} // namespace varlisp
+}  // namespace varlisp

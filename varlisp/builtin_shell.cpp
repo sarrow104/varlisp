@@ -1,9 +1,9 @@
-#include "object.hpp"
 #include "eval_visitor.hpp"
+#include "object.hpp"
 
+#include <sss/colorlog.hpp>
 #include <sss/path.hpp>
 #include <sss/path/glob_path.hpp>
-#include <sss/colorlog.hpp>
 #include <sss/raw_print.hpp>
 
 namespace varlisp {
@@ -24,7 +24,7 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
 {
     Object target_path = boost::apply_visitor(eval_visitor(env), args.head);
-    const std::string *p_path = boost::get<std::string>(&target_path);
+    const std::string* p_path = boost::get<std::string>(&target_path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error,
                           "shell-cd: requie one path string!");
@@ -33,18 +33,20 @@ Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
     COLOG_INFO("(shell-cd: ", sss::raw_string(*p_path), " complete)");
     return Object(sss::path::getcwd());
 }
-// {"ls",          0, -1,  &eval_ls},      // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
+// {"ls",          0, -1,  &eval_ls},      //
+// 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
 Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
 {
     varlisp::List ret;
-    const List * p = &args;
-    List * p_list = &ret;
+    const List* p = &args;
+    List* p_list = &ret;
     if (args.length()) {
         while (p && p->head.which()) {
             Object ls_arg = boost::apply_visitor(eval_visitor(env), p->head);
-            const std::string *p_ls_arg = boost::get<std::string>(&ls_arg);
+            const std::string* p_ls_arg = boost::get<std::string>(&ls_arg);
             if (!p_ls_arg) {
-                SSS_POSTION_THROW(std::runtime_error, "shell-ls: require string-type args");
+                SSS_POSTION_THROW(std::runtime_error,
+                                  "shell-ls: require string-type args");
             }
             switch (sss::path::file_exists(*p_ls_arg)) {
                 case sss::PATH_TO_FILE:
@@ -52,25 +54,25 @@ Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
                     p_list->head = *p_ls_arg;
                     break;
 
-                case sss::PATH_TO_DIRECTORY:
-                    {
-                        sss::path::file_descriptor fd;
-                        sss::path::glob_path gp(*p_ls_arg, fd);
-                        while (gp.fetch()) {
-                            if (fd.is_normal_dir()) {
-                                p_list = p_list->next_slot();
-                                p_list->head = std::string(fd.get_name()) + sss::path::sp_char;
-                            }
-                            else if (fd.is_normal_file()) {
-                                p_list = p_list->next_slot();
-                                p_list->head = std::string(fd.get_name());
-                            }
+                case sss::PATH_TO_DIRECTORY: {
+                    sss::path::file_descriptor fd;
+                    sss::path::glob_path gp(*p_ls_arg, fd);
+                    while (gp.fetch()) {
+                        if (fd.is_normal_dir()) {
+                            p_list = p_list->next_slot();
+                            p_list->head =
+                                std::string(fd.get_name()) + sss::path::sp_char;
+                        }
+                        else if (fd.is_normal_file()) {
+                            p_list = p_list->next_slot();
+                            p_list->head = std::string(fd.get_name());
                         }
                     }
-                    break;
+                } break;
 
                 case sss::PATH_NOT_EXIST:
-                    COLOG_ERROR("(shell-ls: path", sss::raw_string(*p_ls_arg), "not exists)");
+                    COLOG_ERROR("(shell-ls: path", sss::raw_string(*p_ls_arg),
+                                "not exists)");
                     break;
             }
             if (p->tail.empty()) {
@@ -104,4 +106,4 @@ Object eval_pwd(varlisp::Environment& env, const varlisp::List& args)
     return Object(sss::path::getcwd());
 }
 
-} // namespace varlisp
+}  // namespace varlisp

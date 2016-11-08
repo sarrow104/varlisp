@@ -1,5 +1,5 @@
-#include "object.hpp"
 #include "eval_visitor.hpp"
+#include "object.hpp"
 
 #include <sss/spliter.hpp>
 
@@ -16,18 +16,18 @@ namespace varlisp {
  * 需要三个参数；
  * 其中第三个参数是表示正则的的symbol
  */
-Object eval_split(varlisp::Environment& env, const varlisp::List& args)
+Object eval_split(varlisp::Environment &env, const varlisp::List &args)
 {
     Object content = boost::apply_visitor(eval_visitor(env), args.head);
 
     const std::string *p_content = boost::get<std::string>(&content);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          "split requies content to split");
+        SSS_POSTION_THROW(std::runtime_error, "split requies content to split");
     }
     std::string sep(1, ' ');
     if (args.length() == 2) {
-        Object sep_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        Object sep_obj =
+            boost::apply_visitor(eval_visitor(env), args.tail[0].head);
         const std::string *p_sep = boost::get<std::string>(&sep_obj);
         if (!p_sep) {
             SSS_POSTION_THROW(std::runtime_error,
@@ -39,7 +39,7 @@ Object eval_split(varlisp::Environment& env, const varlisp::List& args)
     std::string stem;
     if (sep.length() == 1) {
         sss::Spliter sp(*p_content, sep[0]);
-        List * p_list = &ret;
+        List *p_list = &ret;
         while (sp.fetch_next(stem)) {
             p_list = p_list->next_slot();
             p_list->head = stem;
@@ -58,28 +58,27 @@ Object eval_split(varlisp::Environment& env, const varlisp::List& args)
  * @param [in] env
  * @param [in] args 第一个参数，必须是一个(list)；或者symbol
  *
- * @return 
+ * @return
  */
-Object eval_join(varlisp::Environment& env, const varlisp::List& args)
+Object eval_join(varlisp::Environment &env, const varlisp::List &args)
 {
-    const List * p_list = 0;
+    const List *p_list = 0;
 
     Object content = boost::apply_visitor(eval_visitor(env), args.head);
 
     p_list = boost::get<varlisp::List>(&content);
 
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          "join: first must a list!");
+        SSS_POSTION_THROW(std::runtime_error, "join: first must a list!");
     }
 
     std::string sep;
     if (args.length() == 2) {
-        Object sep_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+        Object sep_obj =
+            boost::apply_visitor(eval_visitor(env), args.tail[0].head);
         const std::string *p_sep = boost::get<std::string>(&sep_obj);
         if (!p_sep) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "join: sep must be a string");
+            SSS_POSTION_THROW(std::runtime_error, "join: sep must be a string");
         }
         sep = *p_sep;
     }
@@ -88,7 +87,7 @@ Object eval_join(varlisp::Environment& env, const varlisp::List& args)
 
     bool is_first = true;
     while (p_list && p_list->head.which()) {
-        const std::string * p_stem = boost::get<std::string>(&p_list->head);
+        const std::string *p_stem = boost::get<std::string>(&p_list->head);
         Object obj;
         if (!p_stem) {
             obj = boost::apply_visitor(eval_visitor(env), p_list->head);
@@ -118,9 +117,9 @@ Object eval_join(varlisp::Environment& env, const varlisp::List& args)
  * @param [in] env
  * @param [in] args
  *
- * @return 
+ * @return
  */
-Object eval_substr(varlisp::Environment& env, const varlisp::List& args)
+Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 {
     Object target = boost::apply_visitor(eval_visitor(env), args.head);
     const std::string *p_content = boost::get<std::string>(&target);
@@ -130,11 +129,12 @@ Object eval_substr(varlisp::Environment& env, const varlisp::List& args)
     }
 
     int offset = 0;
-    Object offset_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
+    Object offset_obj =
+        boost::apply_visitor(eval_visitor(env), args.tail[0].head);
     if (const int *p_offset = boost::get<int>(&offset_obj)) {
         offset = *p_offset;
     }
-    else if (const double *p_offset = boost::get<double>(&offset_obj)){
+    else if (const double *p_offset = boost::get<double>(&offset_obj)) {
         offset = *p_offset;
     }
 
@@ -147,11 +147,12 @@ Object eval_substr(varlisp::Environment& env, const varlisp::List& args)
 
     int length = -1;
     if (args.length() == 3) {
-        Object length_obj = boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
+        Object length_obj =
+            boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
         if (const int *p_length = boost::get<int>(&length_obj)) {
             length = *p_length;
         }
-        else if (const double *p_length = boost::get<double>(&length_obj)){
+        else if (const double *p_length = boost::get<double>(&length_obj)) {
             length = *p_length;
         }
     }
@@ -164,6 +165,4 @@ Object eval_substr(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
-
-
-} // namespace varlisp
+}  // namespace varlisp

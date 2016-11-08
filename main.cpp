@@ -38,13 +38,37 @@ int get_indent(const std::string& line)
     return indent;
 }
 
-int main (int argc, char *argv[])
+int test_construct()
 {
-    (void) argc;
-    (void) argv;
+    // TODO
+    // preload functions
+    // std::string scripts = "(+ 1 2)";
+    // std::string scripts = "(define a (lambda (x) (* x 2)))";
+    varlisp::Interpreter interpreter;
+    // interpreter.eval("(define i 0)");
+    interpreter.eval("(define (sqrt-iter guess x) (if (good-enough guess x) guess (sqrt-iter (improve guess x) x)))");
+    interpreter.eval("(define (improve guess x) (average guess (/ x guess)))");
+    interpreter.eval("(define (average x y) (/ (+ x y) 2))");
+    interpreter.eval("(define (good-enough guess x) (< (abs (- (square guess) x)) 0.001))");
+    interpreter.eval("(define (sqrt x) (sqrt-iter 1.0 x))");
+    interpreter.eval("(define (square x) (* x x))");
+    interpreter.eval("(define (abs x) (if (< x 0) (- x) x))");
+    interpreter.eval("(sqrt 9)");
 
-    sss::colog::set_log_elements(sss::colog::ls_TIME_NANO);
-#if 1
+    // interpreter.eval("(define fibonacci (lambda (n) (define iter (lambda (i n1 n2) (if (= i 0) n2 (iter (- i 1) n2 (+ n1 n2))))) (iter n 0 1)))");
+    // interpreter.eval("(fibonacci 10)");
+    // interpreter.eval("(define x 3)");
+    // interpreter.eval("(- x 1)");
+    // interpreter.eval("(> x 2)");
+    // interpreter.eval("(fib (- x 1))");
+    // interpreter.eval("(fib 5)");
+    // interpreter.eval("(fib 2)");
+    // interpreter.eval("(fib 3)");
+    return EXIT_SUCCESS;
+}
+
+int Interpret()
+{
     varlisp::Interpreter interpreter;
     std::string preload_script = sss::path::dirname(sss::path::getbin());
     sss::path::append(preload_script, "init.varlisp");
@@ -149,35 +173,19 @@ int main (int argc, char *argv[])
             st = varlisp::Interpreter::status_OK;
         }
     }
+}
 
+int main (int argc, char *argv[])
+{
+    (void) argc;
+    (void) argv;
+
+    sss::colog::set_log_elements(sss::colog::ls_TIME_NANO);
+#if 1
+    return Interpret();
 #else
-    // TODO
-    // preload functions
-    // std::string scripts = "(+ 1 2)";
-    // std::string scripts = "(define a (lambda (x) (* x 2)))";
-    varlisp::Interpreter interpreter;
-    // interpreter.eval("(define i 0)");
-    interpreter.eval("(define (sqrt-iter guess x) (if (good-enough guess x) guess (sqrt-iter (improve guess x) x)))");
-    interpreter.eval("(define (improve guess x) (average guess (/ x guess)))");
-    interpreter.eval("(define (average x y) (/ (+ x y) 2))");
-    interpreter.eval("(define (good-enough guess x) (< (abs (- (square guess) x)) 0.001))");
-    interpreter.eval("(define (sqrt x) (sqrt-iter 1.0 x))");
-    interpreter.eval("(define (square x) (* x x))");
-    interpreter.eval("(define (abs x) (if (< x 0) (- x) x))");
-    interpreter.eval("(sqrt 9)");
-
-    // interpreter.eval("(define fibonacci (lambda (n) (define iter (lambda (i n1 n2) (if (= i 0) n2 (iter (- i 1) n2 (+ n1 n2))))) (iter n 0 1)))");
-    // interpreter.eval("(fibonacci 10)");
-    // interpreter.eval("(define x 3)");
-    // interpreter.eval("(- x 1)");
-    // interpreter.eval("(> x 2)");
-    // interpreter.eval("(fib (- x 1))");
-    // interpreter.eval("(fib 5)");
-    // interpreter.eval("(fib 2)");
-    // interpreter.eval("(fib 3)");
-    return EXIT_SUCCESS;
+    return test_construct();
 #endif
-    return EXIT_SUCCESS;
 }
 
 // (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))

@@ -1,5 +1,5 @@
-#include "object.hpp"
 #include "eval_visitor.hpp"
+#include "object.hpp"
 
 namespace varlisp {
 Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
@@ -18,8 +18,9 @@ Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
     // 先解析()内部，然后作为外部的参数再次解析。
     //
     // 所以，这两次eval动作，分别是原有的用户动作，和这个eval关键字自己引发的动作；
-    varlisp::Object first_res = boost::apply_visitor(eval_visitor(env), args.head);
+    varlisp::Object first_res =
+        boost::apply_visitor(eval_visitor(env), args.head);
     return boost::apply_visitor(eval_visitor(env), first_res);
 }
 
-} // namespace varlisp
+}  // namespace varlisp
