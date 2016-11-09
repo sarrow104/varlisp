@@ -1,5 +1,10 @@
 #include "eval_visitor.hpp"
 #include "object.hpp"
+#include "raw_stream_visitor.hpp"
+
+#include <sss/ps.hpp>
+#include <sss/linux/epollPipeRun.hpp>
+#include <sss/util/Escaper.hpp>
 
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
@@ -16,6 +21,7 @@ namespace varlisp {
 // 或者进行转义，就是一个必须的动作了。
 //
 // 但显然，这是两种不兼容的工作方式。
+// 为此，特规定如下：
 /**
  * @brief
  *      (shell "") -> '(stdout, stderr)
@@ -28,12 +34,54 @@ namespace varlisp {
  *
  * @return 
  */
+// TODO 我想增加一组"强化"的boost::get<type>函数，以便支持单向的提取——允许eval；
+// 如果eval后，返回值类型不对，那么抛出异常；
 Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 {
-    // TODO
+    std::ostringstream oss;
+    auto & type = args.head.type();
+    std::string program;
 
-    return Object{};
+    if (type == typeid(std::string)) {
+        program = *boost::get<std::string>(&args.head);
+    }
+    else if (type == typeid(varlisp::symbol) || type == typeid(varlisp::List)) {
+        Object result = boost::apply_visitor(eval_visitor(env), args.head);
+        if (result.type() == typeid(std::string)) {
+            program = *boost::get<std::string>(&result);
+        }
+    }
+    if (program.empty()) {
+        SSS_POSTION_THROW(std::runtime_error, "(shell: 1st arg must be an none-empty string)");
+    }
+    oss << program;
+    static sss::util::Escaper esp("\\ \"'[](){}?*$&");
+    for (const varlisp::List * p_list = args.next(); p_list && p_list->head.which(); p_list = p_list->next()) {
+        std::ostringstream inner_oss;
+        boost::apply_visitor(raw_stream_visitor(inner_oss, env), p_list->head);
+        std::string param = inner_oss.str();
+        if (param.empty()) {
+            continue;
+        }
+        oss << " ";
+        esp.escapeToStream(oss, param);
+    }
+
+    std::string out, err;
+    
+    COLOG_INFO("(shell run: ", oss.str(), ')');
+    std::tie(out, err) = sss::epoll::rwe_pipe_run(oss.str(), 1 + 2);
+
+    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List * p_list = &ret;
+    p_list = p_list->next_slot();
+    p_list->head = out;
+    p_list = p_list->next_slot();
+    p_list->head = err;
+
+    return Object(ret);
 }
+
 /**
  * @brief (cd "path/to/go") -> "new-work-dir"
  *
@@ -54,6 +102,7 @@ Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
     COLOG_INFO("(shell-cd: ", sss::raw_string(*p_path), " complete)");
     return Object(sss::path::getcwd());
 }
+
 // {"ls",          0, -1,  &eval_ls},      //
 // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
 /**
