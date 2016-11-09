@@ -16,12 +16,28 @@ namespace varlisp {
 //    1
 // 其中：
 // > (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))
+/**
+ * @brief (= obj1 obj2) -> #t | #f
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
 Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
 {
     return Object(boost::apply_visitor(strict_equal_visitor(env), args.head,
                                        args.tail[0].head));
 }
 
+/**
+ * @brief (> obj1 obj2) -> #t | #f
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
 Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
 {
     return Object(!boost::apply_visitor(strict_equal_visitor(env),
@@ -30,18 +46,42 @@ Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
                                        args.tail[0].head, args.head));
 }
 
+/**
+ * @brief (< obj1 obj2) -> #t | #f
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
 Object eval_lt(varlisp::Environment& env, const varlisp::List& args)
 {
     return Object(boost::apply_visitor(strict_less_visitor(env), args.head,
                                        args.tail[0].head));
 }
 
+/**
+ * @brief (>= obj1 obj2) -> #t | #f
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
 Object eval_ge(varlisp::Environment& env, const varlisp::List& args)
 {
-    return Object(boost::apply_visitor(strict_less_visitor(env),
-                                       args.tail[0].head, args.head));
+    return Object(!boost::apply_visitor(strict_less_visitor(env), args.head,
+                                       args.tail[0].head));
 }
 
+/**
+ * @brief (<= obj1 obj2) -> #t | #f
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
 Object eval_le(varlisp::Environment& env, const varlisp::List& args)
 {
     return Object(boost::apply_visitor(strict_equal_visitor(env),
@@ -49,5 +89,8 @@ Object eval_le(varlisp::Environment& env, const varlisp::List& args)
                   boost::apply_visitor(strict_less_visitor(env), args.head,
                                        args.tail[0].head));
 }
+
+// TODO (! ) (not ) 当callable，为#f的时候，返回#t；反之，返回#f；
+// 需要注意的是，由于只有#t才判定为真，
 
 }  // namespace varlisp
