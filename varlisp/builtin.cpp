@@ -59,7 +59,11 @@ Object eval_fnamemodify(varlisp::Environment& env, const varlisp::List& args);
 Object eval_glob(varlisp::Environment& env, const varlisp::List& args);
 Object eval_glob_recurse(varlisp::Environment& env, const varlisp::List& args);
 
-const builtin_info_t builtin_infos[] = 
+Object eval_map(varlisp::Environment &env, const varlisp::List &args);
+Object eval_reduce(varlisp::Environment &env, const varlisp::List &args);
+Object eval_filter(varlisp::Environment &env, const varlisp::List &args);
+
+const builtin_info_t builtin_infos[] =
 {
     {"car",         1,  1, &eval_car},
     {"cdr",         1,  1, &eval_cdr},
@@ -100,7 +104,7 @@ const builtin_info_t builtin_infos[] =
 
     // 正则表达式
     {"regex",           1,  1, &eval_regex},        // 从字符串生成regex对象
-    {"regex-match",     2,  2, &eval_regex_match},  // 
+    {"regex-match",     2,  2, &eval_regex_match},  //
     {"regex-search",    2,  3, &eval_regex_search},
     {"regex-replace",   3,  3, &eval_regex_replace},
 
@@ -110,7 +114,7 @@ const builtin_info_t builtin_infos[] =
     // 字符串-获取子串
     {"substr",      2,  3,  &eval_substr},
 
-    {"shell",       1, -1,  &eval_shell}, // 至少一个参数；所有参数，讲组合成一个字符串，用来交给shell执行；然后返回输出
+    {"shell",       1, -1,  &eval_shell}, // 至少一个参数；所有参数，将组合成一个字符串，用来交给shell执行；然后返回输出
     {"shell-cd",    1,  1,  &eval_cd},    // 有且只能有一个参数；更改执行路径——如何显示在title？
     {"shell-ls",    0, -1,  &eval_ls},    // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
     // NOTE 需要注意的是，就算是shell-ls本身，其实也是不支持通配符的！
@@ -121,6 +125,21 @@ const builtin_info_t builtin_infos[] =
 
     {"glob",        1,  2,  &eval_glob},  // 支持1到2个参数；分别是枚举路径和目标规则(可选)；
     {"glob-recurse",1,  3,  &eval_glob_recurse}, // 参数同上；第三个可选参数，指查找深度；
+
+    // ;;(map list-type function list-1 list-2 ... list-n)
+    // ;;map函数接受一个函数和N个列表，该函数接受N个参数；
+    // 返回一个列表。返回列表的每个元素都是使用输入的函数
+    // 对N个类别中的每个元素处理的结果。
+    {"map",         2,  -1, &eval_map},
+
+    // ;;(reduce function list)
+    // ;;reduce让一个指定的函数(function)作用于列表的第一个
+    // 元素和第二个元素,然后在作用于上步得到的结果和第三个
+    // 元素，直到处理完列表中所有元素。
+    {"reduce",      2,  2,  &eval_reduce},
+
+    // filter
+    {"filter",      2,  2,  &eval_filter},
 };
 
 
