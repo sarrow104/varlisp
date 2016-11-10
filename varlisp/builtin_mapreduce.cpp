@@ -2,6 +2,8 @@
 #include "object.hpp"
 
 #include "builtin_helper.hpp"
+#include <sss/colorlog.hpp>
+#include <sss/debug/value_msg.hpp>
 
 #include <limits>
 #include <vector>
@@ -39,10 +41,9 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     // 感觉2不是很合适。因为用户可能显示传入nil或者'()作为参数——这样就无法区分了。
     // 重用最后一个元素也不会很合用；唯一合理的使用情形是，某list，只有一个元素。
     // 那么重用就显得合理。不然，不足的部分，你是选择重用第一个，还是最后一个元素呢？
-    const Object& callable = args.head;
-    Object tmp;
 
     int arg_length = args.next()->length();
+    COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
     std::vector<Object>      tmp_obj_vec;
     tmp_obj_vec.resize(arg_length);
     std::vector<const List*> p_arg_list_vec;
@@ -61,18 +62,27 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
         min_items_count = std::min(int(p_arg_list_vec[i]->length()), min_items_count);
     }
 
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    COLOG_DEBUG(SSS_VALUE_MSG(min_items_count));
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     varlisp::List * p_ret_list = &ret;
+    const Object& callable = args.head;
     for (int i = 0; i < min_items_count; ++i) {
+        COLOG_DEBUG("loop ", i, "begin");
         varlisp::List expr {callable};
+        varlisp::List * p_expr = &expr;
 
         for (int j = 0; j < arg_length; ++j) {
-            expr.append(p_arg_list_vec[i]->head);
-            p_arg_list_vec[i] = p_arg_list_vec[i]->next();
+            COLOG_DEBUG(SSS_VALUE_MSG(i), ',', SSS_VALUE_MSG(j), ',', p_arg_list_vec[j]->head);
+            p_expr = p_expr->next_slot();
+            p_expr->head = p_arg_list_vec[j]->head;
+            // expr.append(p_arg_list_vec[i]->head);
+            p_arg_list_vec[j] = p_arg_list_vec[j]->next();
         }
-        std::cout << expr << std::endl;
+        COLOG_DEBUG(expr);
         p_ret_list = p_ret_list->next_slot();
         p_ret_list->head = expr.eval(env);
+        COLOG_DEBUG(ret);
+        COLOG_DEBUG("loop ", i, "end");
     }
 
     return ret;
@@ -144,7 +154,7 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
 
     p_arg_list = p_arg_list->next();
 
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     varlisp::List * p_ret_list = &ret;
     int arg_cnt = p_arg_list->length();
     for (int i = 0; i < arg_cnt; ++i, p_arg_list = p_arg_list->next()) {
