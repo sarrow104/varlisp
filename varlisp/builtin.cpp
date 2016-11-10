@@ -53,7 +53,19 @@ Object eval_split(varlisp::Environment& env, const varlisp::List& args);
 Object eval_join(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_http_get(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args);
 Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_text(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_textNeat(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_ownText(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_tag(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_innerHtml(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gqnode_outerHtml(varlisp::Environment& env, const varlisp::List& args);
+Object eval_gumbo_query_text(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_regex(varlisp::Environment& env, const varlisp::List& args);
 Object eval_regex_match(varlisp::Environment& env, const varlisp::List& args);
@@ -86,51 +98,67 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args);
 
 const builtin_info_t builtin_infos[] =
 {
-    {"cons",        2,  2, &eval_cons},
-    {"car",         1,  1, &eval_car},
-    {"cdr",         1,  1, &eval_cdr},
-    {"car-nth",     2,  2, &eval_car_nth},
-    {"cdr-nth",     2,  2, &eval_cdr_nth},
-    {"length",      1,  1, &eval_length},
-    {"append",      2,  2, &eval_append},
+    {"cons",            2,  2, &eval_cons},
+    {"car",             1,  1, &eval_car},
+    {"cdr",             1,  1, &eval_cdr},
+    {"car-nth",         2,  2, &eval_car_nth},
+    {"cdr-nth",         2,  2, &eval_cdr_nth},
+    {"length",          1,  1, &eval_length},
+    {"append",          2,  2, &eval_append},
 
     // 基本数学运算
-    {"+",           1, -1, &eval_add},
-    {"-",           1, -1, &eval_sub},
-    {"*",           2, -1, &eval_mul},
-    {"/",           2, -1, &eval_div},
+    {"+",               1, -1, &eval_add},
+    {"-",               1, -1, &eval_sub},
+    {"*",               2, -1, &eval_mul},
+    {"/",               2, -1, &eval_div},
 
-    {"^",           2,  2, &eval_pow},
+    {"^",               2,  2, &eval_pow},
 
     // 逻辑运算
-    {"=",           2,  2, &eval_eq},
+    {"=",               2,  2, &eval_eq},
 
-    {">",           2,  2, &eval_gt},
-    {"<",           2,  2, &eval_lt},
-    {">=",          2,  2, &eval_ge},
-    {"<=",          2,  2, &eval_le},
+    {">",               2,  2, &eval_gt},
+    {"<",               2,  2, &eval_lt},
+    {">=",              2,  2, &eval_ge},
+    {"<=",              2,  2, &eval_le},
 
-    {"not",         1,  1, &eval_not},
-    {"null",        1,  1, &eval_null},
-    {"equal",       2,  2, &eval_equal},
+    {"not",             1,  1, &eval_not},
+    {"null",            1,  1, &eval_null},
+    {"equal",           2,  2, &eval_equal},
 
     // 执行
-    {"eval",        1,  2, &eval_eval},
-    {"load",        1,  1, &eval_load},
+    {"eval",            1,  2, &eval_eval},
+    {"load",            1,  1, &eval_load},
 
     // 文件读写
-    {"read",        1,  1, &eval_read},
-    {"write",       2,  2, &eval_write},
-    {"write-append", 2, 2, &eval_write_append},
+    {"read",            1,  1, &eval_read},
+    {"write",           2,  2, &eval_write},
+    {"write-append",    2,  2, &eval_write_append},
+    // maybe write-ln
 
     // 字符串拆分，组合
-    {"split",       1,  2, &eval_split},
-    {"join",        1,  2, &eval_join},
+    {"split",           1,  2, &eval_split},
+    {"join",            1,  2, &eval_join},
 
     // 网络
-    {"http-get",     1,  3, &eval_http_get},
+    {"http-get",        1,  3, &eval_http_get},
+
+    {"gumbo",           1,  2, &eval_gumbo},
     // html 解析
-    {"gumbo-query",  2,  2, &eval_gumbo_query},
+    {"gumbo-query",     2,  2, &eval_gumbo_query},
+
+    {"gqnode:attr",     2,  2, &eval_gqnode_attr},
+    {"gqnode:hasAttr",  2,  2, &eval_gqnode_hasAttr},
+    {"gqnode:valid",    1,  1, &eval_gqnode_valid},
+    {"gqnode:text",     1,  1, &eval_gqnode_text},
+    {"gqnode:textNeat", 1,  1, &eval_gqnode_textNeat},
+    {"gqnode:ownText",  1,  1, &eval_gqnode_ownText},
+    {"gqnode:tag",      1,  1, &eval_gqnode_tag},
+    {"gqnode:isText",   1,  1, &eval_gqnode_isText},
+    {"gqnode:innerHtml",1,  1, &eval_gqnode_innerHtml},
+    {"gqnode:outerHtml",1,  1, &eval_gqnode_outerHtml},
+
+    {"gumbo-query-text",2,  2, &eval_gumbo_query_text},
 
     // 正则表达式
     {"regex",           1,  1, &eval_regex},        // 从字符串生成regex对象

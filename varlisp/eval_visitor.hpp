@@ -2,6 +2,7 @@
 #define __EVAL_VISITOR_HPP_1457603665__
 
 #include "object.hpp"
+#include "gumboNode.hpp"
 
 #include <sss/util/PostionThrow.hpp>
 
@@ -19,6 +20,7 @@ struct eval_visitor : boost::static_visitor<Object> {
     Object operator()(const varlisp::symbol& s) const;
 
     Object operator()(const sss::regex::CRegex& v) const { return v; }
+    Object operator()(const gumboNode& g) const { return g; }
     Object operator()(const Empty&) const { return Object(); }
     Object operator()(bool v) const { return v; }
     Object operator()(int v) const { return v; }

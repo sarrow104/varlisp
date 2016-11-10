@@ -8,6 +8,7 @@
 #include <sss/regex/cregex.hpp>
 
 #include "symbol.hpp"
+#include "gumboNode.hpp"
 
 namespace varlisp {
 
@@ -44,7 +45,8 @@ typedef boost::variant<
     boost::recursive_wrapper<List>,         // 13
     // NOTE
     // quote-list只是作为一种函数存在！
-    boost::recursive_wrapper<Lambda>        // 14
+    boost::recursive_wrapper<Lambda>,       // 14
+    gumboNode
     >
     Object;
 }  // namespace varlisp
