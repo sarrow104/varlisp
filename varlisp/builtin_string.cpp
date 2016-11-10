@@ -39,7 +39,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
         }
         sep = *p_sep;
     }
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     std::string stem;
     if (sep.length() == 1) {
         sss::Spliter sp(*p_content, sep[0]);
