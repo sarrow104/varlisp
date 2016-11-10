@@ -15,9 +15,9 @@ void Define::print(std::ostream& o) const
 
 Object Define::eval(Environment& env) const
 {
-    env[this->name.m_data] =
-        boost::apply_visitor(eval_visitor(env), this->value);
-    return Object();
+    Object value = boost::apply_visitor(eval_visitor(env), this->value);
+    env[this->name.m_data] = value;
+    return value;
 }
 
 // 不可比较！
