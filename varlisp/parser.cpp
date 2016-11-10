@@ -4,6 +4,7 @@
 #include <sss/log.hpp>
 #include <sss/util/Memory.hpp>
 #include <sss/util/PostionThrow.hpp>
+#include <sss/colorlog.hpp>
 
 #include <ss1x/parser/oparser.hpp>
 
@@ -60,9 +61,20 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
                 break;
             }
             auto expr = this->parseExpression();
+            // NOTE 这里返回的是一个"表"，也就是lisp中的一个完整的语句。
+            // 比如，输入(define x (list + 1 2))，那么得到的expr，也就是这个"表"
+            // 此时，我需要对这个"表达式"进行求值。
+            // 如果是字面值，则原样。
+            // 如果是符号，则会持续求值，直到不是符号。
+            // 如果是s-list，则原样；
+            // 如果是其他的list或者是可执行的可eval()的类型，则求值。
+            // 也就是说，对于 (eval (list 1 2))
+            // 这个需求来说，我只需要特化eval_eval函数即可，不用特意修改。
+            COLOG_DEBUG(expr);
+
             const auto res = boost::apply_visitor(eval_visitor(env), expr);
             // std::cout << expr << " = " << res << std::endl;
-            if (!is_silent && res.which()) {
+            if (!is_silent) {
 #if 1
                 boost::apply_visitor(print_visitor(std::cout), res);
                 std::cout << std::endl;
@@ -86,8 +98,8 @@ int Parser::retrieve_symbols(std::vector<std::string>& symbols,
                              const char* prefix) const
 {
     this->m_toknizer.retrieve_symbols(symbols, prefix);
-    const char* keywords[] = {"if", "else",   "cond",   "and",
-                              "or", "define", "lambda", "list"};
+    const char* keywords[] = {"if",     "else",   "cond", "and", "or",
+                              "define", "lambda", "list", "nil"};
     for (const auto* item : keywords) {
         if (sss::is_begin_with(item, prefix)) {
             symbols.push_back(item);
@@ -164,7 +176,12 @@ Object Parser::parseExpression()
     }
     else if (const varlisp::symbol* p_v = boost::get<varlisp::symbol>(&tok)) {
         this->m_toknizer.consume();
-        return varlisp::Object(*p_v);
+        if (p_v->is_nil()) {
+            return varlisp::Empty{};
+        }
+        else {
+            return varlisp::Object(*p_v);
+        }
     }
     else {
         SSS_POSTION_THROW(std::runtime_error,
@@ -265,7 +282,14 @@ Object Parser::parseList()
                 break;
 
             case 6:
-                current.append(Object(boost::get<varlisp::symbol>(tok)));
+                {
+                    if (boost::get<varlisp::symbol>(&tok)->is_nil()) {
+                        current.append(Object{});
+                    }
+                    else {
+                        current.append(Object(boost::get<varlisp::symbol>(tok)));
+                    }
+                }
                 m_toknizer.consume();
                 break;
         }
