@@ -18,8 +18,13 @@ struct builtin_info_t {
     eval_func_t     eval_fun;
 };
 
+Object eval_cons(varlisp::Environment& env, const varlisp::List& args);
 Object eval_car(varlisp::Environment& env, const varlisp::List& args);
 Object eval_cdr(varlisp::Environment& env, const varlisp::List& args);
+Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args);
+Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args);
+Object eval_length(varlisp::Environment& env, const varlisp::List& args);
+Object eval_append(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_add(varlisp::Environment& env, const varlisp::List& args);
 Object eval_sub(varlisp::Environment& env, const varlisp::List& args);
@@ -27,12 +32,15 @@ Object eval_mul(varlisp::Environment& env, const varlisp::List& args);
 Object eval_div(varlisp::Environment& env, const varlisp::List& args);
 Object eval_pow(varlisp::Environment& env, const varlisp::List& args);
 
-
 Object eval_eq(varlisp::Environment& env, const varlisp::List& args);
 Object eval_gt(varlisp::Environment& env, const varlisp::List& args);
 Object eval_lt(varlisp::Environment& env, const varlisp::List& args);
 Object eval_ge(varlisp::Environment& env, const varlisp::List& args);
 Object eval_le(varlisp::Environment& env, const varlisp::List& args);
+
+Object eval_not(varlisp::Environment& env, const varlisp::List& args);
+Object eval_null(varlisp::Environment& env, const varlisp::List& args);
+Object eval_equal(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_eval(varlisp::Environment& env, const varlisp::List& args);
 Object eval_load(varlisp::Environment& env, const varlisp::List& args);
@@ -65,8 +73,13 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args);
 
 const builtin_info_t builtin_infos[] =
 {
+    {"cons",        2,  2, &eval_cons},
     {"car",         1,  1, &eval_car},
     {"cdr",         1,  1, &eval_cdr},
+    {"car-nth",     2,  2, &eval_car_nth},
+    {"cdr-nth",     2,  2, &eval_cdr_nth},
+    {"length",      1,  1, &eval_length},
+    {"append",      2,  2, &eval_append},
 
     // 基本数学运算
     {"+",           1, -1, &eval_add},
@@ -83,6 +96,10 @@ const builtin_info_t builtin_infos[] =
     {"<",           2,  2, &eval_lt},
     {">=",          2,  2, &eval_ge},
     {"<=",          2,  2, &eval_le},
+
+    {"not",         1,  1, &eval_not},
+    {"null",        1,  1, &eval_null},
+    {"equal",       2,  2, &eval_equal},
 
     // 执行
     {"eval",        1,  2, &eval_eval},
