@@ -118,7 +118,7 @@ Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
     varlisp::List ret = varlisp::List::makeSQuoteList();
     const List* p = &args;
     List* p_list = &ret;
-    if (args.length()) {
+    if (args.length() && args.head.which()) {
         while (p && p->head.which()) {
             Object ls_arg = boost::apply_visitor(eval_visitor(env), p->head);
             const std::string* p_ls_arg = boost::get<std::string>(&ls_arg);
@@ -157,6 +157,9 @@ Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
         }
     }
     else {
+        // NOTE
+        // 没提供参数的时候，貌似失败；Object默认值为nil，导致0长度的args，不存在！
+        // 看样子，必须要使用头结点！或者，额外再增加一个Nil类才行！
         sss::path::file_descriptor fd;
         sss::path::glob_path gp(".", fd);
         while (gp.fetch()) {
