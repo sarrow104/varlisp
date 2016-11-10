@@ -88,7 +88,7 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
         offset = p_content->length();
     }
 
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
 
     if (p_reg->match(p_content->c_str() + offset)) {
         List *p_list = &ret;
@@ -163,7 +163,7 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
     }
 
     const char *str_beg = p_content->c_str();
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     List *p_list = &ret;
 
     while (str_beg && *str_beg && p_reg->match(str_beg)) {
@@ -215,7 +215,7 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
     }
 
     const char *str_beg = p_content->c_str();
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     List *p_list = &ret;
 
     while (str_beg && *str_beg && p_reg->match(str_beg)) {
