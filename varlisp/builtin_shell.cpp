@@ -72,7 +72,7 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     COLOG_INFO("(shell run: ", oss.str(), ')');
     std::tie(out, err) = sss::epoll::rwe_pipe_run(oss.str(), 1 + 2);
 
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     varlisp::List * p_list = &ret;
     p_list = p_list->next_slot();
     p_list->head = out;
@@ -115,7 +115,7 @@ Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
 {
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     const List* p = &args;
     List* p_list = &ret;
     if (args.length()) {
