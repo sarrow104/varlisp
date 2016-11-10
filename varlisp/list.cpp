@@ -7,6 +7,7 @@
 
 #include <sss/util/PostionThrow.hpp>
 #include <sss/log.hpp>
+#include <sss/colorlog.hpp>
 
 #include <sstream>
 #include <stdexcept>
@@ -40,14 +41,9 @@ size_t List::length() const
 {
     size_t len = 0;
     const List* p = this;
-    while (p && p->head.which()) {
+    while (p) {
         len++;
-        if (p->tail.empty()) {
-            p = 0;
-        }
-        else {
-            p = &p->tail[0];
-        }
+        p = p->next();
     }
     return len;
 }
@@ -115,10 +111,6 @@ Object eval_impl(Environment& env, const Object& funcObj, const List& args)
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, funcObj);
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args);
     if (const varlisp::symbol* ps = boost::get<varlisp::symbol>(&funcObj)) {
-        if (*ps == varlisp::symbol("list")) {
-            return args;
-        }
-
         std::string name = (*ps).m_data;
         Object* p_func = env.find(name);
         if (!p_func) {
@@ -153,6 +145,9 @@ Object eval_impl(Environment& env, const Object& funcObj, const List& args)
 
 Object List::eval(Environment& env) const
 {
+    if (this->is_squote()) {
+        return *this;
+    }
     // NOTE list.eval，需要非空，不然，都会抛出异常！
     if (this->is_empty()) {
         throw std::runtime_error("() is an illegal empty application!");
@@ -203,12 +198,7 @@ void List::print_impl(std::ostream& o) const
             o << " ";
         }
         boost::apply_visitor(print_visitor(o), p->head);
-        if (p->tail.empty()) {
-            p = 0;
-        }
-        else {
-            p = &p->tail[0];
-        }
+        p = p->next();
     }
 }
 
@@ -257,8 +247,6 @@ Object List::cdr() const
 {
     none_empty_squote_check();
     return List({varlisp::symbol{"list"},*(this->next()->next())});
-
-    // return makeSQuoteList({*(this->next()->next())});
 }
 
 }  // namespace varlisp

@@ -78,6 +78,11 @@ struct List {
         return makeList({Object{varlisp::symbol("list")}, makeList(std::move(l))});
     }
 
+    static List makeSQuoteList()
+    {
+        return makeList({Object{varlisp::symbol("list")}});
+    }
+
     bool is_squote() const;
 
     void none_empty_squote_check() const;
