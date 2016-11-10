@@ -11,22 +11,6 @@
 
 namespace varlisp {
 
-// TODO 外部函数
-void ensure_utf8(std::string& content, const std::string& encodings)
-{
-    std::string encoding = sss::Encoding::encodings(content, encodings);
-    if (encoding.empty()) {
-        encoding = sss::Encoding::dectect(content);
-    }
-
-    if (!sss::Encoding::isCompatibleWith(encoding, "utf8")) {
-        std::string out;
-        sss::iConv ic("utf8", encoding);
-        ic.convert(out, content);
-        std::swap(out, content);
-    }
-}
-
 // TODO
 // 对于失败的下载，应该告知用户content-length，以及终止在何处(已经接受的bytes数)
 // 另外，ensure-utf，应该交给用户，而不是自动完成。
@@ -81,8 +65,6 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     if (charset.empty()) {
         charset = "gb2312,utf8";
     }
-
-    ensure_utf8(content, charset);
 
     return content;
 }
