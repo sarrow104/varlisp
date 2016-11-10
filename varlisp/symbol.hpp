@@ -11,6 +11,9 @@ struct symbol {
     explicit symbol(const std::string& data) : m_data(data) {}
     std::string m_data;
 
+    bool is_nil() const {
+        return this->m_data == "nil";
+    }
     void print(std::ostream& o) const { o << this->m_data; }
     bool operator==(const symbol& ref) const
     {
