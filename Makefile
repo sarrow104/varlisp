@@ -40,7 +40,7 @@ run: release
 	@./$(TARGET)
 
 run-debug: debug
-	@gdb ./$(TARGET_D)
+	@gdb-dashboard ./$(TARGET_D)
 
 gprof-view: gprof
 	@if [ ! -f gmon.out ]; then ./$(TARGET_G) $(RUN_PARAMS); fi
