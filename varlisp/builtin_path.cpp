@@ -65,7 +65,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
         f.reset(new sss::path::name_filter_t(*p_filter));
     }
 
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     List *p_list = &ret;
 
     sss::path::file_descriptor fd;
@@ -130,7 +130,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
         depth = *p_depth;
     }
 
-    varlisp::List ret = varlisp::List::makeSQuoteList({});
+    varlisp::List ret = varlisp::List::makeSQuoteList();
     List *p_list = &ret;
 
     sss::path::file_descriptor fd;
