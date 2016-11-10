@@ -48,28 +48,41 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args);
 Object eval_read(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args);
+
 Object eval_split(varlisp::Environment& env, const varlisp::List& args);
 Object eval_join(varlisp::Environment& env, const varlisp::List& args);
+
 Object eval_http_get(varlisp::Environment& env, const varlisp::List& args);
 Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args);
+
 Object eval_regex(varlisp::Environment& env, const varlisp::List& args);
 Object eval_regex_match(varlisp::Environment& env, const varlisp::List& args);
 Object eval_regex_search(varlisp::Environment& env, const varlisp::List& args);
 Object eval_regex_replace(varlisp::Environment& env, const varlisp::List& args);
 Object eval_regex_split(varlisp::Environment& env, const varlisp::List& args);
 Object eval_regex_collect(varlisp::Environment& env, const varlisp::List& args);
+
 Object eval_substr(varlisp::Environment& env, const varlisp::List& args);
+
 Object eval_shell(varlisp::Environment& env, const varlisp::List& args);
 Object eval_cd(varlisp::Environment& env, const varlisp::List& args);
 Object eval_ls(varlisp::Environment& env, const varlisp::List& args);
 Object eval_pwd(varlisp::Environment& env, const varlisp::List& args);
+
 Object eval_fnamemodify(varlisp::Environment& env, const varlisp::List& args);
+
 Object eval_glob(varlisp::Environment& env, const varlisp::List& args);
 Object eval_glob_recurse(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_map(varlisp::Environment &env, const varlisp::List &args);
 Object eval_reduce(varlisp::Environment &env, const varlisp::List &args);
 Object eval_filter(varlisp::Environment &env, const varlisp::List &args);
+
+Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args);
+Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args);
+Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args);
+Object eval_iconv(varlisp::Environment& env, const varlisp::List& args);
+Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args);
 
 const builtin_info_t builtin_infos[] =
 {
@@ -157,8 +170,13 @@ const builtin_info_t builtin_infos[] =
 
     // filter
     {"filter",      2,  2,  &eval_filter},
-};
 
+    {"uchardet",    1,  1,  &eval_uchardet},
+    {"pychardet",   1,  1,  &eval_pychardet},
+    {"ivchardet",   2,  2,  &eval_ivchardet},
+    {"iconv",       3,  3,  &eval_iconv},
+    {"ensure-utf8", 2,  3,  &eval_ensure_utf8},
+};
 
 void Builtin::regist_builtin_function(Environment& env)
 {
