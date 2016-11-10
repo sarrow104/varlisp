@@ -19,14 +19,10 @@ const varlisp::List* getFirstListPtrFromArg(varlisp::Environment& env,
                                             const varlisp::List& args,
                                             Object& obj)
 {
-    // NOTE FIXME List 的第一个元素是symbol 的list!
-    const varlisp::List* p_list = boost::get<const varlisp::List>(&args.head);
+    obj = boost::apply_visitor(eval_visitor(env), args.head);
+    const varlisp::List* p_list = boost::get<const varlisp::List>(&obj);
     if (p_list && !p_list->is_squote()) {
-        obj = p_list->eval(env);
-        p_list = boost::get<const varlisp::List>(&obj);
-        if (p_list && !p_list->is_squote()) {
-            p_list = 0;
-        }
+        p_list = 0;
     }
     return p_list;
 }
