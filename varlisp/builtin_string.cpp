@@ -1,6 +1,9 @@
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "object.hpp"
+#include "print_visitor.hpp"
 
+#include "arithmetic_cast_visitor.hpp"
+#include "arithmetic_t.hpp"
 #include "builtin_helper.hpp"
 
 #include <sss/spliter.hpp>
@@ -22,20 +25,24 @@ namespace varlisp {
  */
 Object eval_split(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object content = boost::apply_visitor(eval_visitor(env), args.head);
+    const char *funcName = "split";
+    Object content;
+    const std::string *p_content =
+        getTypedValue<std::string>(env, args.head, content);
 
-    const std::string *p_content = boost::get<std::string>(&content);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error, "split requies content to split");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": requies string as 1st argument)");
     }
+
     std::string sep(1, ' ');
     if (args.length() == 2) {
-        Object sep_obj =
-            boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-        const std::string *p_sep = boost::get<std::string>(&sep_obj);
+        Object sep_obj;
+        const std::string *p_sep =
+            getTypedValue<std::string>(env, args.next()->head, sep_obj);
         if (!p_sep) {
             SSS_POSTION_THROW(std::runtime_error,
-                              "sep using for split must a string");
+                              "(", funcName, ": requires seq string as 2nd argument)");
         }
         sep = *p_sep;
     }
@@ -51,7 +58,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     }
     else {
         SSS_POSTION_THROW(std::runtime_error,
-                          "split: sep.length() >= 2, not support yet!");
+                          "(", funcName, ": sep.length() >= 2, not support yet!)");
     }
     return Object(ret);
 }
@@ -68,21 +75,22 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
  */
 Object eval_join(varlisp::Environment &env, const varlisp::List &args)
 {
-
+    const char * funcName = "join";
     Object obj;
     const List *p_list = getFirstListPtrFromArg(env, args, obj);
 
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error, "join: first must a list!");
+        SSS_POSTION_THROW(std::runtime_error,
+                          "(", funcName, ": 1st must a list!)");
     }
 
     std::string sep;
     if (args.length() == 2) {
-        Object sep_obj =
-            boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-        const std::string *p_sep = boost::get<std::string>(&sep_obj);
+        Object sep_obj;
+        const std::string *p_sep = getTypedValue<std::string>(env, args.tail[0].head, sep_obj);
         if (!p_sep) {
-            SSS_POSTION_THROW(std::runtime_error, "join: sep must be a string");
+            SSS_POSTION_THROW(std::runtime_error,
+                              "(", funcName, ": 2nd sep must be a string)");
         }
         sep = *p_sep;
     }
@@ -91,16 +99,11 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
 
     bool is_first = true;
     p_list = p_list->next();
-    while (p_list && p_list->head.which()) {
-        const std::string *p_stem = boost::get<std::string>(&p_list->head);
+    while (p_list) {
         Object obj;
+        const std::string *p_stem = getTypedValue<std::string>(env, p_list->head, obj);
         if (!p_stem) {
-            obj = boost::apply_visitor(eval_visitor(env), p_list->head);
-            // 或许，这里不用限定类型——相当于序列化各个元素
-            p_stem = boost::get<std::string>(&obj);
-            if (!p_stem) {
-                break;
-            }
+            break;
         }
         if (is_first) {
             is_first = false;
@@ -127,48 +130,77 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
  */
 Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object target = boost::apply_visitor(eval_visitor(env), args.head);
-    const std::string *p_content = boost::get<std::string>(&target);
+    const char *funcName = "substr";
+    const List *p_arg = &args;
+    Object content;
+    const std::string *p_content =
+        getTypedValue<std::string>(env, p_arg->head, content);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          "regex-search: need one target string to search");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": need string as 1st argument)");
     }
+    p_arg = p_arg->next();
 
-    int offset = 0;
-    Object offset_obj =
-        boost::apply_visitor(eval_visitor(env), args.next()->next()->head);
-    if (const int *p_offset = boost::get<int>(&offset_obj)) {
-        offset = *p_offset;
-    }
-    else if (const double *p_offset = boost::get<double>(&offset_obj)) {
-        offset = *p_offset;
-    }
+    Object offset;
+    const Object &offset_ref = getAtomicValue(env, p_arg->head, offset);
 
-    if (offset < 0) {
-        offset = 0;
+    arithmetic_t offset_number =
+        boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
+    if (!offset_number.which()) {
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": need int as 2nd argument)");
     }
-    if (offset > int(p_content->length())) {
-        offset = p_content->length();
+    int offset_int = arithmetic2int(offset_number);
+
+    if (offset_int < 0) {
+        offset_int = 0;
+    }
+    if (offset_int > int(p_content->length())) {
+        offset_int = p_content->length();
     }
 
     int length = -1;
     if (args.length() == 3) {
-        Object length_obj =
-            boost::apply_visitor(eval_visitor(env), args.next()->next()->head);
-        if (const int *p_length = boost::get<int>(&length_obj)) {
-            length = *p_length;
+        p_arg = p_arg->next();
+        Object length_obj;
+        const Object &length_obj_ref =
+            getAtomicValue(env, p_arg->head, length_obj);
+        arithmetic_t arithmetic_length = boost::apply_visitor(
+            arithmetic_cast_visitor(env), (length_obj_ref));
+        if (!arithmetic_length.which()) {
+            SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                              ": need int as 3rd argument)");
         }
-        else if (const double *p_length = boost::get<double>(&length_obj)) {
-            length = *p_length;
-        }
+        length = arithmetic2int(arithmetic_length);
     }
 
     if (length < 0) {
-        return p_content->substr(offset);
+        return p_content->substr(offset_int);
     }
     else {
-        return p_content->substr(offset, length);
+        return p_content->substr(offset_int, length);
     }
 }
 
+/**
+ * @brief
+ *    (strlen "target-string")
+ *      -> length
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char *funcName = "strlen";
+    Object obj;
+    const std::string *p_str = getTypedValue<std::string>(env, args.head, obj);
+    if (!p_str) {
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": need an s-List as the 1st argument)");
+    }
+    return int(p_str->length());
+}
 }  // namespace varlisp

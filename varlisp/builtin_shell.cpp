@@ -1,9 +1,9 @@
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "object.hpp"
 #include "raw_stream_visitor.hpp"
 
-#include <sss/ps.hpp>
 #include <sss/linux/epollPipeRun.hpp>
+#include <sss/ps.hpp>
 #include <sss/util/Escaper.hpp>
 
 #include <sss/colorlog.hpp>
@@ -32,33 +32,33 @@ namespace varlisp {
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 // TODO 我想增加一组"强化"的boost::get<type>函数，以便支持单向的提取——允许eval；
 // 如果eval后，返回值类型不对，那么抛出异常；
 Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char* funcName = "shell";
     std::ostringstream oss;
-    auto & type = args.head.type();
-    std::string program;
 
-    if (type == typeid(std::string)) {
-        program = *boost::get<std::string>(&args.head);
+    Object program;
+
+    const std::string* p_program =
+        getTypedValue<std::string>(env, args.head, program);
+    if (!p_program || p_program->empty()) {
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": 1st arg must be an none-empty string)");
     }
-    else if (type == typeid(varlisp::symbol) || type == typeid(varlisp::List)) {
-        Object result = boost::apply_visitor(eval_visitor(env), args.head);
-        if (result.type() == typeid(std::string)) {
-            program = *boost::get<std::string>(&result);
-        }
-    }
-    if (program.empty()) {
-        SSS_POSTION_THROW(std::runtime_error, "(shell: 1st arg must be an none-empty string)");
-    }
-    oss << program;
+
+    oss << *p_program;
+
     static sss::util::Escaper esp("\\ \"'[](){}?*$&");
-    for (const varlisp::List * p_list = args.next(); p_list && p_list->head.which(); p_list = p_list->next()) {
+    for (const varlisp::List* p_list = args.next();
+         p_list && p_list->head.which(); p_list = p_list->next()) {
+        Object tmp;
+        const Object& current = getAtomicValue(env, p_list->head, tmp);
         std::ostringstream inner_oss;
-        boost::apply_visitor(raw_stream_visitor(inner_oss, env), p_list->head);
+        boost::apply_visitor(raw_stream_visitor(inner_oss, env), current);
         std::string param = inner_oss.str();
         if (param.empty()) {
             continue;
@@ -68,12 +68,12 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     }
 
     std::string out, err;
-    
-    COLOG_INFO("(shell run: ", oss.str(), ')');
+
+    COLOG_INFO("(", funcName, ": ", oss.str(), ')');
     std::tie(out, err) = sss::epoll::rwe_pipe_run(oss.str(), 1 + 2);
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
-    varlisp::List * p_list = &ret;
+    varlisp::List* p_list = &ret;
     p_list = p_list->next_slot();
     p_list->head = out;
     p_list = p_list->next_slot();
@@ -83,27 +83,29 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 }
 
 /**
- * @brief (cd "path/to/go") -> "new-work-dir"
+ * @brief (shell-cd "path/to/go") -> "new-work-dir"
  *
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
-Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
+Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object target_path = boost::apply_visitor(eval_visitor(env), args.head);
-    const std::string* p_path = boost::get<std::string>(&target_path);
+    const char* funcName = "shell-cd";
+    Object path;
+    const std::string* p_path =
+        getTypedValue<std::string>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          "shell-cd: requie one path string!");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": requie one path string!)");
     }
-    sss::path::chgcwd(*p_path);
-    COLOG_INFO("(shell-cd: ", sss::raw_string(*p_path), " complete)");
+    bool is_ok = sss::path::chgcwd(*p_path);
+    COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
+               is_ok ? "succeed" : "failed", ")");
     return Object(sss::path::getcwd());
 }
 
-// {"ls",          0, -1,  &eval_ls},      //
 // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
 /**
  * @brief (ls "dir1" "dir2" ...) -> '("item1","item2", ...)
@@ -111,20 +113,21 @@ Object eval_cd(varlisp::Environment& env, const varlisp::List& args)
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
-Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
+Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char * funcName = "shell-ls";
     varlisp::List ret = varlisp::List::makeSQuoteList();
     const List* p = &args;
     List* p_list = &ret;
     if (args.length() && args.head.which()) {
         while (p && p->head.which()) {
-            Object ls_arg = boost::apply_visitor(eval_visitor(env), p->head);
-            const std::string* p_ls_arg = boost::get<std::string>(&ls_arg);
+            Object ls_arg;
+            const std::string* p_ls_arg = getTypedValue<std::string>(env, p->head, ls_arg);
             if (!p_ls_arg) {
                 SSS_POSTION_THROW(std::runtime_error,
-                                  "shell-ls: require string-type args");
+                                  "(", funcName, ": require string-type args)");
             }
             switch (sss::path::file_exists(*p_ls_arg)) {
                 case sss::PATH_TO_FILE:
@@ -149,7 +152,7 @@ Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
                 } break;
 
                 case sss::PATH_NOT_EXIST:
-                    COLOG_ERROR("(shell-ls: path", sss::raw_string(*p_ls_arg),
+                    COLOG_ERROR("(", funcName, ": path", sss::raw_string(*p_ls_arg),
                                 "not exists)");
                     break;
             }
@@ -182,9 +185,9 @@ Object eval_ls(varlisp::Environment& env, const varlisp::List& args)
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
-Object eval_pwd(varlisp::Environment& env, const varlisp::List& args)
+Object eval_shell_pwd(varlisp::Environment& env, const varlisp::List& args)
 {
     (void)env;
     (void)args;

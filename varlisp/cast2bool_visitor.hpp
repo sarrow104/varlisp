@@ -2,11 +2,16 @@
 #define __CAST2BOOL_VISITOR_HPP_1457680829__
 
 #include <sss/utlstring.hpp>
+#include <boost/variant.hpp>
 
-#include "environment.hpp"
-#include "object.hpp"
-
+// NOTE
+// 本visitor功能，和
+// varlisp/builtin_helper.hpp:57 is_true()
+// 有些重复
 namespace varlisp {
+struct Environment;
+struct symbol;
+struct List;
 struct cast2bool_visitor : public boost::static_visitor<bool> {
     Environment& m_env;
     cast2bool_visitor(Environment& env) : m_env(env) {}
@@ -19,26 +24,13 @@ struct cast2bool_visitor : public boost::static_visitor<bool> {
     bool operator()(double d) const { return bool(d); }
     bool operator()(int d) const { return bool(d); }
     bool operator()(bool b) const { return b; }
-    bool operator()(const std::string& s) const
-    {
-        return bool(sss::string_cast_nothrow<double>(s));
-    }
+    bool operator()(const std::string& s) const;
 
-    bool operator()(const varlisp::symbol& s) const
-    {
-        Object* it = m_env.find(s.m_data);
-        if (!it) {
-            SSS_POSTION_THROW(std::runtime_error, "symbol ", s.m_data,
-                              " not exists!");
-        }
-        return boost::apply_visitor(cast2bool_visitor(m_env), *it);
-    }
+    bool operator()(const varlisp::symbol& s) const;
 
-    bool operator()(const List& l) const
+    bool operator()(const List&) const
     {
-        return l.length();
-        // Object res = l.eval(m_env);
-        // return boost::apply_visitor(cast2bool_visitor(m_env), res);
+        return false;
     }
 };
 

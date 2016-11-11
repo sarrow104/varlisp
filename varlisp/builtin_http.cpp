@@ -1,5 +1,5 @@
-#include "eval_visitor.hpp"
 #include "object.hpp"
+#include "builtin_helper.hpp"
 
 #include <sss/colorlog.hpp>
 #include <sss/encoding.hpp>
@@ -25,29 +25,31 @@ namespace varlisp {
  */
 Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object url = boost::apply_visitor(eval_visitor(env), args.head);
-    const std::string* p_url = boost::get<std::string>(&url);
+    const char * funcName = "http-get";
+    Object url;
+    const std::string* p_url = getTypedValue<std::string>(env, args.head, url);
     if (!p_url) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "http-get requie url for downloading!");
+                          "(", funcName, ": requie downloading url as 1st argument !)");
     }
 
     std::ostringstream oss;
     ss1x::http::Headers headers;
 
     if (args.length() == 3) {
-        const std::string* p_proxy =
-            boost::get<std::string>(&args.tail[0].head);
+        Object proxy;
+        const std::string* p_proxy = getTypedValue<std::string>(env, args.tail[0].head, proxy);
         if (!p_proxy) {
             SSS_POSTION_THROW(
                 std::runtime_error,
-                "http-get 2nd parameter must be proxy domain string!");
+                "(", funcName, ": 2nd parameter must be proxy domain string!)");
         }
-        const int* p_port = boost::get<int>(&args.tail[0].tail[0].head);
+        Object port;
+        const int* p_port = getTypedValue<int>(env, args.tail[0].tail[0].head, port);
         if (!p_port) {
             SSS_POSTION_THROW(
                 std::runtime_error,
-                "http-get 3rd parameter must be proxy port number!");
+                "(", funcName, ": 3rd parameter must be proxy port number!)");
         }
         ss1x::asio::proxyGetFile(oss, headers, *p_proxy, *p_port, *p_url);
     }
@@ -56,15 +58,16 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     }
 
     std::string content = oss.str();
-    std::string charset =
-        sss::trim_copy(headers.get("Content-Type", "charset"));
-    if (!charset.empty()) {
-        COLOG_INFO("(http-get: charset from Content-Type = ",
-                   sss::raw_string(charset), ")");
-    }
-    if (charset.empty()) {
-        charset = "gb2312,utf8";
-    }
+    // http-headers? usage?
+    // std::string charset =
+    //     sss::trim_copy(headers.get("Content-Type", "charset"));
+    // if (!charset.empty()) {
+    //     COLOG_INFO("(http-get: charset from Content-Type = ",
+    //                sss::raw_string(charset), ")");
+    // }
+    // if (charset.empty()) {
+    //     charset = "gb2312,utf8";
+    // }
 
     return content;
 }

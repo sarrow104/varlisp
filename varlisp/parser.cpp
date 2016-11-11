@@ -9,7 +9,7 @@
 #include <ss1x/parser/oparser.hpp>
 
 #include "environment.hpp"
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "parser.hpp"
 #include "print_visitor.hpp"
 #include "tokenizer.hpp"
@@ -72,7 +72,8 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
             // 这个需求来说，我只需要特化eval_eval函数即可，不用特意修改。
             COLOG_DEBUG(expr);
 
-            const auto res = boost::apply_visitor(eval_visitor(env), expr);
+            Object result;
+            const Object& res = getAtomicValue(env, expr, result);
             // std::cout << expr << " = " << res << std::endl;
             if (!is_silent) {
 #if 1

@@ -1,7 +1,6 @@
 #include "list.hpp"
 #include "object.hpp"
 
-#include "cast2double_visitor.hpp"
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
 

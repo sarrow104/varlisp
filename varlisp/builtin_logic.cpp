@@ -1,6 +1,6 @@
 #include "object.hpp"
 
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "strict_equal_visitor.hpp"
 #include "strict_less_visitor.hpp"
 
@@ -121,7 +121,8 @@ Object eval_not(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_null(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object obj = boost::apply_visitor(eval_visitor(env), args.head);
+    Object tmp;
+    const Object& obj = getAtomicValue(env, args.head, tmp);
     return !obj.which();
 }
 

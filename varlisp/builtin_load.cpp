@@ -1,4 +1,4 @@
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "interpreter.hpp"
 #include "object.hpp"
 
@@ -24,6 +24,7 @@ namespace varlisp {
  */
 Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char* funcName = "load";
     // NOTE 既然
     // load是内建函数，那么load，就可以出现在任何地方；比如另外一个脚本；
     // 而，我的解释器，对于脚本的load，本质上，是让内部的Tokenizer对象，
@@ -39,18 +40,19 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     // 这是作用域的问题；即，对于(load "path/to/script")语句而言，新解析到
     // 的标识符(对象、函数等等)，应该放到哪个Environment中呢？
 
-    Object path = boost::apply_visitor(eval_visitor(env), args.head);
-    const std::string* p_path = boost::get<std::string>(&path);
+    Object path;
+    const std::string* p_path =
+        getTypedValue<std::string>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "read requies a path");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": requies a path)");
     }
     std::string full_path = sss::path::full_of_copy(*p_path);
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
-        SSS_POSTION_THROW(std::runtime_error, "path `", *p_path,
-                          "` not to file");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
+                          "` not to file)");
     }
-    // varlisp::List content;
-    // std::string line;
+
     std::string content;
     sss::path::file2string(full_path, content);
 
@@ -61,7 +63,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     }
     varlisp::Parser& parser = p_inter->get_parser();
     parser.parse(env, content, true);
-    COLOG_INFO("(load ", sss::raw_string(*p_path), " complete)");
+    COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
     return Object();
 }
 

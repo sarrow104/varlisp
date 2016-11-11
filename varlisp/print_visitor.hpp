@@ -4,10 +4,14 @@
 #include <boost/variant.hpp>
 
 #include <sss/raw_print.hpp>
+#include <sss/regex/cregex.hpp>
+#include <sss/raw_print.hpp>
 
-#include "object.hpp"
+// #include "object.hpp"
 
 namespace varlisp {
+struct Empty;
+struct symbol;
 
 struct print_visitor : public boost::static_visitor<void> {
     std::ostream& m_o;
@@ -21,7 +25,7 @@ struct print_visitor : public boost::static_visitor<void> {
     void operator()(const Empty&) const { m_o << "nil"; }
     void operator()(bool v) const { m_o << (v ? "#t" : "#f"); }
     void operator()(const std::string& v) const { m_o << sss::raw_string(v); }
-    void operator()(const varlisp::symbol& s) const { m_o << s.m_data; }
+    void operator()(const varlisp::symbol& s) const;
     void operator()(const sss::regex::CRegex& reg) const
     {
         m_o << '/' << reg.regstr() << '/';

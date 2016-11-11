@@ -1,5 +1,4 @@
 #include "builtin_helper.hpp"
-#include "eval_visitor.hpp"
 #include "object.hpp"
 #include "raw_stream_visitor.hpp"
 
@@ -21,23 +20,22 @@ namespace varlisp {
  */
 Object eval_read(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object path = boost::apply_visitor(eval_visitor(env), args.head);
-    const std::string* p_path = boost::get<std::string>(&path);
+    const char* funcName = "read";
+    Object path;
+    const std::string* p_path =
+        getTypedValue<std::string>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "read requies a path");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": requies a path string as 1st argument)");
     }
     std::string full_path = sss::path::full_of_copy(*p_path);
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSTION_THROW(std::runtime_error, "path `", *p_path,
                           "` not to file");
     }
-    // varlisp::List content;
-    // std::string line;
+
     std::string content;
     sss::path::file2string(full_path, content);
-
-    // 对于小文件，其判断可能出错
-    // ensure_utf8(content, "cp936,utf8");
 
     return content;
 }
@@ -60,10 +58,13 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
 Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
                        bool append)
 {
-    Object path = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-    const std::string* p_path = boost::get<std::string>(&path);
+    const char* funcName = append ? "write-append" : "write";
+    Object path;
+    const std::string* p_path =
+        getTypedValue<std::string>(env, args.tail[0].head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "(write: requies path to write)");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": requies path as 2nd argument to write)");
     }
 
     std::string full_path = sss::path::full_of_copy(*p_path);
@@ -81,9 +82,14 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     std::ofstream::pos_type pos = ofs.tellp();
 
     Object obj;
-    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
+    const Object& firstArg = getAtomicValue(env, args.head, obj);
 
-    if (p_list) {
+    if (const varlisp::List* p_list = boost::get<varlisp::List>(&firstArg)) {
+        // NOTE this p_list must be an s-list!
+        if (!p_list->is_squote()) {
+            SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                              ": 1st argument is not a s-list)");
+        }
         p_list = p_list->next();
         while (p_list && p_list->head.which()) {
             boost::apply_visitor(raw_stream_visitor(ofs, env), p_list->head);
@@ -96,14 +102,8 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
 
     std::ofstream::pos_type write_cnt = ofs.tellp() - pos;
 
-    if (append) {
-        COLOG_INFO("(write-append ", sss::raw_string(*p_path), " by ",
-                   int(write_cnt), "bytes complete)");
-    }
-    else {
-        COLOG_INFO("(write ", sss::raw_string(*p_path), "by ", int(write_cnt),
-                   "bytes complete)");
-    }
+    COLOG_INFO("(", funcName, ":", sss::raw_string(*p_path), " by ",
+               int(write_cnt), "bytes complete)");
     return Object(int(write_cnt));
 }
 

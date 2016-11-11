@@ -1,4 +1,4 @@
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "object.hpp"
 
 #include <sss/path/glob_path.hpp>
@@ -12,23 +12,24 @@ namespace varlisp {
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object path = boost::apply_visitor(eval_visitor(env), args.head);
-
-    const std::string *p_path = boost::get<std::string>(&path);
+    const char *funcName = "fnamemodify";
+    Object path;
+    const std::string *p_path =
+        getTypedValue<std::string>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          "fnamemodify: requies one path string");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": requies one path string at 1st)");
     }
-    Object modifier =
-        boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-    const std::string *p_modifier = boost::get<std::string>(&modifier);
+    Object modifier;
+    const std::string *p_modifier =
+        getTypedValue<std::string>(env, args.tail[0].head, modifier);
     if (!p_modifier) {
-        SSS_POSTION_THROW(std::runtime_error,
-                          "fnamemodify: requies one path-modifier string");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          ": requies one path-modifier string at 2nd)");
     }
     return Object(sss::path::modify_copy(*p_path, *p_modifier));
 }
@@ -43,24 +44,28 @@ Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object path = boost::apply_visitor(eval_visitor(env), args.head);
+    const char *funcName = "glob";
+    Object path;
+    const std::string *p_path =
+        getTypedValue<std::string>(env, args.head, path);
 
-    const std::string *p_path = boost::get<std::string>(&path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "glob requies one path string");
+        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                          " requies one path string at 1st)");
     }
+
     std::unique_ptr<sss::path::filter_t> f;
-    Object filter;
     if (args.length() > 1) {
-        filter = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-        const std::string *p_filter = boost::get<std::string>(&filter);
+        Object filter;
+        const std::string *p_filter =
+            getTypedValue<std::string>(env, args.tail[0].head, filter);
         if (!p_filter) {
-            SSS_POSTION_THROW(std::runtime_error,
-                              "glob: second filter arg must be a string");
+            SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+                              ": requires filter string as 2nd argument)");
         }
         f.reset(new sss::path::name_filter_t(*p_filter));
     }
@@ -89,43 +94,46 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 /**
  * @brief
  *      (glob-recurse "paht/to/explorer") -> '("fname1", "fname2", ...)
- *      (glob-recurse "paht/to/explorer" "fname-filter") -> '("fname1", "fname2", ...)
- *      (glob-recurse "paht/to/explorer" "fname-filter" depth) -> '("fname1", "fname2", ...)
+ *      (glob-recurse "paht/to/explorer" "fname-filter") -> '("fname1",
+ * "fname2", ...)
+ *      (glob-recurse "paht/to/explorer" "fname-filter" depth) -> '("fname1",
+ * "fname2", ...)
  *
  * @param env
  * @param args
  *
- * @return 
+ * @return
  */
 Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object path = boost::apply_visitor(eval_visitor(env), args.head);
-
-    const std::string *p_path = boost::get<std::string>(&path);
+    const char * funcName = "glob-recurse";
+    Object path;
+    const std::string *p_path =
+        getTypedValue<std::string>(env, args.head, path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "glob-recurse: requies one path string");
+                          "(", funcName, ": requies one path string)");
     }
     std::unique_ptr<sss::path::filter_t> f;
     if (args.length() > 1) {
-        Object arg = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-        const std::string *p_filter = boost::get<std::string>(&arg);
+        Object filter;
+        const std::string *p_filter =
+            getTypedValue<std::string>(env, args.tail[0].head, filter);
         if (!p_filter) {
             SSS_POSTION_THROW(
                 std::runtime_error,
-                "glob-recurse: second filter arg must be a string");
+                "(", funcName, ": second filter arg must be a string)");
         }
         f.reset(new sss::path::name_filter_t(*p_filter));
     }
 
     int depth = 0;
     if (args.length() > 2) {
-        Object arg =
-            boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
-        const int *p_depth = boost::get<int>(&arg);
+        Object arg;
+        const int *p_depth = getTypedValue<int>(env, args.tail[0].tail[0].head, arg);
         if (!p_depth) {
             SSS_POSTION_THROW(std::runtime_error,
-                              "glob-recurse: third arg must be an integar");
+                              "(", funcName, ": third arg must be an integar)");
         }
         depth = *p_depth;
     }

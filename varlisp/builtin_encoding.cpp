@@ -1,5 +1,4 @@
 #include "object.hpp"
-#include "eval_visitor.hpp"
 #include "builtin_helper.hpp"
 
 #include <uchardet/uchardet.h>
@@ -247,11 +246,12 @@ Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char * funcName = "ensure-utf8";
     Object obj2;
     const std::string * p_content = varlisp::getTypedValue<std::string>(env, args.head, obj2);
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "(ensure-utf8: 1st argument must be content string)");
+                          "(", funcName, ": 1st argument must be content string)");
     }
 
     Object obj1;
@@ -260,7 +260,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
         p_encodings = varlisp::getTypedValue<std::string>(env, args.tail[0].head, obj1);
         if (!p_encodings) {
             SSS_POSTION_THROW(std::runtime_error,
-                              "(ensure-utf8: 2nd argument must be encodings string)");
+                              "(", funcName, ": 2nd argument must be encodings string)");
         }
     }
     std::string encodings;
@@ -282,7 +282,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
             return out;
         }
         else {
-            COLOG_ERROR("(ensure-utf8: error occurs while convert from", from_encoding, "to", to_encoding);
+            COLOG_ERROR("(", funcName, ":", from_encoding, "to", to_encoding);
             return Object{};
         }
     }

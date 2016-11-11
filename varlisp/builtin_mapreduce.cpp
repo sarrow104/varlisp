@@ -1,4 +1,4 @@
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "object.hpp"
 
 #include "builtin_helper.hpp"
@@ -162,10 +162,8 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
 
         expr.append(p_arg_list->head);
         Object value = expr.eval(env);
-        // value = boost::apply_visitor(eval_visitor(env), value);
-        bool * p_bool = boost::get<bool>(&value);
 
-        if (p_bool && *p_bool) {
+        if (varlisp::is_true(env, value)) {
             p_ret_list = p_ret_list->next_slot();
             p_ret_list->head = p_arg_list->head;
         }

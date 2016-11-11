@@ -1,4 +1,4 @@
-#include "eval_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "object.hpp"
 
 namespace varlisp {
@@ -12,13 +12,14 @@ namespace varlisp {
  */
 Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object content = boost::apply_visitor(eval_visitor(env), args.head);
-    const std::string *p_content = boost::get<std::string>(&content);
-    if (!p_content) {
+    const char * funcName = "regex";
+    Object regstr;
+    const std::string *p_regstr = getTypedValue<std::string>(env, args.head, regstr);
+    if (!p_regstr) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "regex: need one string to construct");
+                          "(", funcName, ": need one string to construct)");
     }
-    return sss::regex::CRegex(*p_content);
+    return sss::regex::CRegex(*p_regstr);
 }
 
 /**
@@ -31,18 +32,20 @@ Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
  */
 Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object content = boost::apply_visitor(eval_visitor(env), args.head);
-    sss::regex::CRegex *p_reg = boost::get<sss::regex::CRegex>(&content);
-    if (!p_reg) {
-        SSS_POSTION_THROW(std::runtime_error, "regex-match: regex obj");
-    }
-    Object target = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-    const std::string *p_content = boost::get<std::string>(&target);
-    if (!p_content) {
+    const char * funcName = "regex-match";
+    Object regobj;
+    const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
+    if (!p_regobj) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "regex-match: need one string to match");
+                          "(", funcName, ": regex obj)");
     }
-    return p_reg->match(p_content->c_str());
+    Object target;
+    const std::string *p_target = getTypedValue<std::string>(env, args.tail[0].head, target);
+    if (!p_target) {
+        SSS_POSTION_THROW(std::runtime_error,
+                          "(", funcName, ": need one string to match)");
+    }
+    return p_regobj->match(p_target->c_str());
 }
 
 /**
@@ -55,27 +58,25 @@ Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
  */
 Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object reg_obj = boost::apply_visitor(eval_visitor(env), args.head);
-    sss::regex::CRegex *p_reg = boost::get<sss::regex::CRegex>(&reg_obj);
-    if (!p_reg) {
-        SSS_POSTION_THROW(std::runtime_error, "regex-search: regex obj");
+    const char * funcName = "regex-search";
+    Object regobj;
+    const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
+    if (!p_regobj) {
+        SSS_POSTION_THROW(std::runtime_error,
+                          "(", funcName, ": regex obj)");
     }
 
-    Object target = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-    const std::string *p_content = boost::get<std::string>(&target);
-    if (!p_content) {
+    Object target;
+    const std::string *p_target = getTypedValue<std::string>(env, args.tail[0].head, target);
+    if (!p_target) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "regex-search: need one target string to search");
+                          "(", funcName, ": need one string to search)");
     }
 
     int offset = 0;
     if (args.length() == 3) {
-        Object offset_obj =
-            boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
-        if (const int *p_offset = boost::get<int>(&offset_obj)) {
-            offset = *p_offset;
-        }
-        else if (const double *p_offset = boost::get<double>(&offset_obj)) {
+        Object obj;
+        if (const int *p_offset = getTypedValue<int>(env, args.tail[0].tail[0].head, obj)) {
             offset = *p_offset;
         }
     }
@@ -84,17 +85,17 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
         offset = 0;
     }
 
-    if (offset > int(p_content->length())) {
-        offset = p_content->length();
+    if (offset > int(p_target->length())) {
+        offset = p_target->length();
     }
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
 
-    if (p_reg->match(p_content->c_str() + offset)) {
+    if (p_regobj->match(p_target->c_str() + offset)) {
         List *p_list = &ret;
-        for (int i = 0; i < p_reg->submatch_count(); ++i) {
+        for (int i = 0; i < p_regobj->submatch_count(); ++i) {
             p_list = p_list->next_slot();
-            p_list->head = p_reg->submatch(i);
+            p_list->head = p_regobj->submatch(i);
         }
     }
 
@@ -112,29 +113,29 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
  */
 Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object reg_obj = boost::apply_visitor(eval_visitor(env), args.head);
-    sss::regex::CRegex *p_reg = boost::get<sss::regex::CRegex>(&reg_obj);
-    if (!p_reg) {
+    const char * funcName = "regex-replace";
+    Object regobj;
+    const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
+    if (!p_regobj) {
         SSS_POSTION_THROW(std::runtime_error, "regex-replace: regex obj");
     }
 
-    Object target = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-    const std::string *p_content = boost::get<std::string>(&target);
-    if (!p_content) {
+    Object target;
+    const std::string *p_target = getTypedValue<std::string>(env, args.tail[0].head, target);
+    if (!p_target) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "regex-replace: need one target string to replace");
+                          "(", funcName, ": need one string to replace)");
     }
 
-    Object fmt_obj =
-        boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
-    const std::string *p_fmt = boost::get<std::string>(&fmt_obj);
+    Object fmtobj;
+    const std::string *p_fmt = getTypedValue<std::string>(env, args.tail[0].tail[0].head, fmtobj);
     if (!p_fmt) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "regex-replace: need one fmt string to replace");
+                          "(", funcName, ": need fmt string at 3rd)");
     }
 
     std::string out;
-    p_reg->substitute(*p_content, *p_fmt, out);
+    p_regobj->substitute(*p_target, *p_fmt, out);
     return out;
 }
 
@@ -149,29 +150,31 @@ Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
  */
 Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object reg_obj = boost::apply_visitor(eval_visitor(env), args.head);
-    sss::regex::CRegex *p_reg = boost::get<sss::regex::CRegex>(&reg_obj);
-    if (!p_reg) {
-        SSS_POSTION_THROW(std::runtime_error, "regex-replace: regex obj");
-    }
-
-    Object target = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-    const std::string *p_content = boost::get<std::string>(&target);
-    if (!p_content) {
+    const char * funcName = "regex-split";
+    Object regobj;
+    const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
+    if (!p_regobj) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "regex-replace: need one target string to replace");
+                          "(", funcName, ": regex obj)");
     }
 
-    const char *str_beg = p_content->c_str();
+    Object target;
+    const std::string *p_target = getTypedValue<std::string>(env, args.tail[0].head, target);
+    if (!p_target) {
+        SSS_POSTION_THROW(std::runtime_error,
+                          "(", funcName, ": need one string to replace)");
+    }
+
+    const char *str_beg = p_target->c_str();
     varlisp::List ret = varlisp::List::makeSQuoteList();
     List *p_list = &ret;
 
-    while (str_beg && *str_beg && p_reg->match(str_beg)) {
+    while (str_beg && *str_beg && p_regobj->match(str_beg)) {
         p_list = p_list->next_slot();
 
-        p_list->head = std::string(str_beg, str_beg + p_reg->submatch_start(0));
+        p_list->head = std::string(str_beg, str_beg + p_regobj->submatch_start(0));
 
-        str_beg += p_reg->submatch_end(0);
+        str_beg += p_regobj->submatch_end(0);
     }
 
     if (str_beg && *str_beg) {
@@ -195,32 +198,33 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
  */
 Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
 {
-    Object reg_obj = boost::apply_visitor(eval_visitor(env), args.head);
-    sss::regex::CRegex *p_reg = boost::get<sss::regex::CRegex>(&reg_obj);
-    if (!p_reg) {
-        SSS_POSTION_THROW(std::runtime_error, "regex-replace: regex obj");
+    const char * funcName = "regex-collect";
+    Object regobj;
+    const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
+    if (!p_regobj) {
+        SSS_POSTION_THROW(std::runtime_error,
+                          "(", funcName, ": regex obj)");
     }
 
-    Object target = boost::apply_visitor(eval_visitor(env), args.tail[0].head);
-    const std::string *p_content = boost::get<std::string>(&target);
-    if (!p_content) {
+    Object target;
+    const std::string *p_target = getTypedValue<std::string>(env, args.tail[0].head, target);
+    if (!p_target) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "regex-replace: need one target string to replace");
+                          "(", funcName, ": need one string to search)");
     }
     const std::string *p_fmt = 0;
     if (args.length() == 3) {
-        Object fmt_obj =
-            boost::apply_visitor(eval_visitor(env), args.tail[0].tail[0].head);
-        p_fmt = boost::get<std::string>(&fmt_obj);
+        Object fmtobj;
+        p_fmt = getTypedValue<std::string>(env, args.tail[0].tail[0].head, fmtobj);
     }
 
-    const char *str_beg = p_content->c_str();
+    const char *str_beg = p_target->c_str();
     varlisp::List ret = varlisp::List::makeSQuoteList();
     List *p_list = &ret;
 
-    while (str_beg && *str_beg && p_reg->match(str_beg)) {
+    while (str_beg && *str_beg && p_regobj->match(str_beg)) {
         p_list = p_list->next_slot();
-        str_beg += p_reg->submatch_start(0);
+        str_beg += p_regobj->submatch_start(0);
 
         if (p_fmt) {
             std::ostringstream oss;
@@ -228,8 +232,8 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
                 if (p_fmt->at(i) == '\\' && i + 1 != p_fmt->length() &&
                     std::isdigit(p_fmt->at(i + 1))) {
                     int index = p_fmt->at(i + 1) - '0';
-                    oss.write(str_beg + p_reg->submatch_start(index),
-                              p_reg->submatch_consumed(index));
+                    oss.write(str_beg + p_regobj->submatch_start(index),
+                              p_regobj->submatch_consumed(index));
                     ++i;
                 }
                 else {
@@ -240,9 +244,9 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
         }
         else {
             p_list->head =
-                std::string(str_beg, str_beg + p_reg->submatch_consumed(0));
+                std::string(str_beg, str_beg + p_regobj->submatch_consumed(0));
         }
-        str_beg += p_reg->submatch_consumed(0);
+        str_beg += p_regobj->submatch_consumed(0);
     }
 
     return ret;

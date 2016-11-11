@@ -1,7 +1,7 @@
 #include "Define.hpp"
-#include "eval_visitor.hpp"
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
+#include "builtin_helper.hpp"
 
 #include "environment.hpp"
 
@@ -15,8 +15,8 @@ void Define::print(std::ostream& o) const
 
 Object Define::eval(Environment& env) const
 {
-    Object value = boost::apply_visitor(eval_visitor(env), this->value);
-    env[this->name.m_data] = value;
+    Object tmp;
+    env[this->name.m_data] = getAtomicValue(env, this->value, tmp);
     return value;
 }
 

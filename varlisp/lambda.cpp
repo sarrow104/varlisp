@@ -4,7 +4,6 @@
 
 #include "lambda.hpp"
 
-#include "cast2double_visitor.hpp"
 #include "environment.hpp"
 #include "eval_visitor.hpp"
 #include "print_visitor.hpp"

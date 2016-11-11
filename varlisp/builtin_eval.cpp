@@ -1,4 +1,3 @@
-#include "eval_visitor.hpp"
 #include "object.hpp"
 
 #include "builtin_helper.hpp"
@@ -16,11 +15,12 @@ namespace varlisp {
  */
 Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char * funcName = "eval";
     Object obj;
     const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
     if (!p_list) {
         SSS_POSTION_THROW(std::runtime_error,
-                          "(eval: need squote-List as 1st argument)");
+                          "(", funcName, ": need squote-List as 1st argument)");
     }
     return p_list->next()->eval(env);
 }
