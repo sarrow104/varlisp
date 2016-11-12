@@ -5,10 +5,15 @@
 
 #include <linenoise.hpp>
 
+#include <initializer_list>
+
+#include <sss/debug/value_msg.hpp>
 #include <sss/algorithm.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/log.hpp>
 #include <sss/path.hpp>
+#include <sss/utlstring.hpp>
+#include <sss/string_view.hpp>
 #include <sss/utlstring.hpp>
 
 #include "varlisp/interpreter.hpp"
@@ -72,13 +77,38 @@ int test_construct()
     return EXIT_SUCCESS;
 }
 
-int Interpret()
+// echo_in_load = false;          
+// quit_on_load_complete = false; 
+// load_init_script = false;      
+
+int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_script, int argc, char * argv[])
 {
     varlisp::Interpreter interpreter;
-    std::string preload_script = sss::path::dirname(sss::path::getbin());
-    sss::path::append(preload_script, "init.varlisp");
-    if (sss::path::filereadable(preload_script)) {
-        interpreter.load(preload_script);
+
+    if (load_init_script) {
+        std::string preload_script = sss::path::dirname(sss::path::getbin());
+        sss::path::append(preload_script, "init.varlisp");
+        if (sss::path::filereadable(preload_script)) {
+            interpreter.load(preload_script, echo_in_load);
+        }
+    }
+    for (int i = 0; i < argc && interpreter.is_status(varlisp::Interpreter::status_OK); ++i) {
+        std::string script_path = sss::path::full_of_copy(argv[i]);
+        if (!sss::path::filereadable(script_path)) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "(path", sss::raw_string(argv[i]), " not readable)");
+        }
+        interpreter.load(script_path, echo_in_load);
+    }
+    if (quit_on_load_complete) {
+        return EXIT_SUCCESS;
+    }
+    if (!interpreter.is_status(varlisp::Interpreter::status_OK)) {
+        if (interpreter.is_status(varlisp::Interpreter::status_ERROR)) {
+            SSS_POSTION_THROW(std::runtime_error,
+                              "parseError");
+        }
+        return EXIT_SUCCESS;
     }
 
     linenoise::SetHistoryMaxLen(100);
@@ -190,6 +220,34 @@ int Interpret()
     return EXIT_SUCCESS;
 }
 
+void help_msg()
+{
+    std::string app = sss::path::basename(sss::path::getbin());
+
+    std::cout
+        << app << " --help | -h\n"
+        << "\t" << "print this message"
+        << std::endl;
+
+    std::cout
+        << app << " [(--echo | -e) (1 | 0)]\n"
+        << "\t\t" << " [--quit | -q]\n"
+        << "\t\t" << " [--init | -i]\n"
+        << "\t\t" << " [/path/to/script]\n\n"
+        << "\t" << " 如果不提供脚步路径的话，则直接进入交互模式；"
+        << "\t" << "-q "
+        << std::endl;
+}
+
+bool has_match(sss::string_view tar, std::initializer_list<sss::string_view> l)
+{
+    for (const auto& i : l) {
+        if (tar == i) {
+            return true;
+        }
+    }
+    return false;
+}
 int main(int argc, char* argv[])
 {
     (void)argc;
@@ -199,8 +257,33 @@ int main(int argc, char* argv[])
                                  sss::colog::ls_FILE | sss::colog::ls_LINE);
     sss::colog::set_log_levels(sss::colog::ll_INFO | sss::colog::ll_ERROR |
                                sss::colog::ll_WARN | sss::colog::ll_FATAL);
+
+    bool echo_in_load = false;
+    bool quit_on_load_complete = false;
+    bool load_init_script = false;
+    int i = 1;
+    while (i < argc) {
+        if (has_match(argv[i], {"--echo", "-e"})) {
+            if (++i >= argc) {
+                SSS_POSTION_THROW(std::runtime_error, "need one parameter after", sss::raw_string(argv[i]));
+            }
+            echo_in_load = bool(sss::string_cast<int>(argv[i]));
+        }
+        else if (has_match(argv[i], {"--quit", "-q"})) {
+            quit_on_load_complete = true;
+        }
+        else if (has_match(argv[i], {"--init", "-i"})) {
+            load_init_script = true;
+        }
+        else {
+            break;
+        }
+        ++i;
+    }
+    std::cout << SSS_VALUE_MSG(argc) << std::endl;
+    std::cout << SSS_VALUE_MSG(i) << std::endl;
 #if 1
-    return Interpret();
+    return Interpret(echo_in_load, quit_on_load_complete, load_init_script, argc - i, argv + i);
 #else
     return test_construct();
 #endif
