@@ -41,7 +41,7 @@ Object eval_le(varlisp::Environment& env, const varlisp::List& args);
 Object eval_not(varlisp::Environment& env, const varlisp::List& args);
 Object eval_equal(varlisp::Environment& env, const varlisp::List& args);
 
-Object eval_null(varlisp::Environment& env, const varlisp::List& args);
+Object eval_null_q(varlisp::Environment& env, const varlisp::List& args);
 Object eval_typeid(varlisp::Environment &env, const varlisp::List &args);
 Object eval_number_q(varlisp::Environment &env, const varlisp::List &args);
 Object eval_string_q(varlisp::Environment &env, const varlisp::List &args);
@@ -103,9 +103,10 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args);
 Object eval_iconv(varlisp::Environment& env, const varlisp::List& args);
 Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args);
 
-
 Object eval_quit(varlisp::Environment& env, const varlisp::List& args);
 Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args);
+
+Object eval_time(varlisp::Environment &env, const varlisp::List &args);
 
 const builtin_info_t builtin_infos[] =
 {
@@ -136,7 +137,7 @@ const builtin_info_t builtin_infos[] =
     {"not",             1,  1,  &eval_not},
     {"equal",           2,  2,  &eval_equal},
 
-    {"null",            1,  1,  &eval_null},
+    {"null?",           1,  1,  &eval_null_q},
     {"typeid",          1,  1,  &eval_typeid},
     {"number?",         1,  1,  &eval_number_q},
     {"string?",         1,  1,  &eval_string_q},
@@ -225,6 +226,8 @@ const builtin_info_t builtin_infos[] =
 
     {"quit",            0,  0,  &eval_quit},
     {"it:debug",        1,  1,  &eval_it_debug},
+
+    {"time",            1,  1,  &eval_time},
 };
 
 void Builtin::regist_builtin_function(Environment& env)
