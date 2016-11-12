@@ -35,6 +35,8 @@ struct Environment : public std::map<std::string, Object> {
     using BaseT::operator[];
 
     explicit Environment(Environment* parent = 0);
+
+private:
     Environment* m_parent;
     Interpreter* m_interpreter;
 };
