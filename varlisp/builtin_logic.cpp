@@ -111,19 +111,19 @@ Object eval_not(varlisp::Environment& env, const varlisp::List& args)
 
 /**
  * @brief
- *    (null nil) -> #t
- *    (null (not nil)) -> #f
+ *    (null? nil) -> #t
+ *    (null? (not nil)) -> #f
  *
  * @param[in] env
  * @param[in] args
  *
  * @return
  */
-Object eval_null(varlisp::Environment& env, const varlisp::List& args)
+Object eval_null_q(varlisp::Environment& env, const varlisp::List& args)
 {
     Object tmp;
     const Object& obj = getAtomicValue(env, args.head, tmp);
-    return !obj.which();
+    return obj.which() == 1;
 }
 
 /**
