@@ -280,8 +280,6 @@ int main(int argc, char* argv[])
         }
         ++i;
     }
-    std::cout << SSS_VALUE_MSG(argc) << std::endl;
-    std::cout << SSS_VALUE_MSG(i) << std::endl;
 #if 1
     return Interpret(echo_in_load, quit_on_load_complete, load_init_script, argc - i, argv + i);
 #else
