@@ -2,11 +2,15 @@
 #define __RAW_STREAM_VISITOR_HPP_1478481280__
 
 #include <boost/variant.hpp>
+#include <iosfwd>
 
-#include "object.hpp"
+#include <sss/regex/cregex.hpp>
 
 namespace varlisp {
-
+struct Empty;
+struct Nill;
+struct symbol;
+struct Environment;
 struct raw_stream_visitor : public boost::static_visitor<void> {
     // 这个只是负责打印，不应该执行！
     // 但是，需要获取变量的值；所以：
@@ -23,6 +27,7 @@ struct raw_stream_visitor : public boost::static_visitor<void> {
     }
 
     void operator()(const Empty&) const {}
+    void operator()(const Nill&) const {}
     void operator()(bool v) const { m_o << (v ? "true" : "false"); }
     void operator()(const std::string& v) const { m_o << v; }
     void operator()(const varlisp::symbol& s) const;

@@ -34,6 +34,10 @@ struct strict_less_visitor : boost::static_visitor<bool> {
     {
         throw std::runtime_error("Empty < Empty");
     }
+    bool operator()(Nill lhs, Nill rhs) const
+    {
+        throw std::runtime_error("Nill < Nill");
+    }
 
     bool operator()(const sss::regex::CRegex& lhs,
                     const sss::regex::CRegex& rhs) const
@@ -47,13 +51,6 @@ struct strict_less_visitor : boost::static_visitor<bool> {
         return lhs < rhs;
     }
 
-    // template<typename T>
-    //     bool operator() (const T& lhs, const )
-
-    // // 如何解决提升？
-    // //
-    // // 左右交换的话，可以利用转发；
-    // bool operator()
 };
 }  // namespace varlisp
 

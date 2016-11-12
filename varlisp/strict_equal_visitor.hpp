@@ -31,6 +31,11 @@ struct strict_equal_visitor : boost::static_visitor<bool> {
     {
         throw std::runtime_error("Empty = Empty");
     }
+
+    bool operator()(Nill lhs, Nill rhs) const
+    {
+        return true;
+    }
 };
 }  // namespace varlisp
 
