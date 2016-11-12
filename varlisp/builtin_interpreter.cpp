@@ -51,14 +51,11 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
     auto ll = sss::colog::get_log_levels();
     sss::colog::log_level next_ll = ll;
     if (*p_status) {
-        next_ll = sss::colog::log_level((next_ll | sss::colog::ll_DEBUG) &
-                                        sss::colog::ll_MASK);
+        next_ll = (next_ll | sss::colog::ll_DEBUG) & sss::colog::ll_MASK;
     }
     else {
-        next_ll = sss::colog::log_level(next_ll & ~sss::colog::ll_DEBUG &
-                                        sss::colog::ll_MASK);
+        next_ll = next_ll & ~sss::colog::ll_DEBUG & sss::colog::ll_MASK;
     }
-    std::cout << SSS_VALUE_MSG(next_ll) << std::endl;
 
     sss::colog::set_log_levels(next_ll);
     return *p_status;
