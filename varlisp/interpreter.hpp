@@ -38,6 +38,9 @@ public:
     int retrieve_symbols(std::vector<std::string>& symbols,
                          const char* prefix) const;
 
+    bool set_status(status_t s) {
+        m_status = s;
+    }
     /**
      * @brief 传入一行文本；并求值；
      *

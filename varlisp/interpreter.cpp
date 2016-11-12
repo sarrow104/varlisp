@@ -4,7 +4,6 @@
 
 #include <sss/log.hpp>
 #include <sss/path.hpp>
-#include <sss/regex/cregex.hpp>
 #include <sss/utlstring.hpp>
 
 #include <algorithm>
@@ -22,22 +21,16 @@ Interpreter::status_t Interpreter::eval(const std::string& line)
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, line);
     status_t ret = status_OK;
 
-    static sss::regex::CRegex reg_quit("^\\s*\\(\\s*quit\\s*\\)\\s*$");
-    if (reg_quit.match(line)) {
-        ret = status_QUIT;
+    // varlisp::Parser parser(line);
+    int ec = m_parser.parse(this->m_env, line);
+    if (!ec) {
+        ret = status_UNFINISHED;
     }
-    else {
-        // varlisp::Parser parser(line);
-        int ec = m_parser.parse(this->m_env, line);
-        if (!ec) {
-            ret = status_UNFINISHED;
-        }
-        else if (ec < 0) {
-            ret = status_ERROR;
-        }
+    else if (ec < 0) {
+        ret = status_ERROR;
     }
 
-    return ret;
+    return m_status == status_QUIT ? status_QUIT : ret;
 }
 
 void Interpreter::load(const std::string& path)
