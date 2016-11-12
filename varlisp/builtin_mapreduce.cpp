@@ -75,7 +75,6 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
             COLOG_DEBUG(SSS_VALUE_MSG(i), ',', SSS_VALUE_MSG(j), ',', p_arg_list_vec[j]->head);
             p_expr = p_expr->next_slot();
             p_expr->head = p_arg_list_vec[j]->head;
-            // expr.append(p_arg_list_vec[i]->head);
             p_arg_list_vec[j] = p_arg_list_vec[j]->next();
         }
         COLOG_DEBUG(expr);
