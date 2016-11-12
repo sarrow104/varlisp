@@ -31,8 +31,7 @@ public:
 public:
     bool is_status(status_t status) const { return m_status == status; }
     varlisp::Parser& get_parser() { return this->m_parser; }
-    void load(const std::string& path);
-    void silent(const std::string& script);
+    void load(const std::string& path, bool echo = false);
 
     int retrieve_symbols(std::vector<std::string>& symbols) const;
     int retrieve_symbols(std::vector<std::string>& symbols,
@@ -48,7 +47,7 @@ public:
      *
      * @return 返回解析的状态
      */
-    status_t eval(const std::string& line);
+    status_t eval(const std::string& line, bool silent = false);
 
 private:
     status_t m_status;

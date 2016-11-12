@@ -16,13 +16,13 @@ Interpreter::Interpreter() : m_status(status_OK)
     this->m_env.setInterpreter(*this);
 }
 
-Interpreter::status_t Interpreter::eval(const std::string& line)
+Interpreter::status_t Interpreter::eval(const std::string& line, bool silent)
 {
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, line);
     status_t ret = status_OK;
 
     // varlisp::Parser parser(line);
-    int ec = m_parser.parse(this->m_env, line);
+    int ec = m_parser.parse(this->m_env, line, silent);
     if (!ec) {
         ret = status_UNFINISHED;
     }
@@ -30,10 +30,13 @@ Interpreter::status_t Interpreter::eval(const std::string& line)
         ret = status_ERROR;
     }
 
-    return m_status == status_QUIT ? status_QUIT : ret;
+    if (m_status != status_QUIT) {
+        m_status = ret;
+    }
+    return m_status;
 }
 
-void Interpreter::load(const std::string& path)
+void Interpreter::load(const std::string& path, bool echo)
 {
     std::string full_path = sss::path::full_of_copy(path);
     if (!sss::path::filereadable(full_path)) {
@@ -45,13 +48,8 @@ void Interpreter::load(const std::string& path)
         return;
     }
     std::cout << "loading " << full_path << " ...";
-    this->silent(content);
+    this->eval(content, !echo);
     std::cout << " succeed." << std::endl;
-}
-
-void Interpreter::silent(const std::string& script)
-{
-    this->m_parser.parse(m_env, script, true);
 }
 
 int Interpreter::retrieve_symbols(std::vector<std::string>& symbols) const
