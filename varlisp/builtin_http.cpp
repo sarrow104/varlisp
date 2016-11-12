@@ -5,6 +5,7 @@
 #include <sss/encoding.hpp>
 #include <sss/iConvpp.hpp>
 #include <sss/utlstring.hpp>
+#include <sss/debug/value_msg.hpp>
 
 #include <ss1x/asio/GetFile.hpp>
 #include <ss1x/asio/headers.hpp>
@@ -33,31 +34,58 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
                           "(", funcName, ": requie downloading url as 1st argument !)");
     }
 
-    std::ostringstream oss;
-    ss1x::http::Headers headers;
+    Object proxy;             
+    const std::string* p_proxy = 0;
+    Object port;
+    const int* p_port = 0;
 
     if (args.length() == 3) {
-        Object proxy;
-        const std::string* p_proxy = getTypedValue<std::string>(env, args.tail[0].head, proxy);
+        p_proxy = getTypedValue<std::string>(env, args.tail[0].head, proxy);
         if (!p_proxy) {
             SSS_POSTION_THROW(
                 std::runtime_error,
                 "(", funcName, ": 2nd parameter must be proxy domain string!)");
         }
-        Object port;
-        const int* p_port = getTypedValue<int>(env, args.tail[0].tail[0].head, port);
+        p_port = getTypedValue<int>(env, args.tail[0].tail[0].head, port);
         if (!p_port) {
             SSS_POSTION_THROW(
                 std::runtime_error,
                 "(", funcName, ": 3rd parameter must be proxy port number!)");
         }
-        ss1x::asio::proxyGetFile(oss, headers, *p_proxy, *p_port, *p_url);
-    }
-    else {
-        ss1x::asio::getFile(oss, headers, *p_url);
     }
 
-    std::string content = oss.str();
+    ss1x::http::Headers headers;
+
+    std::string max_content;
+
+    int max_test = 5;
+    do {
+        std::ostringstream oss;
+        if (p_proxy) {
+            ss1x::asio::proxyGetFile(oss, headers, *p_proxy, *p_port, *p_url);
+        }
+        else {
+            ss1x::asio::getFile(oss, headers, *p_url);
+        }
+        if (headers.status_code != 200) {
+            COLOG_ERROR("(",funcName, ": http-status code:", headers.status_code, ")");
+            continue;
+        }
+        if (unsigned(oss.tellp()) > max_content.length()) {
+            max_content = oss.str();
+        }
+        std::string content_length_str = headers.get("Content-Length");
+        sss::trim(content_length_str);
+        COLOG_DEBUG(SSS_VALUE_MSG(content_length_str));
+        COLOG_DEBUG(SSS_VALUE_MSG(max_content.length()));
+        if (content_length_str.empty()) {
+            break;
+        }
+        if (max_content.length() == sss::string_cast<unsigned int>(content_length_str)) {
+            break;
+        }
+    } while (max_test-- > 0);
+
     // http-headers? usage?
     // std::string charset =
     //     sss::trim_copy(headers.get("Content-Type", "charset"));
@@ -65,11 +93,8 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     //     COLOG_INFO("(http-get: charset from Content-Type = ",
     //                sss::raw_string(charset), ")");
     // }
-    // if (charset.empty()) {
-    //     charset = "gb2312,utf8";
-    // }
 
-    return content;
+    return max_content;
 }
 
 }  // namespace varlisp
