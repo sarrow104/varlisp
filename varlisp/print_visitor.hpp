@@ -11,6 +11,7 @@
 
 namespace varlisp {
 struct Empty;
+struct Nill;
 struct symbol;
 
 struct print_visitor : public boost::static_visitor<void> {
@@ -22,7 +23,8 @@ struct print_visitor : public boost::static_visitor<void> {
         m_o << v;
     }
 
-    void operator()(const Empty&) const { m_o << "nil"; }
+    void operator()(const Empty&) const {}
+    void operator()(const Nill&) const { m_o << "nil"; }
     void operator()(bool v) const { m_o << (v ? "#t" : "#f"); }
     void operator()(const std::string& v) const { m_o << sss::raw_string(v); }
     void operator()(const varlisp::symbol& s) const;
