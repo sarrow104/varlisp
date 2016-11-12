@@ -1,6 +1,7 @@
 
 #include <sstream>
 
+#include <sss/debug/value_msg.hpp>
 #include <sss/log.hpp>
 #include <sss/util/Memory.hpp>
 #include <sss/util/PostionThrow.hpp>
@@ -8,6 +9,7 @@
 
 #include <ss1x/parser/oparser.hpp>
 
+#include "typeid_visitor.hpp"
 #include "environment.hpp"
 #include "builtin_helper.hpp"
 #include "parser.hpp"
@@ -178,7 +180,7 @@ Object Parser::parseExpression()
     else if (const varlisp::symbol* p_v = boost::get<varlisp::symbol>(&tok)) {
         this->m_toknizer.consume();
         if (p_v->is_nil()) {
-            return varlisp::Empty{};
+            return varlisp::Nill{};
         }
         else {
             return varlisp::Object(*p_v);
@@ -284,11 +286,13 @@ Object Parser::parseList()
 
             case 6:
                 {
-                    if (boost::get<varlisp::symbol>(&tok)->is_nil()) {
-                        current.append(Object{});
+                    COLOG_DEBUG(SSS_VALUE_MSG(tok));
+                    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&tok);
+                    if (p_sym->is_nil()) {
+                        current.append(Object{Nill{}});
                     }
                     else {
-                        current.append(Object(boost::get<varlisp::symbol>(tok)));
+                        current.append(Object(*p_sym));
                     }
                 }
                 m_toknizer.consume();
