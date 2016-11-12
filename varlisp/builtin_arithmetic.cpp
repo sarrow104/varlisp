@@ -129,7 +129,7 @@ Object eval_add(varlisp::Environment& env, const varlisp::List& args)
 {
     arithmetic_t sum = 0;
     const List* p = &args;
-    while (sum.which() && p) {
+    while (sum.which() && p && p->head.which()) {
         arithmetic_t to_add =
             boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
         sum = boost::apply_visitor(arithmetic_add_visitor(), sum, to_add);
@@ -153,7 +153,7 @@ Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
         arithmetic_t sum =
             boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
         const List* p = &args.tail[0];
-        while (p) {
+        while (sum.which() && p && p->head.which()) {
             arithmetic_t to_sub =
                 boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
             sum = boost::apply_visitor(arithmetic_sub_visitor(), sum, to_sub);
@@ -167,7 +167,7 @@ Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
 {
     arithmetic_t mul{1};
     const List* p = &args;
-    while (mul.which() && p) {
+    while (mul.which() && p && p->head.which()) {
         arithmetic_t to_mul =
             boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
         mul = boost::apply_visitor(arithmetic_mul_visitor(), mul, to_mul);
@@ -188,7 +188,7 @@ Object eval_div(varlisp::Environment& env, const varlisp::List& args)
     else {
         arithmetic_t mul = boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
         const List* p = &args.tail[0];
-        while (mul.which() && p) {
+        while (mul.which() && p && p->head.which()) {
             arithmetic_t to_div = boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
             mul = boost::apply_visitor(arithmetic_div_visitor(), mul, to_div);
             p = p->next();

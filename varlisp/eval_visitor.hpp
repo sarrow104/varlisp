@@ -8,7 +8,7 @@
 
 namespace varlisp {
 struct Environment;
-struct eval_visitor : boost::static_visitor<Object> {
+struct eval_visitor : public boost::static_visitor<Object> {
     Environment& m_env;
     explicit eval_visitor(Environment& env) : m_env(env) {}
     template <typename T>
@@ -22,6 +22,7 @@ struct eval_visitor : boost::static_visitor<Object> {
     Object operator()(const sss::regex::CRegex& v) const { return v; }
     Object operator()(const gumboNode& g) const { return g; }
     Object operator()(const Empty&) const { return Object(); }
+    Object operator()(const Nill& n) const { return n; }
     Object operator()(bool v) const { return v; }
     Object operator()(int v) const { return v; }
     Object operator()(double v) const { return v; }
