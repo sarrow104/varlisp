@@ -1,6 +1,5 @@
 #pragma once
-// #include "object.hpp"
-// #include "gumboNode.hpp"
+
 #include <sss/regex/cregex.hpp>
 #include <boost/variant.hpp>
 
@@ -12,10 +11,11 @@ struct symbol;
 struct Lambda;
 struct List;
 struct Empty;
+struct Nill;
 struct Builtin;
 
 class gumboNode;
-struct is_instant_visitor : boost::static_visitor<bool> {
+struct is_instant_visitor : public boost::static_visitor<bool> {
     Environment& m_env;
     explicit is_instant_visitor(Environment& env) : m_env(env) {}
     template <typename T>
@@ -31,6 +31,7 @@ struct is_instant_visitor : boost::static_visitor<bool> {
     bool operator()(const sss::regex::CRegex& ) const { return true; }
     bool operator()(const gumboNode& ) const { return true; }
     bool operator()(const Empty&) const { return true; }
+    bool operator()(const Nill&) const { return true; }
     bool operator()(bool ) const { return true; }
     bool operator()(int ) const { return true; }
     bool operator()(double ) const { return true; }

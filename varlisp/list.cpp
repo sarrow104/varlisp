@@ -4,15 +4,14 @@
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
 
-#include <sss/util/PostionThrow.hpp>
-#include <sss/log.hpp>
 #include <sss/colorlog.hpp>
+#include <sss/log.hpp>
+#include <sss/util/PostionThrow.hpp>
 
 #include <sstream>
 #include <stdexcept>
 
 namespace varlisp {
-
 
 List::List(const List& l)
 {
@@ -27,7 +26,7 @@ List::List(const List& l)
     }
 }
 
-List& List::operator= (const List& l)
+List& List::operator=(const List& l)
 {
     if (this != &l) {
         List tmp{l};
@@ -40,7 +39,7 @@ size_t List::length() const
 {
     size_t len = 0;
     const List* p = this;
-    while (p) {
+    while (p && p->head.which()) {
         len++;
         p = p->next();
     }
@@ -49,13 +48,6 @@ size_t List::length() const
 
 void List::append(const Object& o)
 {
-    // std::ostringstream oss;
-    // oss << __func__ << " ";
-    // boost::apply_visitor(print_visitor(oss), o);
-    // oss << std::endl;
-    // std::cout << oss.str();
-    // std::cout << "before:" << *this << std::endl;
-
     List* p = this;
     while (p->head.which() && !p->tail.empty()) {
         p = &p->tail[0];
@@ -71,13 +63,6 @@ void List::append(const Object& o)
 
 void List::append(Object&& o)
 {
-    // std::ostringstream oss;
-    // oss << __func__ << " ";
-    // boost::apply_visitor(print_visitor(oss), o);
-    // oss << std::endl;
-    // std::cout << oss.str();
-    // std::cout << "before:" << *this << std::endl;
-
     List* p = this;
     while (p->head.which() && !p->tail.empty()) {
         p = &p->tail[0];
@@ -88,7 +73,6 @@ void List::append(Object&& o)
     else {
         p->tail.push_back(List(std::move(o)));
     }
-    // std::cout << "after:" << *this << std::endl;
 }
 
 void List::swap(List& ref)
@@ -136,9 +120,7 @@ Object eval_impl(Environment& env, const Object& funcObj, const List& args)
         return pl->eval(env, args);
     }
     else {
-        std::ostringstream oss;
-        boost::apply_visitor(print_visitor(oss), funcObj);
-        SSS_POSTION_THROW(std::runtime_error, oss.str(), " not callable objct");
+        SSS_POSTION_THROW(std::runtime_error, funcObj, " not callable objct");
     }
 }
 
@@ -196,7 +178,7 @@ void List::print_impl(std::ostream& o) const
         else {
             o << " ";
         }
-        boost::apply_visitor(print_visitor(o), p->head);
+        o << p->head;
         p = p->next();
     }
 }
@@ -215,7 +197,8 @@ bool operator<(const List& lhs, const List& rhs)
     return false;
 }
 
-bool List::is_squote() const {
+bool List::is_squote() const
+{
     if (this->head.which()) {
         const varlisp::symbol* p_symbol =
             boost::get<const varlisp::symbol>(&this->head);
@@ -245,7 +228,7 @@ Object List::car() const
 Object List::cdr() const
 {
     none_empty_squote_check();
-    return List({varlisp::symbol{"list"},*(this->next()->next())});
+    return List({varlisp::symbol{"list"}, *(this->next()->next())});
 }
 
 }  // namespace varlisp
