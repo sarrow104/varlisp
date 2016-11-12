@@ -7,8 +7,6 @@
 #include <sss/regex/cregex.hpp>
 #include <sss/raw_print.hpp>
 
-// #include "object.hpp"
-
 namespace varlisp {
 struct Empty;
 struct Nill;
