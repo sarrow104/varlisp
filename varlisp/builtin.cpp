@@ -39,8 +39,14 @@ Object eval_ge(varlisp::Environment& env, const varlisp::List& args);
 Object eval_le(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_not(varlisp::Environment& env, const varlisp::List& args);
-Object eval_null(varlisp::Environment& env, const varlisp::List& args);
 Object eval_equal(varlisp::Environment& env, const varlisp::List& args);
+
+Object eval_null(varlisp::Environment& env, const varlisp::List& args);
+Object eval_typeid(varlisp::Environment &env, const varlisp::List &args);
+Object eval_number_q(varlisp::Environment &env, const varlisp::List &args);
+Object eval_string_q(varlisp::Environment &env, const varlisp::List &args);
+Object eval_slist_q(varlisp::Environment &env, const varlisp::List &args);
+Object eval_boolean_q(varlisp::Environment &env, const varlisp::List &args);
 
 Object eval_eval(varlisp::Environment& env, const varlisp::List& args);
 Object eval_load(varlisp::Environment& env, const varlisp::List& args);
@@ -97,6 +103,10 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args);
 Object eval_iconv(varlisp::Environment& env, const varlisp::List& args);
 Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args);
 
+
+Object eval_quit(varlisp::Environment& env, const varlisp::List& args);
+Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args);
+
 const builtin_info_t builtin_infos[] =
 {
     {"cons",            2,  2,  &eval_cons},
@@ -124,8 +134,14 @@ const builtin_info_t builtin_infos[] =
     {"<=",              2,  2,  &eval_le},
 
     {"not",             1,  1,  &eval_not},
-    {"null",            1,  1,  &eval_null},
     {"equal",           2,  2,  &eval_equal},
+
+    {"null",            1,  1,  &eval_null},
+    {"typeid",          1,  1,  &eval_typeid},
+    {"number?",         1,  1,  &eval_number_q},
+    {"string?",         1,  1,  &eval_string_q},
+    {"slist?",          1,  1,  &eval_slist_q},
+    {"boolean?",        1,  1,  &eval_boolean_q},
 
     // 执行
     {"eval",            1,  2,  &eval_eval},
@@ -206,6 +222,9 @@ const builtin_info_t builtin_infos[] =
     {"ivchardet",       2,  2,  &eval_ivchardet},
     {"iconv",           3,  3,  &eval_iconv},
     {"ensure-utf8",     2,  3,  &eval_ensure_utf8},
+
+    {"quit",            0,  0,  &eval_quit},
+    {"it:debug",        1,  1,  &eval_it_debug},
 };
 
 void Builtin::regist_builtin_function(Environment& env)
