@@ -22,7 +22,10 @@ inline bool operator<(const Empty&, const Empty&) { return false; }
 struct Nill {
 };
 
-inline std::ostream& operator<<(std::ostream& o, const Nill&) { return o; }
+inline std::ostream& operator<<(std::ostream& o, const Nill&) {
+    o << "nil";
+    return o;
+}
 inline bool operator==(const Nill&, const Nill&) { return true; }
 inline bool operator<(const Nill&, const Nill&) { return false; }
 
