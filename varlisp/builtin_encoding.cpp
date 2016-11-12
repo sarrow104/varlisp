@@ -125,7 +125,7 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
     // 那么，麻烦了——这是一个死循环；因为ucs2，将很难与不定长类的编码，区分开！
     size_t w_cnt = write(rwepipe_data[0], p_content->c_str(), p_content->length());
     if (w_cnt != p_content->length()) {
-        return Object{};
+        return Object{Nill{}};
     }
     close(rwepipe_data[0]);
     rwepipe_data[0] = -1;
@@ -134,7 +134,7 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
     out_buf[cnt] = '\0';
     pcloseRWE(pid, rwepipe_data);
     if (!sss::is_begin_with(out_buf, "<stdin>: ")) {
-        return Object{};
+        return Object{Nill{}};
     }
     char* next_space = std::strchr(out_buf + 9, ' ');
     if (next_space) {
@@ -144,7 +144,7 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
         encoding_normalize(encoding);
         return encoding;
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -192,7 +192,7 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
         }
     }
 
-    return has_found ? Object(encoding) : Object{};
+    return has_found ? Object(encoding) : Object{Nill{}};
 }
 
 /**
@@ -229,7 +229,7 @@ Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
     sss::iConv ic(*p_enc_to, *p_enc_from);
     if (!ic.convert(out, *p_content)) {
         COLOG_ERROR("(iconv: error occurs while convert from", *p_enc_from, "to", *p_enc_to);
-        return Object{};
+        return Object{Nill{}};
     }
     return out;
 }
@@ -283,7 +283,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
         }
         else {
             COLOG_ERROR("(", funcName, ":", from_encoding, "to", to_encoding);
-            return Object{};
+            return Object{Nill{}};
         }
     }
     return *p_content;

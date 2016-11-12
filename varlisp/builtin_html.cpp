@@ -39,7 +39,7 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
         }
     }
     if (p_content->empty()) {
-        return Object{};
+        return Object{Nill{}};
     }
     gumboNode doc(*p_content);
     if (doc.valid()) {
@@ -58,7 +58,7 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
         }
     }
     else {
-        return Object{};
+        return Object{Nill{}};
     }
 }
 
@@ -101,7 +101,7 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
         return ret_nodes;
     }
 
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -136,7 +136,7 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
             return attribute;
         }
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -168,7 +168,7 @@ Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
     if (p_gqnode->valid()) {
         return p_gqnode->hasAttr(*p_attrib_name);
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -215,7 +215,7 @@ Object eval_gqnode_text(varlisp::Environment& env, const varlisp::List& args)
     if (p_gqnode->valid()) {
         return p_gqnode->text();
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -241,7 +241,7 @@ Object eval_gqnode_textNeat(varlisp::Environment& env,
     if (p_gqnode->valid()) {
         return p_gqnode->textNeat();
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -266,7 +266,7 @@ Object eval_gqnode_ownText(varlisp::Environment& env, const varlisp::List& args)
     if (p_gqnode->valid()) {
         return p_gqnode->onwText();
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -291,7 +291,7 @@ Object eval_gqnode_tag(varlisp::Environment& env, const varlisp::List& args)
     if (p_gqnode->valid()) {
         return p_gqnode->tag();
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -316,7 +316,7 @@ Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
     if (p_gqnode->valid()) {
         return p_gqnode->isText();
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -342,7 +342,7 @@ Object eval_gqnode_innerHtml(varlisp::Environment& env,
     if (p_gqnode->valid()) {
         return p_gqnode->innerHtml();
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 /**
@@ -368,7 +368,7 @@ Object eval_gqnode_outerHtml(varlisp::Environment& env,
     if (p_gqnode->valid()) {
         return p_gqnode->outerHtml();
     }
-    return Object{};
+    return Object{Nill{}};
 }
 
 // NOTE 如何处理多个node，然后需要串成一个s-list的需求？
