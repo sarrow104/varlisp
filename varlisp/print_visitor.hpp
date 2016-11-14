@@ -7,10 +7,13 @@
 #include <sss/regex/cregex.hpp>
 #include <sss/raw_print.hpp>
 
+
 namespace varlisp {
 struct Empty;
 struct Nill;
 struct symbol;
+struct String;
+typedef String string_t;
 
 struct print_visitor : public boost::static_visitor<void> {
     std::ostream& m_o;
@@ -24,7 +27,7 @@ struct print_visitor : public boost::static_visitor<void> {
     void operator()(const Empty&) const {}
     void operator()(const Nill&) const { m_o << "nil"; }
     void operator()(bool v) const { m_o << (v ? "#t" : "#f"); }
-    void operator()(const std::string& v) const { m_o << sss::raw_string(v); }
+    void operator()(const string_t& v) const;
     void operator()(const varlisp::symbol& s) const;
     void operator()(const sss::regex::CRegex& reg) const
     {

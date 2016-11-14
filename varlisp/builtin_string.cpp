@@ -27,8 +27,8 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "split";
     Object content;
-    const std::string *p_content =
-        getTypedValue<std::string>(env, args.head, content);
+    const string_t *p_content =
+        getTypedValue<string_t>(env, args.head, content);
 
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
@@ -38,22 +38,22 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     std::string sep(1, ' ');
     if (args.length() == 2) {
         Object sep_obj;
-        const std::string *p_sep =
-            getTypedValue<std::string>(env, args.next()->head, sep_obj);
+        const string_t *p_sep =
+            getTypedValue<string_t>(env, args.next()->head, sep_obj);
         if (!p_sep) {
             SSS_POSTION_THROW(std::runtime_error,
                               "(", funcName, ": requires seq string as 2nd argument)");
         }
-        sep = *p_sep;
+        sep = p_sep->to_string();
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
-    std::string stem;
     if (sep.length() == 1) {
-        sss::Spliter sp(*p_content, sep[0]);
+        sss::Spliter sp(p_content->to_string(), sep[0]);
         List *p_list = &ret;
+        std::string stem;
         while (sp.fetch_next(stem)) {
             p_list = p_list->next_slot();
-            p_list->head = stem;
+            p_list->head = string_t(std::move(stem));
         }
     }
     else {
@@ -87,12 +87,12 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     std::string sep;
     if (args.length() == 2) {
         Object sep_obj;
-        const std::string *p_sep = getTypedValue<std::string>(env, args.tail[0].head, sep_obj);
+        const string_t *p_sep = getTypedValue<string_t>(env, args.tail[0].head, sep_obj);
         if (!p_sep) {
             SSS_POSTION_THROW(std::runtime_error,
                               "(", funcName, ": 2nd sep must be a string)");
         }
-        sep = *p_sep;
+        sep = p_sep->to_string();
     }
 
     std::ostringstream oss;
@@ -101,7 +101,7 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     p_list = p_list->next();
     while (p_list) {
         Object obj;
-        const std::string *p_stem = getTypedValue<std::string>(env, p_list->head, obj);
+        const string_t *p_stem = getTypedValue<string_t>(env, p_list->head, obj);
         if (!p_stem) {
             break;
         }
@@ -114,7 +114,8 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
         oss << *p_stem;
         p_list = p_list->next();
     }
-    return Object(oss.str());
+
+    return Object(string_t(std::move(oss.str())));
 }
 
 /**
@@ -133,8 +134,8 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     const char *funcName = "substr";
     const List *p_arg = &args;
     Object content;
-    const std::string *p_content =
-        getTypedValue<std::string>(env, p_arg->head, content);
+    const string_t *p_content =
+        getTypedValue<string_t>(env, p_arg->head, content);
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": need string as 1st argument)");
@@ -196,7 +197,7 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "strlen";
     Object obj;
-    const std::string *p_str = getTypedValue<std::string>(env, args.head, obj);
+    const string_t *p_str = getTypedValue<string_t>(env, args.head, obj);
     if (!p_str) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": need an s-List as the 1st argument)");

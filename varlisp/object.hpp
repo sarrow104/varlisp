@@ -9,6 +9,7 @@
 
 #include "symbol.hpp"
 #include "gumboNode.hpp"
+#include "String.hpp"
 
 namespace varlisp {
 
@@ -39,6 +40,10 @@ struct Cond;
 struct LogicAnd;
 struct LogicOr;
 
+// struct String;
+typedef ::varlisp::String string_t;
+// typedef ::std::string string_t;
+
 // NOTE
 typedef boost::variant<
     Empty,                                  // 0
@@ -46,7 +51,7 @@ typedef boost::variant<
     bool,                                   // 2
     int,                                    // 3
     double,                                 // 4
-    std::string,                            // 5
+    string_t,                               // 5
     sss::regex::CRegex,                     // 6
     symbol,                                 // 7
     boost::recursive_wrapper<Builtin>,      // 8

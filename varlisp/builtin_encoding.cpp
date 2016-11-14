@@ -51,7 +51,7 @@ namespace varlisp {
 Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj;
-    const std::string * p_content = varlisp::getTypedValue<std::string>(env, args.head, obj);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj);
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(uchardet: 1st argument must be string)");
@@ -77,7 +77,7 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSTION_THROW(std::runtime_error,
                           "uchardet: analyze coding faild！");
     }
-    return encoding;
+    return string_t(std::move(encoding));
 }
 
 /**
@@ -92,7 +92,7 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
 Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj;
-    const std::string * p_content = varlisp::getTypedValue<std::string>(env, args.head, obj);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj);
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(pychardet: 1st argument must be string)");
@@ -123,8 +123,8 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
     // 不定长的编码，那么，判断行（或者任意一个ascii字符），为结尾，比较安全；
     //
     // 那么，麻烦了——这是一个死循环；因为ucs2，将很难与不定长类的编码，区分开！
-    size_t w_cnt = write(rwepipe_data[0], p_content->c_str(), p_content->length());
-    if (w_cnt != p_content->length()) {
+    size_t w_cnt = write(rwepipe_data[0], p_content->data(), p_content->size());
+    if (w_cnt != p_content->size()) {
         return Object{Nill{}};
     }
     close(rwepipe_data[0]);
@@ -142,7 +142,7 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
         std::string encoding(out_buf + 9);
 
         encoding_normalize(encoding);
-        return encoding;
+        return string_t(std::move(encoding));
     }
     return Object{Nill{}};
 }
@@ -159,13 +159,13 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
 Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const std::string * p_encodings = varlisp::getTypedValue<std::string>(env, args.head, obj1);
+    const string_t * p_encodings = varlisp::getTypedValue<string_t>(env, args.head, obj1);
     if (!p_encodings) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(ivchardet: 1st argument must be encodings string)");
     }
     Object obj2;
-    const std::string * p_content = varlisp::getTypedValue<std::string>(env, args.tail[0].head, obj2);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj2);
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(ivchardet: 2nd argument must be content string)");
@@ -173,7 +173,7 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
 
     std::string encoding;
     bool has_found = false;
-    sss::Spliter sp(*p_encodings, ',');
+    sss::Spliter sp(p_encodings->to_string(), ',');
     std::string out;
     while (sp.fetch_next(encoding)) {
         sss::trim(encoding);
@@ -182,7 +182,7 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
             if (!ic.is_ok()) {
                 continue;
             }
-            if (ic.convert(out, *p_content)) {
+            if (ic.convert(out, p_content->to_string())) {
                 has_found = true;
                 break;
             }
@@ -192,7 +192,7 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
         }
     }
 
-    return has_found ? Object(encoding) : Object{Nill{}};
+    return has_found ? Object(string_t(std::move(encoding))) : Object{Nill{}};
 }
 
 /**
@@ -207,31 +207,31 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
 Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const std::string * p_enc_from = varlisp::getTypedValue<std::string>(env, args.head, obj1);
+    const string_t * p_enc_from = varlisp::getTypedValue<string_t>(env, args.head, obj1);
     if (!p_enc_from) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(iconv: 1st argument must be encodings string)");
     }
     Object obj2;
-    const std::string * p_enc_to = varlisp::getTypedValue<std::string>(env, args.tail[0].head, obj2);
+    const string_t * p_enc_to = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj2);
     if (!p_enc_to) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(iconv: 2nd argument must be encodings string)");
     }
     Object obj3;
-    const std::string * p_content = varlisp::getTypedValue<std::string>(env, args.tail[0].tail[0].head, obj3);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.tail[0].tail[0].head, obj3);
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(iconv: 3rd argument must be content string)");
     }
 
     std::string out;
-    sss::iConv ic(*p_enc_to, *p_enc_from);
-    if (!ic.convert(out, *p_content)) {
+    sss::iConv ic(p_enc_to->to_string(), p_enc_from->to_string());
+    if (!ic.convert(out, p_content->to_string())) {
         COLOG_ERROR("(iconv: error occurs while convert from", *p_enc_from, "to", *p_enc_to);
         return Object{Nill{}};
     }
-    return out;
+    return string_t(std::move(out));
 }
 
 /**
@@ -248,16 +248,16 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ensure-utf8";
     Object obj2;
-    const std::string * p_content = varlisp::getTypedValue<std::string>(env, args.head, obj2);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj2);
     if (!p_content) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(", funcName, ": 1st argument must be content string)");
     }
 
     Object obj1;
-    const std::string * p_encodings = 0;
+    const string_t * p_encodings = 0;
     if (args.length() >= 2) {
-        p_encodings = varlisp::getTypedValue<std::string>(env, args.tail[0].head, obj1);
+        p_encodings = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj1);
         if (!p_encodings) {
             SSS_POSTION_THROW(std::runtime_error,
                               "(", funcName, ": 2nd argument must be encodings string)");
@@ -266,20 +266,21 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     std::string encodings;
     std::string to_encoding = "utf8";
     if (p_encodings) {
-        encodings = *p_encodings;
+        encodings = p_encodings->to_string();
     }
     std::string from_encoding;
+    std::string content = p_content->to_string();
     if (encodings.empty()) {
-        from_encoding = sss::Encoding::dectect(*p_content);
+        from_encoding = sss::Encoding::dectect(content);
     }
     else {
-        from_encoding = sss::Encoding::encodings(*p_content, encodings);
+        from_encoding = sss::Encoding::encodings(content, encodings);
     }
     if (!sss::Encoding::isCompatibleWith(from_encoding, to_encoding)) {
         std::string out;
         sss::iConv ic(to_encoding, from_encoding);
-        if (ic.convert(out, *p_content)) {
-            return out;
+        if (ic.convert(out, content)) {
+            return string_t(std::move(out));
         }
         else {
             COLOG_ERROR("(", funcName, ":", from_encoding, "to", to_encoding);

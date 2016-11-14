@@ -175,7 +175,7 @@ Object Parser::parseExpression()
     }
     else if (const std::string* p_v = boost::get<std::string>(&tok)) {
         this->m_toknizer.consume();
-        return varlisp::Object(*p_v);
+        return varlisp::Object(string_t(*p_v));
     }
     else if (const varlisp::symbol* p_v = boost::get<varlisp::symbol>(&tok)) {
         this->m_toknizer.consume();
@@ -280,7 +280,7 @@ Object Parser::parseList()
                 break;
 
             case 5:
-                current.append(Object(boost::get<std::string>(tok)));
+                current.append(Object(string_t(boost::get<std::string>(tok))));
                 m_toknizer.consume();
                 break;
 

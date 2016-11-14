@@ -18,20 +18,21 @@ Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "fnamemodify";
     Object path;
-    const std::string *p_path =
-        getTypedValue<std::string>(env, args.head, path);
+    const string_t *p_path =
+        getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": requies one path string at 1st)");
     }
     Object modifier;
-    const std::string *p_modifier =
-        getTypedValue<std::string>(env, args.tail[0].head, modifier);
+    const string_t *p_modifier =
+        getTypedValue<string_t>(env, args.tail[0].head, modifier);
     if (!p_modifier) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": requies one path-modifier string at 2nd)");
     }
-    return Object(sss::path::modify_copy(*p_path, *p_modifier));
+    std::string mod_name = sss::path::modify_copy(p_path->to_string(), p_modifier->to_string());
+    return Object(string_t(std::move(mod_name)));
 }
 
 // {"glob",        1,  2,  &eval_glob}, //
@@ -50,8 +51,8 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "glob";
     Object path;
-    const std::string *p_path =
-        getTypedValue<std::string>(env, args.head, path);
+    const string_t *p_path =
+        getTypedValue<string_t>(env, args.head, path);
 
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
@@ -61,13 +62,13 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     std::unique_ptr<sss::path::filter_t> f;
     if (args.length() > 1) {
         Object filter;
-        const std::string *p_filter =
-            getTypedValue<std::string>(env, args.tail[0].head, filter);
+        const string_t *p_filter =
+            getTypedValue<string_t>(env, args.tail[0].head, filter);
         if (!p_filter) {
             SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                               ": requires filter string as 2nd argument)");
         }
-        f.reset(new sss::path::name_filter_t(*p_filter));
+        f.reset(new sss::path::name_filter_t(p_filter->to_string()));
     }
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
@@ -78,11 +79,13 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
             p_list = p_list->next_slot();
-            p_list->head = std::string(fd.get_name()) + sss::path::sp_char;
+            std::string name = fd.get_name();
+            name += sss::path::sp_char;
+            p_list->head = string_t(std::move(name));
         }
         else if (fd.is_normal_file()) {
             p_list = p_list->next_slot();
-            p_list->head = std::string(fd.get_name());
+            p_list->head = string_t(fd.get_name());
         }
     }
 
@@ -108,8 +111,8 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "glob-recurse";
     Object path;
-    const std::string *p_path =
-        getTypedValue<std::string>(env, args.head, path);
+    const string_t *p_path =
+        getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(", funcName, ": requies one path string)");
@@ -117,14 +120,14 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     std::unique_ptr<sss::path::filter_t> f;
     if (args.length() > 1) {
         Object filter;
-        const std::string *p_filter =
-            getTypedValue<std::string>(env, args.tail[0].head, filter);
+        const string_t *p_filter =
+            getTypedValue<string_t>(env, args.tail[0].head, filter);
         if (!p_filter) {
             SSS_POSTION_THROW(
                 std::runtime_error,
                 "(", funcName, ": second filter arg must be a string)");
         }
-        f.reset(new sss::path::name_filter_t(*p_filter));
+        f.reset(new sss::path::name_filter_t(p_filter->to_string()));
     }
 
     int depth = 0;
@@ -142,13 +145,12 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     List *p_list = &ret;
 
     sss::path::file_descriptor fd;
-    sss::path::glob_path_recursive gp(*p_path, fd, f.get(), false);
+    sss::path::glob_path_recursive gp(p_path->to_string(), fd, f.get(), false);
     gp.max_depth(depth);
     while (gp.fetch()) {
         if (fd.is_normal_file()) {
             p_list = p_list->next_slot();
-            p_list->head =
-                std::string(sss::path::relative_to(fd.get_path(), *p_path));
+            p_list->head = string_t(sss::path::relative_to(fd.get_path(), p_path->to_string()));
         }
     }
 

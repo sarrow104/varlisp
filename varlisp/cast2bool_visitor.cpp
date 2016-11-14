@@ -1,13 +1,14 @@
 #include "cast2bool_visitor.hpp"
 #include "object.hpp"
 #include "environment.hpp"
+#include "String.hpp"
 
 #include "builtin_helper.hpp"
 namespace varlisp {
 
-bool cast2bool_visitor::operator()(const std::string& s) const
+bool cast2bool_visitor::operator()(const string_t& s) const
 {
-    return (s == "#t" || s == "true");
+    return (s == sss::string_view("#t") || s == sss::string_view("true"));
 }
 
 bool cast2bool_visitor::operator()(const varlisp::symbol& s) const

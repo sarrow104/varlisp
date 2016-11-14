@@ -21,6 +21,8 @@ struct Cond;
 struct LogicAnd;
 struct LogicOr;
 
+struct String;
+typedef String string_t;
 struct List;
 struct Lambda;
 struct gumboNode;
@@ -34,7 +36,7 @@ struct typeid_visitor : public boost::static_visitor<int> {
     int operator() (const bool& ) const { return 1; }
     int operator() (const int& ) const { return 2; }
     int operator() (const double& ) const { return 3; }
-    int operator() (const std::string& ) const { return 4; }
+    int operator() (const string_t& ) const { return 4; }
     int operator() (const sss::regex::CRegex& ) const { return 5; }
     int operator() (const symbol& ) const { return 6; }
     int operator() (const Builtin& ) const { return 7; }

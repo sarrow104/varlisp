@@ -26,7 +26,7 @@ struct eval_visitor : public boost::static_visitor<Object> {
     Object operator()(bool v) const { return v; }
     Object operator()(int v) const { return v; }
     Object operator()(double v) const { return v; }
-    Object operator()(const std::string v) const { return v; }
+    Object operator()(const string_t& v) const { return v; }
     Object operator()(const varlisp::Builtin& v) const { return v; }
     Object operator()(const varlisp::Lambda& v) const { return v; }
 };

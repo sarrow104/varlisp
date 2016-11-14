@@ -43,14 +43,14 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 
     Object program;
 
-    const std::string* p_program =
-        getTypedValue<std::string>(env, args.head, program);
+    const string_t* p_program =
+        getTypedValue<string_t>(env, args.head, program);
     if (!p_program || p_program->empty()) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": 1st arg must be an none-empty string)");
     }
 
-    oss << *p_program;
+    oss << p_program->to_string();
 
     static sss::util::Escaper esp("\\ \"'[](){}?*$&");
     for (const varlisp::List* p_list = args.next();
@@ -75,9 +75,9 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     varlisp::List ret = varlisp::List::makeSQuoteList();
     varlisp::List* p_list = &ret;
     p_list = p_list->next_slot();
-    p_list->head = out;
+    p_list->head = string_t(std::move(out));
     p_list = p_list->next_slot();
-    p_list->head = err;
+    p_list->head = string_t(std::move(err));
 
     return Object(ret);
 }
@@ -94,13 +94,13 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "shell-cd";
     Object path;
-    const std::string* p_path =
-        getTypedValue<std::string>(env, args.head, path);
+    const string_t* p_path =
+        getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": requie one path string!)");
     }
-    bool is_ok = sss::path::chgcwd(*p_path);
+    bool is_ok = sss::path::chgcwd(p_path->to_string());
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
     return Object(sss::path::getcwd());
@@ -124,12 +124,12 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
     if (args.length() && args.head.which()) {
         while (p && p->head.which()) {
             Object ls_arg;
-            const std::string* p_ls_arg = getTypedValue<std::string>(env, p->head, ls_arg);
+            const string_t* p_ls_arg = getTypedValue<string_t>(env, p->head, ls_arg);
             if (!p_ls_arg) {
                 SSS_POSTION_THROW(std::runtime_error,
                                   "(", funcName, ": require string-type args)");
             }
-            switch (sss::path::file_exists(*p_ls_arg)) {
+            switch (sss::path::file_exists(p_ls_arg->to_string())) {
                 case sss::PATH_TO_FILE:
                     p_list = p_list->next_slot();
                     p_list->head = *p_ls_arg;
@@ -137,16 +137,17 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
 
                 case sss::PATH_TO_DIRECTORY: {
                     sss::path::file_descriptor fd;
-                    sss::path::glob_path gp(*p_ls_arg, fd);
+                    sss::path::glob_path gp(p_ls_arg->to_string(), fd);
                     while (gp.fetch()) {
                         if (fd.is_normal_dir()) {
                             p_list = p_list->next_slot();
-                            p_list->head =
-                                std::string(fd.get_name()) + sss::path::sp_char;
+                            std::string item{fd.get_name()};
+                            item += sss::path::sp_char;
+                            p_list->head = string_t(std::move(item));
                         }
                         else if (fd.is_normal_file()) {
                             p_list = p_list->next_slot();
-                            p_list->head = std::string(fd.get_name());
+                            p_list->head = string_t(fd.get_name());
                         }
                     }
                 } break;
@@ -168,11 +169,13 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
         while (gp.fetch()) {
             if (fd.is_normal_dir()) {
                 p_list = p_list->next_slot();
-                p_list->head = std::string(fd.get_name()) + sss::path::sp_char;
+                std::string item{fd.get_name()};
+                item += sss::path::sp_char;
+                p_list->head = string_t(std::move(item));
             }
             else if (fd.is_normal_file()) {
                 p_list = p_list->next_slot();
-                p_list->head = std::string(fd.get_name());
+                p_list->head = string_t(fd.get_name());
             }
         }
     }
@@ -191,7 +194,7 @@ Object eval_shell_pwd(varlisp::Environment& env, const varlisp::List& args)
 {
     (void)env;
     (void)args;
-    return Object(sss::path::getcwd());
+    return Object(string_t(std::move(sss::path::getcwd())));
 }
 
 }  // namespace varlisp

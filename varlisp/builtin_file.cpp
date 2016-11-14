@@ -22,13 +22,13 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "read";
     Object path;
-    const std::string* p_path =
-        getTypedValue<std::string>(env, args.head, path);
+    const string_t* p_path =
+        getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": requies a path string as 1st argument)");
     }
-    std::string full_path = sss::path::full_of_copy(*p_path);
+    std::string full_path = sss::path::full_of_copy(p_path->to_string());
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSTION_THROW(std::runtime_error, "path `", *p_path,
                           "` not to file");
@@ -37,7 +37,7 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
     std::string content;
     sss::path::file2string(full_path, content);
 
-    return content;
+    return string_t(std::move(content));
 }
 
 /**
@@ -46,6 +46,7 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
  *           (write-append (list) path)
  *           (write        item path)
  *           (write-append item path)
+ *              -> written-bytes-count
  *
  * 原样，无格式；也没有额外插入"sep-string"
  *
@@ -60,14 +61,14 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
 {
     const char* funcName = append ? "write-append" : "write";
     Object path;
-    const std::string* p_path =
-        getTypedValue<std::string>(env, args.tail[0].head, path);
+    const string_t* p_path =
+        getTypedValue<string_t>(env, args.tail[0].head, path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": requies path as 2nd argument to write)");
     }
 
-    std::string full_path = sss::path::full_of_copy(*p_path);
+    std::string full_path = sss::path::full_of_copy(p_path->to_string());
     sss::path::mkpath(sss::path::dirname(full_path));
     auto bit_op = std::ios_base::out | std::ios_base::binary;
     if (append) {

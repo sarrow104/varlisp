@@ -12,6 +12,8 @@ namespace varlisp {
 struct Environment;
 struct symbol;
 struct List;
+struct String;
+typedef varlisp::String string_t;
 struct cast2bool_visitor : public boost::static_visitor<bool> {
     Environment& m_env;
     cast2bool_visitor(Environment& env) : m_env(env) {}
@@ -24,7 +26,7 @@ struct cast2bool_visitor : public boost::static_visitor<bool> {
     bool operator()(double d) const { return bool(d); }
     bool operator()(int d) const { return bool(d); }
     bool operator()(bool b) const { return b; }
-    bool operator()(const std::string& s) const;
+    bool operator()(const string_t& s) const;
 
     bool operator()(const varlisp::symbol& s) const;
 
