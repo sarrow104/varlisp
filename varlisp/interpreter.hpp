@@ -37,7 +37,7 @@ public:
     int retrieve_symbols(std::vector<std::string>& symbols,
                          const char* prefix) const;
 
-    bool set_status(status_t s) {
+    void set_status(status_t s) {
         m_status = s;
     }
     /**
