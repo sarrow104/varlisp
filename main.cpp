@@ -18,6 +18,7 @@
 
 #include "varlisp/interpreter.hpp"
 #include "varlisp/tokenizer.hpp"
+#include "varlisp/String.hpp"
 
 const char* find_identifier(const char* buf)
 {
@@ -247,6 +248,19 @@ bool has_match(sss::string_view tar, std::initializer_list<sss::string_view> l)
         }
     }
     return false;
+}
+
+int test_string_t()
+{
+    auto s = varlisp::String("hello world");
+    std::cout << sss::raw_string(s) << std::endl;
+    auto sub = s.substr(3, 4);
+    std::cout << sss::raw_string(sub) << std::endl;
+    std::string tmp("this is a long string from std::string");
+    sub = std::move(tmp);
+    std::cout << sss::raw_string(sub) << std::endl;
+    std::cout << sss::raw_string(tmp) << std::endl;
+    return EXIT_SUCCESS;
 }
 int main(int argc, char* argv[])
 {
