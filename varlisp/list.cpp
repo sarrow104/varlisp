@@ -178,7 +178,7 @@ void List::print_impl(std::ostream& o) const
         else {
             o << " ";
         }
-        o << p->head;
+        boost::apply_visitor(print_visitor(o), p->head);
         p = p->next();
     }
 }
