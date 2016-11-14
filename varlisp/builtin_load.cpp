@@ -41,13 +41,13 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     // 的标识符(对象、函数等等)，应该放到哪个Environment中呢？
 
     Object path;
-    const std::string* p_path =
-        getTypedValue<std::string>(env, args.head, path);
+    const string_t* p_path =
+        getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName,
                           ": requies a path)");
     }
-    std::string full_path = sss::path::full_of_copy(*p_path);
+    std::string full_path = sss::path::full_of_copy(p_path->to_string());
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSTION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
                           "` not to file)");
@@ -64,7 +64,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     varlisp::Parser& parser = p_inter->get_parser();
     parser.parse(env, content, true);
     COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
-    return Object();
+    return Object{Nill{}};
 }
 
 }  // namespace varlisp
