@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-add_definitions(-std=c++11)
+add_definitions(-std=c++14)
 add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors)
 
 set(target_name "varLisp")
