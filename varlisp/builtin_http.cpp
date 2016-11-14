@@ -28,19 +28,19 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "http-get";
     Object url;
-    const std::string* p_url = getTypedValue<std::string>(env, args.head, url);
+    const string_t* p_url = getTypedValue<string_t>(env, args.head, url);
     if (!p_url) {
         SSS_POSTION_THROW(std::runtime_error,
                           "(", funcName, ": requie downloading url as 1st argument !)");
     }
 
     Object proxy;             
-    const std::string* p_proxy = 0;
+    const string_t* p_proxy = 0;
     Object port;
     const int* p_port = 0;
 
     if (args.length() == 3) {
-        p_proxy = getTypedValue<std::string>(env, args.tail[0].head, proxy);
+        p_proxy = getTypedValue<string_t>(env, args.tail[0].head, proxy);
         if (!p_proxy) {
             SSS_POSTION_THROW(
                 std::runtime_error,
@@ -56,16 +56,16 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     ss1x::http::Headers headers;
 
-    std::string max_content;
+    string_t max_content;
 
     int max_test = 5;
     do {
         std::ostringstream oss;
         if (p_proxy) {
-            ss1x::asio::proxyGetFile(oss, headers, *p_proxy, *p_port, *p_url);
+            ss1x::asio::proxyGetFile(oss, headers, p_proxy->to_string(), *p_port, p_url->to_string());
         }
         else {
-            ss1x::asio::getFile(oss, headers, *p_url);
+            ss1x::asio::getFile(oss, headers, p_url->to_string());
         }
         if (headers.status_code != 200) {
             COLOG_ERROR("(",funcName, ": http-status code:", headers.status_code, ")");
