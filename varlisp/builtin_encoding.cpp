@@ -171,14 +171,15 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
                           "(ivchardet: 2nd argument must be content string)");
     }
 
-    std::string encoding;
+    sss::string_view encoding;
     bool has_found = false;
-    sss::Spliter sp(p_encodings->to_string(), ',');
+    sss::ViewSpliter<char> sp(*p_encodings, ',');
     std::string out;
     while (sp.fetch_next(encoding)) {
-        sss::trim(encoding);
+        // TODO sss::trim(encoding);
         try {
-            sss::iConv ic(encoding, encoding);
+            std::string encoding_str = encoding.to_string();
+            sss::iConv ic(encoding_str, encoding_str);
             if (!ic.is_ok()) {
                 continue;
             }
@@ -192,7 +193,9 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
         }
     }
 
-    return has_found ? Object(string_t(std::move(encoding))) : Object{Nill{}};
+    return has_found
+               ? Object(p_encodings->substr(encoding))
+               : Object{Nill{}};
 }
 
 /**
@@ -271,7 +274,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     std::string from_encoding;
     std::string content = p_content->to_string();
     if (encodings.empty()) {
-        from_encoding = sss::Encoding::dectect(content);
+        from_encoding = sss::Encoding::detect(content);
     }
     else {
         from_encoding = sss::Encoding::encodings(content, encodings);

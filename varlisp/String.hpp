@@ -72,6 +72,11 @@ public:
         return ret;
     }
 
+    String substr(const sss::string_view& s) const
+    {
+        return substr(s.data() - this->data(), s.size());
+    }
+
 private:
     std::shared_ptr<std::string> m_refer;
 };

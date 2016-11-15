@@ -48,12 +48,12 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
     if (sep.length() == 1) {
-        sss::Spliter sp(p_content->to_string(), sep[0]);
+        sss::ViewSpliter<char> sp(*p_content, sep[0]);
         List *p_list = &ret;
-        std::string stem;
+        sss::string_view stem;
         while (sp.fetch_next(stem)) {
             p_list = p_list->next_slot();
-            p_list->head = string_t(std::move(stem));
+            p_list->head = p_content->substr(stem);
         }
     }
     else {
