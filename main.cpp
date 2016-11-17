@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
     (void)argv;
 
     sss::colog::set_log_elements(sss::colog::ls_TIME_NANO |
-                                 sss::colog::ls_FILE | sss::colog::ls_LINE);
+                                 sss::colog::ls_FILE_SHORT | sss::colog::ls_LINE);
     sss::colog::set_log_levels(sss::colog::ll_INFO | sss::colog::ll_ERROR |
                                sss::colog::ll_WARN | sss::colog::ll_FATAL);
 
@@ -288,6 +288,10 @@ int main(int argc, char* argv[])
         }
         else if (has_match(argv[i], {"--init", "-i"})) {
             load_init_script = true;
+        }
+        else if (has_match(argv[i], {"--help", "-h"})) {
+            help_msg();
+            return EXIT_SUCCESS;
         }
         else {
             break;
