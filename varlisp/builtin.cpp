@@ -109,6 +109,11 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_time(varlisp::Environment &env, const varlisp::List &args);
 
+Object eval_print(varlisp::Environment& env, const varlisp::List& args);
+Object eval_print_ln(varlisp::Environment& env, const varlisp::List& args);
+Object eval_fmt(varlisp::Environment& env, const varlisp::List& args);
+Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args);
+
 const builtin_info_t builtin_infos[] =
 {
     {"cons",            2,  2,  &eval_cons},
@@ -229,6 +234,11 @@ const builtin_info_t builtin_infos[] =
     {"it:debug",        1,  1,  &eval_it_debug},
 
     {"time",            1,  1,  &eval_time},
+
+    {"io-print",        1, -1,  &eval_print},
+    {"io-print-ln",     1, -1,  &eval_print_ln},
+    {"io-fmt",          1, -1,  &eval_fmt},
+    {"io-fmt-escape",   1,  1,  &eval_fmt_escape},
 };
 
 void Builtin::regist_builtin_function(Environment& env)
