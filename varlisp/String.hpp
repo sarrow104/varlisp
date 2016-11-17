@@ -77,6 +77,16 @@ public:
         return substr(s.data() - this->data(), s.size());
     }
 
+    sss::string_view to_string_view() const
+    {
+        return {this->data(), this->size()};
+    }
+
+    size_t use_count() const
+    {
+        return this->m_refer.use_count();
+    }
+
 private:
     std::shared_ptr<std::string> m_refer;
 };
