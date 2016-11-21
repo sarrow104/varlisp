@@ -96,7 +96,7 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_scri
     for (int i = 0; i < argc && interpreter.is_status(varlisp::Interpreter::status_OK); ++i) {
         std::string script_path = sss::path::full_of_copy(argv[i]);
         if (!sss::path::filereadable(script_path)) {
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(path", sss::raw_string(argv[i]), " not readable)");
         }
         interpreter.load(script_path, echo_in_load);
@@ -106,7 +106,7 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_scri
     }
     if (!interpreter.is_status(varlisp::Interpreter::status_OK)) {
         if (interpreter.is_status(varlisp::Interpreter::status_ERROR)) {
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "parseError");
         }
         return EXIT_SUCCESS;
@@ -279,7 +279,7 @@ int main(int argc, char* argv[])
     while (i < argc) {
         if (has_match(argv[i], {"--echo", "-e"})) {
             if (++i >= argc) {
-                SSS_POSTION_THROW(std::runtime_error, "need one parameter after", sss::raw_string(argv[i]));
+                SSS_POSITION_THROW(std::runtime_error, "need one parameter after", sss::raw_string(argv[i]));
             }
             echo_in_load = bool(sss::string_cast<int>(argv[i]));
         }
