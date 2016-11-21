@@ -10,6 +10,9 @@
 #include <ss1x/asio/GetFile.hpp>
 #include <ss1x/asio/headers.hpp>
 
+#include <boost/system/error_code.hpp>
+#include <boost/asio.hpp>
+
 namespace varlisp {
 
 // TODO
@@ -30,7 +33,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     Object url;
     const string_t* p_url = getTypedValue<string_t>(env, args.head, url);
     if (!p_url) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": requie downloading url as 1st argument !)");
     }
 
@@ -42,13 +45,13 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     if (args.length() == 3) {
         p_proxy = getTypedValue<string_t>(env, args.tail[0].head, proxy);
         if (!p_proxy) {
-            SSS_POSTION_THROW(
+            SSS_POSITION_THROW(
                 std::runtime_error,
                 "(", funcName, ": 2nd parameter must be proxy domain string!)");
         }
         p_port = getTypedValue<int>(env, args.tail[0].tail[0].head, port);
         if (!p_port) {
-            SSS_POSTION_THROW(
+            SSS_POSITION_THROW(
                 std::runtime_error,
                 "(", funcName, ": 3rd parameter must be proxy port number!)");
         }
@@ -58,31 +61,57 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     string_t max_content;
 
+    boost::system::error_code ec;
+
     int max_test = 5;
     do {
         std::ostringstream oss;
         if (p_proxy) {
-            ss1x::asio::proxyGetFile(oss, headers, p_proxy->to_string(), *p_port, p_url->to_string());
+            ec = ss1x::asio::proxyRedirectHttpGet(oss, headers, p_proxy->to_string(), *p_port, p_url->to_string());
+            // ss1x::asio::proxyGetFile(oss, headers, p_proxy->to_string(), *p_port, p_url->to_string());
         }
         else {
-            ss1x::asio::getFile(oss, headers, p_url->to_string());
+            // ss1x::asio::getFile(oss, headers, p_url->to_string());
+            ec = ss1x::asio::redirectHttpGet(oss, headers, p_url->to_string());
         }
+
         if (headers.status_code != 200) {
             COLOG_ERROR("(",funcName, ": http-status code:", headers.status_code, ")");
+            for (const auto& item : headers)
+            {
+                std::cerr << "header : " << item.first << ": " << item.second << std::endl;
+            }
             continue;
         }
-        if (unsigned(oss.tellp()) > max_content.length()) {
-            max_content = oss.str();
+        if (!headers.has("Content-Length")) {
+            if (ec == boost::asio::error::eof) {
+                max_content = oss.str();
+                break;
+            }
         }
-        std::string content_length_str = headers.get("Content-Length");
-        sss::trim(content_length_str);
-        COLOG_DEBUG(SSS_VALUE_MSG(content_length_str));
-        COLOG_DEBUG(SSS_VALUE_MSG(max_content.length()));
-        if (content_length_str.empty()) {
-            break;
-        }
-        if (max_content.length() == sss::string_cast<unsigned int>(content_length_str)) {
-            break;
+        else {
+            std::string content_length_str = headers.get("Content-Length");
+            sss::trim(content_length_str);
+            if (content_length_str.empty()) {
+                break;
+            }
+            size_t content_length = sss::string_cast<unsigned int>(content_length_str);
+            COLOG_DEBUG(SSS_VALUE_MSG(oss.str().length()));
+            size_t actual_recieved = oss.tellp();
+            if (actual_recieved > content_length) {
+                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '>', SSS_VALUE_MSG(content_length));
+                break;
+            }
+            else if (actual_recieved < content_length) {
+                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '<', SSS_VALUE_MSG(content_length));
+                // retry
+            }
+            if (actual_recieved > max_content.length() && actual_recieved <= content_length) {
+                max_content = oss.str();
+            }
+            if (max_content.length() == content_length) {
+                break;
+            }
         }
     } while (max_test-- > 0);
 
