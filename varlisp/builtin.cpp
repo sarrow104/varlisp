@@ -114,6 +114,8 @@ Object eval_print_ln(varlisp::Environment& env, const varlisp::List& args);
 Object eval_fmt(varlisp::Environment& env, const varlisp::List& args);
 Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args);
 
+// NOTE 帮助信息，可以利用外部文件导入的方式。
+// 锚点，就是函数名；
 const builtin_info_t builtin_infos[] =
 {
     {"cons",            2,  2,  &eval_cons},
@@ -267,12 +269,12 @@ Object Builtin::eval(varlisp::Environment& env, const varlisp::List& args) const
     int arg_min = builtin_infos[m_type].min;
     int arg_max = builtin_infos[m_type].max;
     if (arg_min > 0 && arg_length < arg_min) {
-        SSS_POSTION_THROW(std::runtime_error, builtin_infos[m_type].name,
+        SSS_POSITION_THROW(std::runtime_error, builtin_infos[m_type].name,
                           " need at least ", arg_min,
                           " parameters. but provided ", arg_length);
     }
     if (arg_max > 0 && arg_length > arg_max) {
-        SSS_POSTION_THROW(std::runtime_error, builtin_infos[m_type].name,
+        SSS_POSITION_THROW(std::runtime_error, builtin_infos[m_type].name,
                           " need at most ", arg_max,
                           " parameters. but provided ", arg_length);
     }

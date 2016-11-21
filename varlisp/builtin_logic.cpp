@@ -140,13 +140,13 @@ Object eval_equal(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const varlisp::List * p_list1 = varlisp::getFirstListPtrFromArg(env, args, obj1);
     if (!p_list1) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(equal: 1st argument must be an s-list)");
     }
     Object obj2;
     const varlisp::List * p_list2 = varlisp::getFirstListPtrFromArg(env, args.tail[0], obj2);
     if (!p_list2) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(equal: 1st argument must be an s-list)");
     }
     p_list1 = p_list1->next();

@@ -97,7 +97,7 @@ Object eval_impl(Environment& env, const Object& funcObj, const List& args)
         std::string name = (*ps).m_data;
         Object* p_func = env.find(name);
         if (!p_func) {
-            SSS_POSTION_THROW(std::runtime_error, "Application ", name,
+            SSS_POSITION_THROW(std::runtime_error, "Application ", name,
                               " not exist.");
         }
         const Object& invokable = *p_func;
@@ -111,7 +111,7 @@ Object eval_impl(Environment& env, const Object& funcObj, const List& args)
             return pl->eval(env, args);
         }
         else {
-            SSS_POSTION_THROW(std::runtime_error, "Application ", name,
+            SSS_POSITION_THROW(std::runtime_error, "Application ", name,
                               " not invokable.");
         }
     }
@@ -120,7 +120,7 @@ Object eval_impl(Environment& env, const Object& funcObj, const List& args)
         return pl->eval(env, args);
     }
     else {
-        SSS_POSTION_THROW(std::runtime_error, funcObj, " not callable objct");
+        SSS_POSITION_THROW(std::runtime_error, funcObj, " not callable objct");
     }
 }
 
@@ -212,10 +212,10 @@ bool List::is_squote() const
 void List::none_empty_squote_check() const
 {
     if (!this->is_squote()) {
-        SSS_POSTION_THROW(std::runtime_error, "need squote-list; but", *this);
+        SSS_POSITION_THROW(std::runtime_error, "need squote-list; but", *this);
     }
     else if (this->length() < 2) {
-        SSS_POSTION_THROW(std::runtime_error, "need at least one object");
+        SSS_POSITION_THROW(std::runtime_error, "need at least one object");
     }
 }
 

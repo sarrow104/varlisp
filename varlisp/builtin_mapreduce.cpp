@@ -55,7 +55,7 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     {
         p_arg_list_vec[i] = varlisp::getFirstListPtrFromArg(env, *p_arg_list, tmp_obj_vec[i]);
         if (!p_arg_list_vec[i]) {
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(reduce: the other arguments must be s-list)");
         }
         p_arg_list_vec[i] = p_arg_list_vec[i]->next(); // descard "list"
@@ -106,11 +106,11 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     Object tmp;
     const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
     if (!p_arg_list) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(reduce: need a s-list at 2nd arguments)");
     }
     if (p_arg_list->length() < 3) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(reduce: the s-list must have at least two items)");
     }
 
@@ -147,7 +147,7 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     Object tmp;
     const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
     if (!p_arg_list) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(reduce: need a s-list at 2nd arguments)");
     }
 

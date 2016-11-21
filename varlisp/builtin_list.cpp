@@ -19,7 +19,7 @@ Object eval_car(varlisp::Environment& env, const varlisp::List& args)
     Object obj;
     const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error, "(car: need squote-List)");
+        SSS_POSITION_THROW(std::runtime_error, "(car: need squote-List)");
     }
 
     return p_list->car();
@@ -40,7 +40,7 @@ Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
     Object obj;
     const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error, "(cdr: need squote-List)");
+        SSS_POSITION_THROW(std::runtime_error, "(cdr: need squote-List)");
     }
     return p_list->cdr();
 }
@@ -60,13 +60,13 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const int * p_nth = varlisp::getTypedValue<int>(env, args.head, obj1);
     if (!p_nth) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(car-nth: 1st argument must be an Integar)");
     }
     Object obj2;
     const varlisp::List* p_list = getFirstListPtrFromArg(env, args.tail[0], obj2);
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(car-nth: 2nd argument must be an S-list");
     }
     p_list = p_list->next();
@@ -96,13 +96,13 @@ Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const int * p_nth = varlisp::getTypedValue<int>(env, args.head, obj1);
     if (!p_nth) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(car-nth: 1st argument must be an Integar)");
     }
     Object obj2;
     const varlisp::List* p_list = getFirstListPtrFromArg(env, args.tail[0], obj2);
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(car-nth: 2nd argument must be an S-list");
     }
     p_list = p_list->next();
@@ -131,7 +131,7 @@ Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
     Object obj;
     const varlisp::List * p_list = getFirstListPtrFromArg(env, args.tail[0], obj);
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error, "(cons: need squote-List as the 2nd argument)");
+        SSS_POSITION_THROW(std::runtime_error, "(cons: need squote-List as the 2nd argument)");
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
     ret.append(boost::apply_visitor(eval_visitor(env), args.head));
@@ -153,7 +153,7 @@ Object eval_length(varlisp::Environment& env, const varlisp::List& args)
     Object obj;
     const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj);
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error, "(length: need s-List as the 1st argument)");
+        SSS_POSITION_THROW(std::runtime_error, "(length: need s-List as the 1st argument)");
     }
     return int(p_list->length() - 1);
 }
@@ -172,12 +172,12 @@ Object eval_append(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const varlisp::List * p_list1 = getFirstListPtrFromArg(env, args, obj1);
     if (!p_list1) {
-        SSS_POSTION_THROW(std::runtime_error, "(append: need s-List as the 1st argument)");
+        SSS_POSITION_THROW(std::runtime_error, "(append: need s-List as the 1st argument)");
     }
     Object obj2;
     const varlisp::List * p_list2 = getFirstListPtrFromArg(env, args.tail[0], obj2);
     if (!p_list2) {
-        SSS_POSTION_THROW(std::runtime_error, "(append: need s-List as the 2nd argument)");
+        SSS_POSITION_THROW(std::runtime_error, "(append: need s-List as the 2nd argument)");
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
     varlisp::List * p_ret = &ret;

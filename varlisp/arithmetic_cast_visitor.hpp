@@ -16,7 +16,7 @@ struct arithmetic_cast_visitor : public boost::static_visitor<varlisp::arithmeti
     template <typename T>
     varlisp::arithmetic_t operator()(const T& v) const
     {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "object: cannot convert ", v, "to double!");
     }
 

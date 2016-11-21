@@ -31,7 +31,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
         getTypedValue<string_t>(env, args.head, content);
 
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies string as 1st argument)");
     }
 
@@ -41,7 +41,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
         const string_t *p_sep =
             getTypedValue<string_t>(env, args.next()->head, sep_obj);
         if (!p_sep) {
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": requires seq string as 2nd argument)");
         }
         sep = p_sep->to_string();
@@ -57,7 +57,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
         }
     }
     else {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": sep.length() >= 2, not support yet!)");
     }
     return Object(ret);
@@ -80,7 +80,7 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     const List *p_list = getFirstListPtrFromArg(env, args, obj);
 
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": 1st must a list!)");
     }
 
@@ -89,7 +89,7 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
         Object sep_obj;
         const string_t *p_sep = getTypedValue<string_t>(env, args.tail[0].head, sep_obj);
         if (!p_sep) {
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": 2nd sep must be a string)");
         }
         sep = p_sep->to_string();
@@ -137,7 +137,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_content =
         getTypedValue<string_t>(env, p_arg->head, content);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need string as 1st argument)");
     }
     p_arg = p_arg->next();
@@ -148,7 +148,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     arithmetic_t offset_number =
         boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
     if (!offset_number.which()) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need int as 2nd argument)");
     }
     int offset_int = arithmetic2int(offset_number);
@@ -169,7 +169,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
         arithmetic_t arithmetic_length = boost::apply_visitor(
             arithmetic_cast_visitor(env), (length_obj_ref));
         if (!arithmetic_length.which()) {
-            SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                               ": need int as 3rd argument)");
         }
         length = arithmetic2int(arithmetic_length);
@@ -199,7 +199,7 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
     Object obj;
     const string_t *p_str = getTypedValue<string_t>(env, args.head, obj);
     if (!p_str) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need an s-List as the 1st argument)");
     }
     return int(p_str->length());

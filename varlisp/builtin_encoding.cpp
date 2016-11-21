@@ -53,7 +53,7 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
     Object obj;
     const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(uchardet: 1st argument must be string)");
     }
 
@@ -74,7 +74,7 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
     }
 
     if (err) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "uchardet: analyze coding faild！");
     }
     return string_t(std::move(encoding));
@@ -94,7 +94,7 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
     Object obj;
     const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(pychardet: 1st argument must be string)");
     }
     // Python 支持两种使用方式：
@@ -161,13 +161,13 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const string_t * p_encodings = varlisp::getTypedValue<string_t>(env, args.head, obj1);
     if (!p_encodings) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(ivchardet: 1st argument must be encodings string)");
     }
     Object obj2;
     const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj2);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(ivchardet: 2nd argument must be content string)");
     }
 
@@ -212,19 +212,19 @@ Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const string_t * p_enc_from = varlisp::getTypedValue<string_t>(env, args.head, obj1);
     if (!p_enc_from) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(iconv: 1st argument must be encodings string)");
     }
     Object obj2;
     const string_t * p_enc_to = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj2);
     if (!p_enc_to) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(iconv: 2nd argument must be encodings string)");
     }
     Object obj3;
     const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.tail[0].tail[0].head, obj3);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(iconv: 3rd argument must be content string)");
     }
 
@@ -253,7 +253,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     Object obj2;
     const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj2);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": 1st argument must be content string)");
     }
 
@@ -262,7 +262,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     if (args.length() >= 2) {
         p_encodings = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj1);
         if (!p_encodings) {
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": 2nd argument must be encodings string)");
         }
     }

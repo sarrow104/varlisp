@@ -46,7 +46,7 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_program =
         getTypedValue<string_t>(env, args.head, program);
     if (!p_program || p_program->empty()) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": 1st arg must be an none-empty string)");
     }
 
@@ -97,7 +97,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requie one path string!)");
     }
     bool is_ok = sss::path::chgcwd(p_path->to_string());
@@ -126,7 +126,7 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
             Object ls_arg;
             const string_t* p_ls_arg = getTypedValue<string_t>(env, p->head, ls_arg);
             if (!p_ls_arg) {
-                SSS_POSTION_THROW(std::runtime_error,
+                SSS_POSITION_THROW(std::runtime_error,
                                   "(", funcName, ": require string-type args)");
             }
             switch (sss::path::file_exists(p_ls_arg->to_string())) {

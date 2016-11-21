@@ -25,12 +25,12 @@ Object eval_read(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies a path string as 1st argument)");
     }
     std::string full_path = sss::path::full_of_copy(p_path->to_string());
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
-        SSS_POSTION_THROW(std::runtime_error, "path `", *p_path,
+        SSS_POSITION_THROW(std::runtime_error, "path `", *p_path,
                           "` not to file");
     }
 
@@ -64,7 +64,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     const string_t* p_path =
         getTypedValue<string_t>(env, args.tail[0].head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies path as 2nd argument to write)");
     }
 
@@ -76,7 +76,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     }
     std::ofstream ofs(full_path, bit_op);
     if (!ofs.good()) {
-        SSS_POSTION_THROW(std::runtime_error, "(write: failed open file ",
+        SSS_POSITION_THROW(std::runtime_error, "(write: failed open file ",
                           sss::raw_string(*p_path), " to write");
     }
 
@@ -88,7 +88,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     if (const varlisp::List* p_list = boost::get<varlisp::List>(&firstArg)) {
         // NOTE this p_list must be an s-list!
         if (!p_list->is_squote()) {
-            SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                               ": 1st argument is not a s-list)");
         }
         p_list = p_list->next();

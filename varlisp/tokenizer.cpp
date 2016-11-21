@@ -217,7 +217,7 @@ void Tokenizer::init(const std::string& data)
            ss1x::parser::space_p)[ss1x::parser::rule::ActionT([&](
              StrIterator beg, StrIterator end,
              ss1x::parser::rule::matched_value_t) {
-            SSS_POSTION_THROW(std::runtime_error, "Un-recongnise string `",
+            SSS_POSITION_THROW(std::runtime_error, "Un-recongnise string `",
                               std::string(beg, end), "`");
         })]).name("FallthrowError_p");
 
@@ -276,7 +276,7 @@ Token Tokenizer::lookahead(int index)
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     Token ret = lookahead_nothrow(index);
     if (!ret.which()) {
-        SSS_POSTION_THROW(std::runtime_error, "not enough tokens");
+        SSS_POSITION_THROW(std::runtime_error, "not enough tokens");
     }
     return ret;
 }

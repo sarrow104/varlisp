@@ -116,7 +116,7 @@ void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
         else if (sv_fmt.substr(offset).is_begin_with("{")) {
             fmtArgInfo info;
             if (!parseFmtInfo(current, fmt_fin, info, ref_id)) {
-                SSS_POSTION_THROW(std::runtime_error,
+                SSS_POSITION_THROW(std::runtime_error,
                                   sss::raw_string(sss::string_view{
                                       current, size_t(fmt_fin - current)}),
                                   " error!");
@@ -136,7 +136,7 @@ void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
             COLOG_DEBUG(loop_id, SSS_VALUE_MSG(fmts.back()));
         }
         else if (sv_fmt.substr(offset).is_begin_with("}")) {
-            SSS_POSTION_THROW(std::runtime_error, "encounter single '}'");
+            SSS_POSITION_THROW(std::runtime_error, "encounter single '}'");
         }
         else {
             padding.push_back(sv_fmt.substr(0, offset));

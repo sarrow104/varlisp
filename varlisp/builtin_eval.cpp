@@ -19,7 +19,7 @@ Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
     Object obj;
     const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
     if (!p_list) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need squote-List as 1st argument)");
     }
     return p_list->next()->eval(env);

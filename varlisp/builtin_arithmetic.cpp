@@ -118,7 +118,7 @@ struct arithmetic_div_visitor : public boost::static_visitor<arithmetic_t> {
     arithmetic_t operator()(const T1& v1, const T2& v2) const
     {
         if (v2 == 0) {
-            SSS_POSTION_THROW(std::runtime_error, v1, "divided by Zero");
+            SSS_POSITION_THROW(std::runtime_error, v1, "divided by Zero");
         }
         return v1 / v2;
     }

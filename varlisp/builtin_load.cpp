@@ -44,12 +44,12 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies a path)");
     }
     std::string full_path = sss::path::full_of_copy(p_path->to_string());
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
                           "` not to file)");
     }
 
@@ -58,7 +58,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 
     varlisp::Interpreter* p_inter = env.getInterpreter();
     if (!p_inter) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "env.getInterpreter return 0 ptr");
     }
     varlisp::Parser& parser = p_inter->get_parser();

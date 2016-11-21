@@ -24,7 +24,7 @@ Object eval_quit(varlisp::Environment& env, const varlisp::List& args)
     (void)args;
     Interpreter* it = env.getInterpreter();
     if (!it) {
-        SSS_POSTION_THROW(std::runtime_error, "env&", &env,
+        SSS_POSITION_THROW(std::runtime_error, "env&", &env,
                           " with nullptr Interpreter");
     }
     it->set_status(Interpreter::status_QUIT);
@@ -45,7 +45,7 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
     Object status;
     const bool* p_status = getTypedValue<bool>(env, args.head, status);
     if (!p_status) {
-        SSS_POSTION_THROW(::std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(::std::runtime_error, "(", funcName,
                           ": requires bool status at 1st argument)");
     }
     auto ll = sss::colog::get_log_levels();

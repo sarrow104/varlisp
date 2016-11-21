@@ -28,7 +28,7 @@ const varlisp::List* getFirstListPtrFromArg(varlisp::Environment& env,
     // 至于函数，为什么是"值"，而不能执行呢？是因为，"它"需要用括号括起来，
     // 如果需要参数的话，还需要添加参数。
     if (p_list && !p_list->is_squote()) {
-        SSS_POSTION_THROW(std::runtime_error, "need eval list error!");
+        SSS_POSITION_THROW(std::runtime_error, "need eval list error!");
         // p_list = 0;
     }
     return p_list;

@@ -21,14 +21,14 @@ Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies one path string at 1st)");
     }
     Object modifier;
     const string_t *p_modifier =
         getTypedValue<string_t>(env, args.tail[0].head, modifier);
     if (!p_modifier) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies one path-modifier string at 2nd)");
     }
     std::string mod_name = sss::path::modify_copy(p_path->to_string(), p_modifier->to_string());
@@ -55,7 +55,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
         getTypedValue<string_t>(env, args.head, path);
 
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           " requies one path string at 1st)");
     }
 
@@ -65,7 +65,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
         const string_t *p_filter =
             getTypedValue<string_t>(env, args.tail[0].head, filter);
         if (!p_filter) {
-            SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                               ": requires filter string as 2nd argument)");
         }
         f.reset(new sss::path::name_filter_t(p_filter->to_string()));
@@ -114,7 +114,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         getTypedValue<string_t>(env, args.head, path);
     if (!p_path) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": requies one path string)");
     }
     std::unique_ptr<sss::path::filter_t> f;
@@ -123,7 +123,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
         const string_t *p_filter =
             getTypedValue<string_t>(env, args.tail[0].head, filter);
         if (!p_filter) {
-            SSS_POSTION_THROW(
+            SSS_POSITION_THROW(
                 std::runtime_error,
                 "(", funcName, ": second filter arg must be a string)");
         }
@@ -135,7 +135,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
         Object arg;
         const int *p_depth = getTypedValue<int>(env, args.tail[0].tail[0].head, arg);
         if (!p_depth) {
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": third arg must be an integar)");
         }
         depth = *p_depth;

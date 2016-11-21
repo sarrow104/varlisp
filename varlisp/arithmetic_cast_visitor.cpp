@@ -23,7 +23,7 @@ varlisp::arithmetic_t arithmetic_cast_visitor::operator()(
         return dv;
     }
     else {
-        SSS_POSTION_THROW(std::runtime_error, "failed convert ",
+        SSS_POSITION_THROW(std::runtime_error, "failed convert ",
                           sss::raw_string(s), " to arithmetic_t");
     }
 }
@@ -31,7 +31,7 @@ varlisp::arithmetic_t arithmetic_cast_visitor::operator()(const varlisp::symbol&
 {
     Object* p_obj = m_env.find(s.m_data);
     if (!p_obj) {
-        SSS_POSTION_THROW(std::runtime_error, "symbol ", s.m_data,
+        SSS_POSITION_THROW(std::runtime_error, "symbol ", s.m_data,
                           " not exists!");
     }
     Object tmp;
@@ -47,7 +47,7 @@ varlisp::arithmetic_t arithmetic_cast_visitor::operator()(const varlisp::symbol&
 varlisp::arithmetic_t arithmetic_cast_visitor::operator()(const List& l) const
 {
     if (l.is_squote()) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "object: cannot convert from s-list to arithmetic_t!");
     }
     Object res = l.eval(m_env);

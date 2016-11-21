@@ -84,11 +84,9 @@ namespace varlisp {
 struct fmtArgInfo {
     fmtArgInfo() : index(-1) {}
     ~fmtArgInfo() = default;
-    size_t index =
-        0u;           // 变量引用下标；从0开始；没有显示提供下标，则当前下标为前一个"捕获"的下标+1；
+    size_t index = 0u; // 变量引用下标；从0开始；没有显示提供下标，则当前下标为前一个"捕获"的下标+1；
     char fill = ' ';  // 填充符号；默认为空格；
-    char align =
-        '<';          // 水平对齐方式；默认是字符串居左，数字居右。 '<','>','=','^'
+    char align = '<'; // 水平对齐方式；默认是字符串居左，数字居右。 '<','>','=','^'
     char sign = '-';  // 符号位；
     char type = ' ';  // 显示风格
     size_t width = 0u;

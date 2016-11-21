@@ -16,7 +16,7 @@ Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
     Object regstr;
     const string_t *p_regstr = getTypedValue<string_t>(env, args.head, regstr);
     if (!p_regstr) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to construct)");
     }
     return sss::regex::CRegex(p_regstr->to_string());
@@ -36,13 +36,13 @@ Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
     Object regobj;
     const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
     if (!p_regobj) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
     }
     Object target;
     const string_t *p_target = getTypedValue<string_t>(env, args.tail[0].head, target);
     if (!p_target) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to match)");
     }
     return p_regobj->match(p_target->to_string());
@@ -62,14 +62,14 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
     Object regobj;
     const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
     if (!p_regobj) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
     }
 
     Object target;
     const string_t *p_target = getTypedValue<string_t>(env, args.tail[0].head, target);
     if (!p_target) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to search)");
     }
 
@@ -118,20 +118,20 @@ Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
     Object regobj;
     const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
     if (!p_regobj) {
-        SSS_POSTION_THROW(std::runtime_error, "regex-replace: regex obj");
+        SSS_POSITION_THROW(std::runtime_error, "regex-replace: regex obj");
     }
 
     Object target;
     const string_t *p_target = getTypedValue<string_t>(env, args.tail[0].head, target);
     if (!p_target) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to replace)");
     }
 
     Object fmtobj;
     const string_t *p_fmt = getTypedValue<string_t>(env, args.tail[0].tail[0].head, fmtobj);
     if (!p_fmt) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need fmt string at 3rd)");
     }
 
@@ -155,14 +155,14 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
     Object regobj;
     const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
     if (!p_regobj) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
     }
 
     Object target;
     const string_t *p_target = getTypedValue<string_t>(env, args.tail[0].head, target);
     if (!p_target) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to replace)");
     }
 
@@ -207,14 +207,14 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
     Object regobj;
     const sss::regex::CRegex *p_regobj = getTypedValue<sss::regex::CRegex>(env, args.head, regobj);
     if (!p_regobj) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
     }
 
     Object target;
     const string_t *p_target = getTypedValue<string_t>(env, args.tail[0].head, target);
     if (!p_target) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to search)");
     }
     const string_t *p_fmt = 0;

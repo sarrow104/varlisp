@@ -16,7 +16,7 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env, const varlisp::List&
     Object obj1;
     const string_t* p_fmt = getTypedValue<string_t>(env, args.head, obj1);
     if (!p_fmt) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires string to escape at 1st)");
     }
     std::vector<fmtArgInfo> fmts;
@@ -33,7 +33,7 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env, const varlisp::List&
     const varlisp::List* p_arg = args.next();
     while (p_arg) {
         if (!p_arg->head.which()) {
-            SSS_POSTION_THROW(std::runtime_error, "varlisp::Empty");
+            SSS_POSITION_THROW(std::runtime_error, "varlisp::Empty");
         }
         vecArgPtr.push_back(&p_arg->head);
         p_arg = p_arg->next();
@@ -52,7 +52,7 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env, const varlisp::List&
             continue;
         }
         if (arg_ref_id >= arg_len) {
-            SSS_POSTION_THROW(std::runtime_error, "ref arg-id", arg_ref_id,
+            SSS_POSITION_THROW(std::runtime_error, "ref arg-id", arg_ref_id,
                               " out of range [0,", arg_len, ')');
         }
         if (!vecObjPtr[arg_ref_id]) {
@@ -106,7 +106,7 @@ Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const string_t* p_fmt = getTypedValue<string_t>(env, args.head, obj1);
     if (!p_fmt) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires string to escape at 1st)");
     }
     std::string escaped_str;

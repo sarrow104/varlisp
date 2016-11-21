@@ -31,7 +31,7 @@ inline double arithmetic2double(const arithmetic_t& a)
 {
     switch (a.which()) {
         case 0:
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(not a valid number)");
 
         case 1:
@@ -46,7 +46,7 @@ inline int arithmetic2int(const arithmetic_t& a)
 {
     switch (a.which()) {
         case 0:
-            SSS_POSTION_THROW(std::runtime_error,
+            SSS_POSITION_THROW(std::runtime_error,
                               "(not a valid number)");
 
         case 1:
@@ -56,7 +56,7 @@ inline int arithmetic2int(const arithmetic_t& a)
             {
                 double ret = boost::get<double>(a);
                 if (ret != int(ret)) {
-                    SSS_POSTION_THROW(std::runtime_error,
+                    SSS_POSITION_THROW(std::runtime_error,
                                       "(unsafe convert from", ret, "to", int(ret), ")");
                 }
 

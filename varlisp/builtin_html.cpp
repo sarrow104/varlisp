@@ -25,7 +25,7 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_content =
         varlisp::getTypedValue<string_t>(env, args.head, content);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires 1st argument as content to parsing)");
     }
     Object query;
@@ -34,7 +34,7 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
     if (args.length() >= 2) {
         varlisp::getTypedValue<string_t>(env, args.tail[0].head, query);
         if (!p_query) {
-            SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                               "： requires 2nd argument as query string)");
         }
     }
@@ -79,14 +79,14 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
     const gumboNode* p_node =
         varlisp::getTypedValue<gumboNode>(env, args.head, gNode);
     if (!p_node) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires gumboNode as 1st argument to querying)");
     }
     Object query;
     const string_t* p_query =
         varlisp::getTypedValue<string_t>(env, args.tail[0].head, query);
     if (!p_query) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires query string as 2nd argument)");
     }
 
@@ -119,14 +119,14 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     if (!p_gqnode) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires gumbo-query-node as 1st argument)");
     }
     Object attrib_name;
     const string_t* p_attrib_name = varlisp::getTypedValue<string_t>(
         env, args.tail[0].head, attrib_name);
     if (!p_attrib_name) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires gumbo-query-node as 1st argument)");
     }
     if (p_gqnode->valid()) {
@@ -154,14 +154,14 @@ Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     if (!p_gqnode) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires gumbo-query-node as 1st argument)");
     }
     Object attrib_name;
     const string_t* p_attrib_name = varlisp::getTypedValue<string_t>(
         env, args.tail[0].head, attrib_name);
     if (!p_attrib_name) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires gumbo-query-node as 1st argument)");
     }
     if (p_gqnode->valid()) {
@@ -180,7 +180,7 @@ public:
         const gumboNode* p_gqnode =
             varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
         if (!p_gqnode) {
-            SSS_POSTION_THROW(std::runtime_error, "(", m_funcName,
+            SSS_POSITION_THROW(std::runtime_error, "(", m_funcName,
                               ": requires gumbo-query-node as 1st argument)");
         }
         if (p_gqnode->valid()) {
@@ -210,7 +210,7 @@ Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args)
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     if (!p_gqnode) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires gumbo-query-node as 1st argument)");
     }
     return p_gqnode->valid();
@@ -232,7 +232,7 @@ Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     if (!p_gqnode) {
-        SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires gumbo-query-node as 1st argument)");
     }
     if (p_gqnode->valid()) {
@@ -259,7 +259,7 @@ Object eval_gqnode_text(varlisp::Environment& env, const varlisp::List& args)
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     // if (!p_gqnode) {
-    //     SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+    //     SSS_POSITION_THROW(std::runtime_error, "(", funcName,
     //                       ": requires gumbo-query-node as 1st argument)");
     // }
     // if (p_gqnode->valid()) {
@@ -286,7 +286,7 @@ Object eval_gqnode_textNeat(varlisp::Environment& env,
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     // if (!p_gqnode) {
-    //     SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+    //     SSS_POSITION_THROW(std::runtime_error, "(", funcName,
     //                       ": requires gumbo-query-node as 1st argument)");
     // }
     // if (p_gqnode->valid()) {
@@ -312,7 +312,7 @@ Object eval_gqnode_ownText(varlisp::Environment& env, const varlisp::List& args)
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     // if (!p_gqnode) {
-    //     SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+    //     SSS_POSITION_THROW(std::runtime_error, "(", funcName,
     //                       ": requires gumbo-query-node as 1st argument)");
     // }
     // if (p_gqnode->valid()) {
@@ -338,7 +338,7 @@ Object eval_gqnode_tag(varlisp::Environment& env, const varlisp::List& args)
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     // if (!p_gqnode) {
-    //     SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+    //     SSS_POSITION_THROW(std::runtime_error, "(", funcName,
     //                       ": requires gumbo-query-node as 1st argument)");
     // }
     // if (p_gqnode->valid()) {
@@ -365,7 +365,7 @@ Object eval_gqnode_innerHtml(varlisp::Environment& env,
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     // if (!p_gqnode) {
-    //     SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+    //     SSS_POSITION_THROW(std::runtime_error, "(", funcName,
     //                       ": requires gumbo-query-node as 1st argument)");
     // }
     // if (p_gqnode->valid()) {
@@ -392,7 +392,7 @@ Object eval_gqnode_outerHtml(varlisp::Environment& env,
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
     // if (!p_gqnode) {
-    //     SSS_POSTION_THROW(std::runtime_error, "(", funcName,
+    //     SSS_POSITION_THROW(std::runtime_error, "(", funcName,
     //                       ": requires gumbo-query-node as 1st argument)");
     // }
     // if (p_gqnode->valid()) {
@@ -421,14 +421,14 @@ Object eval_gumbo_query_text(varlisp::Environment& env,
     const string_t* p_content =
         varlisp::getTypedValue<string_t>(env, args.head, content);
     if (!p_content) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": requires content to parsing)");
     }
     Object query;
     const string_t* p_query =
         varlisp::getTypedValue<string_t>(env, args.tail[0].head, query);
     if (!p_query) {
-        SSS_POSTION_THROW(std::runtime_error,
+        SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": requires query string)");
     }
     std::ostringstream oss;
