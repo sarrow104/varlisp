@@ -9,7 +9,6 @@
 
 #include <ss1x/parser/oparser.hpp>
 
-#include "typeid_visitor.hpp"
 #include "environment.hpp"
 #include "builtin_helper.hpp"
 #include "parser.hpp"
