@@ -103,7 +103,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     bool is_ok = sss::path::chgcwd(p_path->to_string());
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
-    return Object(sss::path::getcwd());
+    return Object(string_t{std::move(sss::path::getcwd())});
 }
 
 // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
