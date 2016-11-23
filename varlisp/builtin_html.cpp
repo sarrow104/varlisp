@@ -132,7 +132,7 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
     if (p_gqnode->valid()) {
         std::string attribute = p_gqnode->attribute(p_attrib_name->to_string());
         if (!attribute.empty()) {
-            return attribute;
+            return string_t{std::move(attribute)};
         }
     }
     return Object{Nill{}};
