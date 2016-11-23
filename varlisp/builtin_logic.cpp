@@ -29,8 +29,12 @@ namespace varlisp {
  */
 Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
 {
-    return Object(boost::apply_visitor(strict_equal_visitor(env), args.head,
-                                       args.tail[0].head));
+    Object obj1;
+    const Object& obj1_ref = varlisp::getAtomicValue(env, args.head, obj1);
+    Object obj2;
+    const Object& obj2_ref = varlisp::getAtomicValue(env, args.tail[0].head, obj2);
+
+    return Object(boost::apply_visitor(strict_equal_visitor(env), obj1_ref, obj2_ref));
 }
 
 /**
@@ -43,10 +47,12 @@ Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
 {
-    return Object(!boost::apply_visitor(strict_equal_visitor(env),
-                                        args.tail[0].head, args.head) &&
-                  boost::apply_visitor(strict_less_visitor(env),
-                                       args.tail[0].head, args.head));
+    Object obj1;
+    const Object& obj1_ref = varlisp::getAtomicValue(env, args.head, obj1);
+    Object obj2;
+    const Object& obj2_ref = varlisp::getAtomicValue(env, args.tail[0].head, obj2);
+    return Object(!boost::apply_visitor(strict_equal_visitor(env), obj2_ref, obj1_ref) &&
+                  boost::apply_visitor(strict_less_visitor(env), obj2_ref, obj1_ref));
 }
 
 /**
@@ -59,8 +65,11 @@ Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_lt(varlisp::Environment& env, const varlisp::List& args)
 {
-    return Object(boost::apply_visitor(strict_less_visitor(env), args.head,
-                                       args.tail[0].head));
+    Object obj1;
+    const Object& obj1_ref = varlisp::getAtomicValue(env, args.head, obj1);
+    Object obj2;
+    const Object& obj2_ref = varlisp::getAtomicValue(env, args.tail[0].head, obj2);
+    return Object(boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
 /**
@@ -73,8 +82,11 @@ Object eval_lt(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_ge(varlisp::Environment& env, const varlisp::List& args)
 {
-    return Object(!boost::apply_visitor(strict_less_visitor(env), args.head,
-                                       args.tail[0].head));
+    Object obj1;
+    const Object& obj1_ref = varlisp::getAtomicValue(env, args.head, obj1);
+    Object obj2;
+    const Object& obj2_ref = varlisp::getAtomicValue(env, args.tail[0].head, obj2);
+    return Object(!boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
 /**
@@ -87,10 +99,12 @@ Object eval_ge(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_le(varlisp::Environment& env, const varlisp::List& args)
 {
-    return Object(boost::apply_visitor(strict_equal_visitor(env),
-                                       args.tail[0].head, args.head) ||
-                  boost::apply_visitor(strict_less_visitor(env), args.head,
-                                       args.tail[0].head));
+    Object obj1;
+    const Object& obj1_ref = varlisp::getAtomicValue(env, args.head, obj1);
+    Object obj2;
+    const Object& obj2_ref = varlisp::getAtomicValue(env, args.tail[0].head, obj2);
+    return Object(boost::apply_visitor(strict_equal_visitor(env), obj2_ref, obj1_ref) ||
+                  boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
 // TODO (! ) (not ) 当callable，为#f的时候，返回#t；反之，返回#f；
