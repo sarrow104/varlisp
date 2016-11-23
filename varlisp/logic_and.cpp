@@ -5,6 +5,7 @@
 #include "eval_visitor.hpp"
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
+#include "builtin_helper.hpp"
 
 #include <sss/utlstring.hpp>
 
@@ -13,8 +14,7 @@ Object LogicAnd::eval(Environment& env) const
 {
     bool ret = true;
     for (const auto item : conditions) {
-        Object res = boost::apply_visitor(eval_visitor(env), item);
-        if (!boost::apply_visitor(cast2bool_visitor(env), res)) {
+        if (!varlisp::is_true(env, item)) {
             ret = false;
             break;
         }
