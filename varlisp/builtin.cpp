@@ -263,8 +263,7 @@ Builtin::Builtin(int type)
 Object Builtin::eval(varlisp::Environment& env, const varlisp::List& args) const
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-    COLOG_DEBUG(args);
-    COLOG_DEBUG(builtin_infos[m_type].name);
+    COLOG_DEBUG(builtin_infos[m_type].name, args);
     int arg_length = args.length();
     int arg_min = builtin_infos[m_type].min;
     int arg_max = builtin_infos[m_type].max;
