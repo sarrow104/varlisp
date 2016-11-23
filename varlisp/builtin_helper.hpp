@@ -26,7 +26,8 @@ struct Environment;
 //
 // 最后，我其实不用那么介意eval_visitor中对象的创建——
 // 唯一需要优化的是s-list。其他的类型，速度都不慢。
-inline const Object& getAtomicValue(varlisp::Environment& env, const varlisp::Object& value, Object& tmp)
+inline const Object& getAtomicValue(varlisp::Environment& env,
+                                    const varlisp::Object& value, Object& tmp)
 {
     if (boost::apply_visitor(is_instant_visitor(env), value)) {
         return value;
@@ -35,9 +36,20 @@ inline const Object& getAtomicValue(varlisp::Environment& env, const varlisp::Ob
     return tmp;
 }
 
+inline int typedid(varlisp::Environment&, const varlisp::Object& obj)
+{
+    switch(obj.which()) {
+        case 0:
+            throw std::runtime_error("query Empty typeid!"); 
+
+        default:
+            return obj.which() - 1;
+    }
+}
+
 template <typename T>
-inline const T* getTypedValue(varlisp::Environment& env, const varlisp::Object& value,
-                       Object& obj)
+inline const T* getTypedValue(varlisp::Environment& env,
+                              const varlisp::Object& value, Object& obj)
 {
     // NOTE 从Object中取某个类型的值，有三种情况：
     // 1. 立即数
@@ -59,7 +71,7 @@ inline const T* getTypedValue(varlisp::Environment& env, const varlisp::Object& 
 inline bool is_true(varlisp::Environment& env, const varlisp::Object& obj)
 {
     Object res;
-    const bool * p_bool = getTypedValue<bool>(env, obj, res);
+    const bool* p_bool = getTypedValue<bool>(env, obj, res);
     return p_bool && *p_bool;
 }
 
