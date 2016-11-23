@@ -1,7 +1,6 @@
 #include "object.hpp"
 
 #include "builtin_helper.hpp"
-#include "typeid_visitor.hpp"
 
 namespace varlisp {
 
@@ -19,7 +18,7 @@ Object eval_typeid(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "typeid";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, args.head, obj);
-    return boost::apply_visitor(typeid_visitor(env), obj_ref);
+    return varlisp::typedid(env, obj_ref);
 }
 
 template<typename T>
@@ -48,7 +47,7 @@ Object eval_number_q(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "number?";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, args.head, obj);
-    return between_cc_range<int>(boost::apply_visitor(typeid_visitor(env), obj_ref), 2, 3);
+    return between_cc_range<int>(varlisp::typedid(env, obj_ref), varlisp::typedid(env, varlisp::Object{1}), varlisp::typedid(env, varlisp::Object{1.0}));
 }
 
 /**
@@ -65,7 +64,7 @@ Object eval_boolean_q(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "number?";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, args.head, obj);
-    return  boost::apply_visitor(typeid_visitor(env), obj_ref) == typeid_visitor(env)(true);
+    return varlisp::typedid(env, obj_ref) == varlisp::typedid(env, Object{true});
 }
 
 /**
@@ -82,7 +81,7 @@ Object eval_string_q(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "number?";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, args.head, obj);
-    return boost::apply_visitor(typeid_visitor(env), obj_ref) == typeid_visitor(env)(std::string{});
+    return varlisp::typedid(env, obj_ref) == varlisp::typedid(env, Object{varlisp::string_t{}});
 }
 
 /**
