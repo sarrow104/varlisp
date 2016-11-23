@@ -200,7 +200,7 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_str = getTypedValue<string_t>(env, args.head, obj);
     if (!p_str) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need an s-List as the 1st argument)");
+                          ": need an string as the 1st argument)");
     }
     return int(p_str->length());
 }
