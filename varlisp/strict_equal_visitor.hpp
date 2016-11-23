@@ -11,15 +11,6 @@ namespace varlisp {
 struct strict_equal_visitor : boost::static_visitor<bool> {
     Environment& m_env;
     explicit strict_equal_visitor(Environment& env) : m_env(env) {}
-    template <typename T, typename U>
-    bool operator()(const T& lhs, const U& rhs) const
-    {
-        double d1 = arithmetic2double(arithmetic_cast_visitor(m_env)(lhs));
-        double d2 = arithmetic2double(arithmetic_cast_visitor(m_env)(rhs));
-        // double d1 = arithmetic2double(boost::apply_visitor(arithmetic_cast_visitor(m_env), lhs));
-        // double d2 = arithmetic2double(boost::apply_visitor(arithmetic_cast_visitor(m_env), rhs));
-        return d1 == d2;
-    }
 
     template <typename T>
     bool operator()(const T& lhs, const T& rhs) const
@@ -35,6 +26,20 @@ struct strict_equal_visitor : boost::static_visitor<bool> {
     bool operator()(Nill lhs, Nill rhs) const
     {
         return true;
+    }
+
+    template <typename T, typename U>
+    bool operator()(const T& lhs, const U& rhs) const
+    {
+        try {
+            double d1 = arithmetic2double(arithmetic_cast_visitor(m_env)(lhs));
+            double d2 = arithmetic2double(arithmetic_cast_visitor(m_env)(rhs));
+            return d1 == d2;
+        }
+        catch (...)
+        {
+            return false;
+        }
     }
 };
 }  // namespace varlisp
