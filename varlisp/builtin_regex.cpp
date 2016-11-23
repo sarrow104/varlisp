@@ -247,7 +247,7 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
                     oss << p_fmt->at(i);
                 }
             }
-            p_list->head = oss.str();
+            p_list->head = Object{string_t{std::move(oss.str())}};
         }
         else {
             p_list->head = p_target->substr(str_beg - content.c_str(), p_regobj->submatch_consumed(0));
