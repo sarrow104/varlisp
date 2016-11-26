@@ -117,6 +117,11 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_scri
     // NOTE linenoise默认是单行模式；此时，大段的输入，会导致响应变慢。
     // 因此，修改为多行模式
     linenoise::SetMultiLine(true);
+    // TODO NOTE 为linenoise::SetCompletionCallback回调函数，增加一个触发位置的参数。
+    // 以便完成在中间补全。
+    // 不然，现有的补全，如果在行中间触发，会定位到行末尾；
+    // 为了正常补全，只能提前回车，用多行。
+    // 但这样，就需要去数左括号次数，然后添加右括号。
     linenoise::SetCompletionCallback([&interpreter](
         const char* editBuffer, std::vector<std::string>& completions) {
 
@@ -268,9 +273,14 @@ int main(int argc, char* argv[])
     (void)argv;
 
     sss::colog::set_log_elements(sss::colog::ls_TIME_NANO |
-                                 sss::colog::ls_FILE_SHORT | sss::colog::ls_LINE);
-    sss::colog::set_log_levels(sss::colog::ll_INFO | sss::colog::ll_ERROR |
-                               sss::colog::ll_WARN | sss::colog::ll_FATAL);
+                                 sss::colog::ls_FILE_VIM |
+                                 sss::colog::ls_FUNC |
+                                 sss::colog::ls_LINE);
+
+    sss::colog::set_log_levels(sss::colog::ll_INFO |
+                               sss::colog::ll_ERROR |
+                               sss::colog::ll_WARN |
+                               sss::colog::ll_FATAL);
 
     bool echo_in_load = false;
     bool quit_on_load_complete = false;
