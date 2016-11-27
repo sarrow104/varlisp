@@ -11,7 +11,7 @@
 namespace varlisp {
 
 /**
- * @brief (read "path/to/file")
+ * @brief (read "path/to/file") -> string
  *
  * @param[in] env
  * @param[in] args
