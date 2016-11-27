@@ -25,7 +25,7 @@ slist?	(slist? expr) -> boolean
 boolean?	(boolean? expr) -> boolean
 eval	(eval '(...)) -> ...
 load	(load "path/to/lisp") -> nil
-read	(read "path/to/file") -> string
+read-all	(read-all "path/to/file") -> string
 write	(write (list) path) (write item path)
 write-append	(write-append (list) path) (write-append item path)
 open	(open "path") -> file_descriptor | nil; (open "path" flag) -> file_descriptor | nil

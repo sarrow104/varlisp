@@ -54,7 +54,7 @@ Object eval_boolean_q(varlisp::Environment &env, const varlisp::List &args);
 Object eval_eval(varlisp::Environment& env, const varlisp::List& args);
 Object eval_load(varlisp::Environment& env, const varlisp::List& args);
 
-Object eval_read(varlisp::Environment& env, const varlisp::List& args);
+Object eval_read_all(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args);
 Object eval_open(varlisp::Environment& env, const varlisp::List& args);
@@ -189,7 +189,7 @@ const builtin_info_t builtin_infos[] =
     {"load",            1,  1,  &eval_load},
 
     // 文件读写
-    {"read",            1,  1,  &eval_read},
+    {"read-all",        1,  1,  &eval_read_all},
     {"write",           2,  2,  &eval_write},
     {"write-append",    2,  2,  &eval_write_append},
     {"open",            1,  2,  &eval_open},

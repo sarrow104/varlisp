@@ -17,16 +17,16 @@
 namespace varlisp {
 
 /**
- * @brief (read "path/to/file") -> string
+ * @brief (read-cat "path/to/file") -> string
  *
  * @param[in] env
  * @param[in] args
  *
  * @return "file-content"
  */
-Object eval_read(varlisp::Environment& env, const varlisp::List& args)
+Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "read";
+    const char* funcName = "read-all";
     Object path;
     const string_t* p_path =
         getTypedValue<string_t>(env, args.head, path);
