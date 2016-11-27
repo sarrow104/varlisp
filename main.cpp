@@ -20,6 +20,9 @@
 #include "varlisp/tokenizer.hpp"
 #include "varlisp/String.hpp"
 
+// TODO FIXME
+// 这里需要和tokenizer同步修改！
+// 功能应该独立出来！
 const char* find_identifier(const char* buf)
 {
     if (!buf || !buf[0]) {
@@ -30,7 +33,7 @@ const char* find_identifier(const char* buf)
         return 0;
     }
     while (std::distance(buf, ret - 1) >= 0 &&
-           (std::isalnum(*(ret - 1)) || *(ret - 1) == '-')) {
+           (std::isalnum(*(ret - 1)) || *(ret - 1) == '-') || *(ret - 1) == '_') {
         ret--;
     }
     return ret;
@@ -47,10 +50,6 @@ int get_indent(const std::string& line)
 
 int test_construct()
 {
-    // TODO
-    // preload functions
-    // std::string scripts = "(+ 1 2)";
-    // std::string scripts = "(define a (lambda (x) (* x 2)))";
     varlisp::Interpreter interpreter;
     // interpreter.eval("(define i 0)");
     interpreter.eval(
