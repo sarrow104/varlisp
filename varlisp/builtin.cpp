@@ -6,6 +6,8 @@
 #include <sss/log.hpp>
 #include <sss/algorithm.hpp>
 
+#include <fcntl.h>
+
 namespace varlisp {
 
 typedef Object (*eval_func_t)(varlisp::Environment& env, const varlisp::List& args);
@@ -294,6 +296,14 @@ void Builtin::regist_builtin_function(Environment& env)
     for (size_t i = 0; i < sss::size(builtin_infos); ++i) {
         env[builtin_infos[i].name] = varlisp::Builtin(i);
     }
+#define CONSTANT_INT(i) (env[#i] = varlisp::Object{i})
+    CONSTANT_INT(O_RDONLY);
+    CONSTANT_INT(O_WRONLY);
+    CONSTANT_INT(O_RDWR);
+    CONSTANT_INT(O_APPEND);
+    CONSTANT_INT(O_TRUNC);
+    CONSTANT_INT(O_CREAT);
+#undef CONSTANT_INT
 }
 
 void Builtin::print(std::ostream& o) const
