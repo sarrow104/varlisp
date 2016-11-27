@@ -29,7 +29,7 @@ struct strict_less_visitor : boost::static_visitor<bool> {
         }
     }
 
-    bool operator()(const std::string& lhs, const std::string& rhs) const
+    bool operator()(const string_t& lhs, const string_t& rhs) const
     {
         return lhs < rhs;
     }
