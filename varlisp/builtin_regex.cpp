@@ -49,7 +49,7 @@ Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
 }
 
 /**
- * @brief (regex-search reg target offset = 0) -> (list sub0, sub1...)
+ * @brief (regex-search reg target offset = 0) -> (list sub0, sub1 ...)
  *
  * @param[in] env
  * @param[in] args
@@ -105,7 +105,7 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
 
 /**
  * @brief
- *      (regex-replace reg-obj target fmt)->string
+ *      (regex-replace reg-obj target fmt) -> string
  *
  * @param [in]env
  * @param [in]args
