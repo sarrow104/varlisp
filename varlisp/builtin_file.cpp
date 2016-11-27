@@ -9,6 +9,7 @@
 
 #include <fstream>
 
+#include "detail/io.hpp"
 #include <sss/debug/value_msg.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
@@ -190,6 +191,89 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
     // 由于我这个是脚本，不是真正编译程序；也就是说，从产生错误号，到获取
     // 错误号，间隔了多少系统调用？错误号是否被覆盖。
     return ::close(*p_fd) == -1 ? errno : 0;
+}
+
+
+/**
+ * @brief (read-line file_descriptor) -> string | nill
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "read-line";
+    Object obj;
+    const int* p_fd =
+        getTypedValue<int>(env, args.head, obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    std::string line = detail::readline(*p_fd);
+    if (line.empty() && errno) {
+        return varlisp::Nill{};
+    }
+    return varlisp::string_t{std::move(line)};
+}
+
+// static bool x = init_helpdoc(&eval_read_line)("(read-line ....)");
+
+/**
+ * @brief (read-char file_descriptor) -> int | nill
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "read-line";
+    Object obj;
+    const int* p_fd =
+        getTypedValue<int>(env, args.head, obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    int ch = detail::readchar(*p_fd);
+    if (ch == -1 || errno) {
+        return varlisp::Nill{};
+    }
+
+    return ch;
+}
+
+/**
+ * @brief (write-char file_descriptor int) -> int | nill
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "read-line";
+    Object obj;
+    const int* p_fd =
+        getTypedValue<int>(env, args.head, obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    Object chObj;
+    const int* p_ch =
+        getTypedValue<int>(env, args.tail[0].head, chObj);
+    if (!p_ch) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 2nd argument)");
+    }
+
+    return detail::writechar(*p_fd, *p_ch);
 }
 
 }  // namespace
