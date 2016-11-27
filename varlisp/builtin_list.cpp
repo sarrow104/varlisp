@@ -83,7 +83,7 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
 
 /**
  * @brief
- *      (cdr-nth index '(list)) -> list[index]
+ *      (cdr-nth index '(list)) -> (list-tail[index]...)
  *      NOTE: index start from 0
  *
  * @param[in] env
