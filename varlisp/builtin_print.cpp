@@ -8,6 +8,7 @@
 #include "builtin_helper.hpp"
 #include "fmtArgInfo.hpp"
 #include "fmt_print_visitor.hpp"
+#include "detail/io.hpp"
 
 namespace varlisp {
 
@@ -107,6 +108,35 @@ Object eval_fmt(varlisp::Environment& env, const varlisp::List& args)
     fmt_impl(oss, env, args, "io:fmt");
     std::string out = oss.str();
     return Object{string_t{std::move(out)}};
+}
+
+/**
+ * @brief (format stream-fd "fmt-str" arg1 arg2 ... argn) -> int
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_format(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "format";
+    Object objFd;
+    const int* p_fd =
+        getTypedValue<int>(env, args.head, objFd);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    if (*p_fd == 0) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies none-zero int as 1st argument)");
+    }
+
+    std::ostringstream oss;
+    fmt_impl(oss, env, args.tail[0], funcName);
+    std::string out = oss.str();
+    return varlisp::detail::writestring(*p_fd, sss::string_view{out});
 }
 
 /**
