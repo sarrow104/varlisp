@@ -58,4 +58,20 @@ Interpreter* Environment::setInterpreter(Interpreter& interpreter)
 {
     this->m_interpreter = &interpreter;
 }
+
+bool Environment::erase(const std::string& name)
+{
+    bool erased = false;
+    Environment* pe = this;
+    do {
+        auto it = pe->BaseT::find(name);
+        if (it != pe->BaseT::end()) {
+            pe->BaseT::erase(it);
+            erased = true;
+        }
+        pe = pe->m_parent;
+    } while (pe && !erased);
+    return erased;
+}
+
 }  // namespace varlisp

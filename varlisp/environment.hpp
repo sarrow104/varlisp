@@ -10,7 +10,7 @@
 
 namespace varlisp {
 class Interpreter;
-struct Environment : public std::map<std::string, Object> {
+struct Environment : private std::map<std::string, Object> {
     typedef std::map<std::string, Object> BaseT;
     typedef std::map<std::string, Object>::const_iterator const_iterator;
     typedef std::map<std::string, Object>::iterator iterator;
@@ -35,6 +35,12 @@ struct Environment : public std::map<std::string, Object> {
     using BaseT::operator[];
 
     explicit Environment(Environment* parent = 0);
+
+    bool erase(const std::string& name);
+
+    Environment * parent() const {
+        return m_parent;
+    }
 
 private:
     Environment* m_parent;
