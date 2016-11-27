@@ -114,6 +114,16 @@ Object eval_print_ln(varlisp::Environment& env, const varlisp::List& args);
 Object eval_fmt(varlisp::Environment& env, const varlisp::List& args);
 Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args);
 
+Object eval_help(varlisp::Environment& env, const varlisp::List& args);
+Object eval_get_help(varlisp::Environment& env, const varlisp::List& args);
+
+Object eval_bit_and(varlisp::Environment& env, const varlisp::List& args);
+Object eval_bit_or(varlisp::Environment& env, const varlisp::List& args);
+Object eval_bit_rev(varlisp::Environment& env, const varlisp::List& args);
+Object eval_bit_xor(varlisp::Environment& env, const varlisp::List& args);
+Object eval_bit_shift_right(varlisp::Environment& env, const varlisp::List& args);
+Object eval_bit_shift_left(varlisp::Environment& env, const varlisp::List& args);
+
 // NOTE 帮助信息，可以利用外部文件导入的方式。
 // 锚点，就是函数名；
 const builtin_info_t builtin_infos[] =
@@ -132,7 +142,15 @@ const builtin_info_t builtin_infos[] =
     {"*",               0, -1,  &eval_mul}, // from 1
     {"/",               1, -1,  &eval_div}, // from 1
 
-    {"^",               2,  2,  &eval_pow},
+    {"power",           2,  2,  &eval_pow},
+
+    // bit operation
+    {"&",               2, -1,  &eval_bit_and},
+    {"|",               2, -1,  &eval_bit_or},
+    {"~",               1,  1,  &eval_bit_rev},
+    {"^",               2, -1,  &eval_bit_xor},
+    {">>",              2,  2,  &eval_bit_shift_right},
+    {"<<",              2,  2,  &eval_bit_shift_left},
 
     // 逻辑运算
     {"=",               2,  2,  &eval_eq},
@@ -173,16 +191,16 @@ const builtin_info_t builtin_infos[] =
     // html 解析
     {"gumbo-query",     2,  2,  &eval_gumbo_query},
 
-    {"gqnode:attr",     2,  2,  &eval_gqnode_attr},
-    {"gqnode:hasAttr",  2,  2,  &eval_gqnode_hasAttr},
-    {"gqnode:valid",    1,  1,  &eval_gqnode_valid},
-    {"gqnode:text",     1,  1,  &eval_gqnode_text},
-    {"gqnode:textNeat", 1,  1,  &eval_gqnode_textNeat},
-    {"gqnode:ownText",  1,  1,  &eval_gqnode_ownText},
-    {"gqnode:tag",      1,  1,  &eval_gqnode_tag},
-    {"gqnode:isText",   1,  1,  &eval_gqnode_isText},
-    {"gqnode:innerHtml",1,  1,  &eval_gqnode_innerHtml},
-    {"gqnode:outerHtml",1,  1,  &eval_gqnode_outerHtml},
+    {"gqnode-attr",     2,  2,  &eval_gqnode_attr},
+    {"gqnode-hasAttr",  2,  2,  &eval_gqnode_hasAttr},
+    {"gqnode-valid",    1,  1,  &eval_gqnode_valid},
+    {"gqnode-text",     1,  1,  &eval_gqnode_text},
+    {"gqnode-textNeat", 1,  1,  &eval_gqnode_textNeat},
+    {"gqnode-ownText",  1,  1,  &eval_gqnode_ownText},
+    {"gqnode-tag",      1,  1,  &eval_gqnode_tag},
+    {"gqnode-isText",   1,  1,  &eval_gqnode_isText},
+    {"gqnode-innerHtml",1,  1,  &eval_gqnode_innerHtml},
+    {"gqnode-outerHtml",1,  1,  &eval_gqnode_outerHtml},
 
     {"gumbo-query-text",2,  2,  &eval_gumbo_query_text},
 
@@ -233,7 +251,7 @@ const builtin_info_t builtin_infos[] =
     {"ensure-utf8",     2,  3,  &eval_ensure_utf8},
 
     {"quit",            0,  0,  &eval_quit},
-    {"it:debug",        1,  1,  &eval_it_debug},
+    {"it-debug",        1,  1,  &eval_it_debug},
 
     {"time",            1,  1,  &eval_time},
 
@@ -241,6 +259,9 @@ const builtin_info_t builtin_infos[] =
     {"io-print-ln",     1, -1,  &eval_print_ln},
     {"io-fmt",          1, -1,  &eval_fmt},
     {"io-fmt-escape",   1,  1,  &eval_fmt_escape},
+
+    {"help",            1,  1,  &eval_help},
+    {"get-help",        1,  1,  &eval_get_help},
 };
 
 void Builtin::regist_builtin_function(Environment& env)
