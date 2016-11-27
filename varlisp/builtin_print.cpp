@@ -142,7 +142,6 @@ Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
                 break;
         }
     }
-    // TODO
     return Object{string_t{std::move(escaped_str)}};
 }
 
