@@ -10,14 +10,12 @@
 
 namespace varlisp {
 
-// TODO
 // 如何判断，是否是call-able 的Object？
 // 1. builtin
 // 2. lambda
 //
 // 还有允许的参数个数……
 
-// TODO
 /**
  * @brief (map func list-1 list-2 ... list-n)
  *      -> '(func(l1[1] l2[1] ... ln[1]) func(l1[2] l2[2] ... ln[2]) ... func(l1[n] l2[n] ... ln[n]))
@@ -87,7 +85,6 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     return ret;
 }
 
-// TODO
 /**
  * @brief
  *      (reduce func list) 
@@ -117,7 +114,6 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     p_arg_list = p_arg_list->next();
     Object first_arg = p_arg_list->head;
     p_arg_list = p_arg_list->next();
-    // TODO FIXME () or nil ?
     while (p_arg_list && p_arg_list->head.which()) {
         Object second_arg = p_arg_list->head;
         varlisp::List expr {callable};
