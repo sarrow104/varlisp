@@ -59,6 +59,9 @@ Object eval_write(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args);
 Object eval_open(varlisp::Environment& env, const varlisp::List& args);
 Object eval_close(varlisp::Environment& env, const varlisp::List& args);
+Object eval_read_line(varlisp::Environment& env, const varlisp::List& args);
+Object eval_read_char(varlisp::Environment& env, const varlisp::List& args);
+Object eval_write_char(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_split(varlisp::Environment& env, const varlisp::List& args);
 Object eval_join(varlisp::Environment& env, const varlisp::List& args);
@@ -117,6 +120,7 @@ Object eval_print(varlisp::Environment& env, const varlisp::List& args);
 Object eval_print_ln(varlisp::Environment& env, const varlisp::List& args);
 Object eval_fmt(varlisp::Environment& env, const varlisp::List& args);
 Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args);
+Object eval_format(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_help(varlisp::Environment& env, const varlisp::List& args);
 Object eval_get_help(varlisp::Environment& env, const varlisp::List& args);
@@ -194,6 +198,10 @@ const builtin_info_t builtin_infos[] =
     {"write-append",    2,  2,  &eval_write_append},
     {"open",            1,  2,  &eval_open},
     {"close",           1,  1,  &eval_close},
+
+    {"read-line",       1,  1,  &eval_read_line},
+    {"read-char",       1,  1,  &eval_read_char},
+    {"write-char",      2,  2,  &eval_write_char},
 
     // maybe write-ln
 
@@ -276,6 +284,7 @@ const builtin_info_t builtin_infos[] =
     {"io-print-ln",     1, -1,  &eval_print_ln},
     {"io-fmt",          1, -1,  &eval_fmt},
     {"io-fmt-escape",   1,  1,  &eval_fmt_escape},
+    {"format",          1, -1,  &eval_format},
 
     {"help",            1,  1,  &eval_help},
     {"get-help",        1,  1,  &eval_get_help},
