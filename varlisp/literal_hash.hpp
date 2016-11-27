@@ -21,12 +21,15 @@ namespace keywords_hash {
   std::size_t constexpr hash(T&& t) {
     return hasher< typename std::decay<T>::type >()(std::forward<T>(t));
   }
+  template<size_t N>
+  std::size_t constexpr hash(const char (&s)[N]) {
+    return hasher<std::string>()(s);
+  }
   inline namespace literals {
     std::size_t constexpr operator "" _hash(const char* s,size_t) {
       return hasher<std::string>()(s);
     }
   }
-}
-
+} // namespace keywords_hash
 } // namespace detail
 } // namespace varlisp
