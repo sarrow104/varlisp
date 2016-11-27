@@ -2,6 +2,11 @@
 #include "object.hpp"
 #include "raw_stream_visitor.hpp"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <fstream>
 
 #include <sss/colorlog.hpp>
@@ -116,6 +121,66 @@ Object eval_write(varlisp::Environment& env, const varlisp::List& args)
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args)
 {
     return eval_write_impl(env, args, true);
+}
+
+/**
+ * @brief
+ *     (open "path") -> file_descriptor | nil
+ *     (open "path" flag) -> file_descriptor | nil
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_open(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "open";
+    Object obj;
+    const string_t* p_path =
+        getTypedValue<string_t>(env, args.head, obj);
+    if (!p_path) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": requies string path as 1nd argument)");
+    }
+    std::string std_path = p_path->to_string_view().to_string();
+    int flag = 0;
+    if (args.length() >= 2) {
+        const int* p_flag =
+            getTypedValue<int>(env, args.tail[0].head, obj);
+        if (!p_flag) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": requies int flag as 2nd argument)");
+        }
+        flag = *p_flag;
+    }
+    int fd = ::open(std_path.c_str(), flag);
+    return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
+}
+
+/**
+ * @brief (close file_descriptor) -> errno
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_close(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "close";
+    Object obj;
+    const int* p_fd =
+        getTypedValue<int>(env, args.tail[0].head, obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    
+    // errno；
+    // 由于我这个是脚本，不是真正编译程序；也就是说，从产生错误号，到获取
+    // 错误号，间隔了多少系统调用？错误号是否被覆盖。
+    return ::close(*p_fd) == -1 ? errno : 0;
 }
 
 }  // namespace
