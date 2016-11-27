@@ -55,6 +55,8 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args);
 Object eval_read(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args);
+Object eval_open(varlisp::Environment& env, const varlisp::List& args);
+Object eval_close(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_split(varlisp::Environment& env, const varlisp::List& args);
 Object eval_join(varlisp::Environment& env, const varlisp::List& args);
@@ -124,6 +126,16 @@ Object eval_bit_xor(varlisp::Environment& env, const varlisp::List& args);
 Object eval_bit_shift_right(varlisp::Environment& env, const varlisp::List& args);
 Object eval_bit_shift_left(varlisp::Environment& env, const varlisp::List& args);
 
+Object eval_undef(varlisp::Environment& env, const varlisp::List& args);
+Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args);
+Object eval_var_list(varlisp::Environment& env, const varlisp::List& args);
+
+Object eval_sort(varlisp::Environment& env, const varlisp::List& args);
+Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args);
+
+Object eval_errno(varlisp::Environment& env, const varlisp::List& args);
+Object eval_strerr(varlisp::Environment& env, const varlisp::List& args);
+
 // NOTE 帮助信息，可以利用外部文件导入的方式。
 // 锚点，就是函数名；
 const builtin_info_t builtin_infos[] =
@@ -178,6 +190,9 @@ const builtin_info_t builtin_infos[] =
     {"read",            1,  1,  &eval_read},
     {"write",           2,  2,  &eval_write},
     {"write-append",    2,  2,  &eval_write_append},
+    {"open",            1,  2,  &eval_open},
+    {"close",           1,  1,  &eval_close},
+
     // maybe write-ln
 
     // 字符串拆分，组合
@@ -262,6 +277,16 @@ const builtin_info_t builtin_infos[] =
 
     {"help",            1,  1,  &eval_help},
     {"get-help",        1,  1,  &eval_get_help},
+
+    {"undef",           1,  1,  &eval_undef},
+    {"ifdef",           1,  1,  &eval_ifdef},
+    {"var-list",        0,  1,  &eval_var_list},
+
+    {"sort",            2,  2,  &eval_sort},
+    {"sort!",           2,  2,  &eval_sort_bar},
+
+    {"errno",           0,  0,  &eval_errno},
+    {"strerr",          1,  1,  &eval_strerr},
 };
 
 void Builtin::regist_builtin_function(Environment& env)

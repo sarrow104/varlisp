@@ -28,6 +28,8 @@ load	(load "path/to/lisp") -> nil
 read	(read "path/to/file") -> string
 write	(write (list) path) (write item path)
 write-append	(write-append (list) path) (write-append item path)
+open	(open "path") -> file_descriptor | nil; (open "path" flag) -> file_descriptor | nil
+close	(close file_descriptor) -> errno
 split	(split "string to split") -> '("part1","part2", ...) (split "string to split" "seq-str") -> '("part1","part2", ...)
 join	(join '("s1" "s2" ...)) -> "joined-text"; (join '("s1" "s2" ...) "seq") -> "joined-text"
 http-get	(http-get "url") -> "<html>"; (http-get "url" "proxy-url" proxy-port-number) -> "<html>"
@@ -82,3 +84,10 @@ get-help	(get-help symbol) -> string
 ^	(^ int1 int2 ...) -> int
 >>	(>> int shift) -> int
 <<	(<< int shift) -> int
+undef	(undef symbol) -> boolean
+ifdef	(ifdef symbol) -> boolean
+var-list	(var-list) -> int; (var-list env-name) -> int
+sort	(sort func '(list)) -> '(sorted-list)
+sort!	(sort! func '(list)) -> '(sorted-list)
+errno	(errno) -> int
+strerr	(strerr) -> string
