@@ -9,7 +9,7 @@ namespace varlisp {
 
 /**
  * @brief
- *      (time expr) -> result
+ *      (time expr) -> result-of-expr
  *
  * @param[in] env
  * @param[in] args
