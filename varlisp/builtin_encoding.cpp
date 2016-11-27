@@ -2,6 +2,7 @@
 #include "builtin_helper.hpp"
 
 #include <uchardet/uchardet.h>
+#include <cctype>
 
 #include <sss/encoding.hpp>
 #include <sss/colorlog.hpp>
@@ -147,6 +148,19 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
+namespace detail {
+void trim(sss::string_view& s)
+{
+    while(s.size() && std::isspace(s.front())) {
+        s.remove_prefix(1);
+    }
+    while(s.size() && std::isspace(s.back())) {
+        s.remove_suffix(1);
+    }
+}
+
+} // namespace detail
+
 /**
  * @brief
  *      (ivchardet "encodings" "content") -> "utf8"
@@ -176,7 +190,7 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
     sss::ViewSpliter<char> sp(*p_encodings, ',');
     std::string out;
     while (sp.fetch_next(encoding)) {
-        // TODO sss::trim(encoding);
+        detail::trim(encoding);
         try {
             std::string encoding_str = encoding.to_string();
             sss::iConv ic(encoding_str, encoding_str);
