@@ -32,8 +32,6 @@ Object eval_car(varlisp::Environment& env, const varlisp::List& args)
  * @param[in] args
  *
  * @return
- *
- * TODO FIXME 这个函数，需要类似eval_car改造。
  */
 Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
 {
