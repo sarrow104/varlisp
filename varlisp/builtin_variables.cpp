@@ -1,6 +1,7 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "environment.hpp"
+#include "keyword_t.hpp"
 
 #include <set>
 
@@ -8,10 +9,6 @@
 #include <sss/colorlog.hpp>
 
 namespace varlisp {
-// TODO
-// keyword类；
-// 通过hash算法，生成keyword相关信息；
-// 用来公用；
 
 /**
  * @brief
@@ -33,8 +30,11 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
     }
+    if (varlisp::keywords_t::is_keyword(p_sym->m_data)) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": cannot undef keywords", p_sym->m_data, ")");
+    }
     bool ret = false;
-    // TODO FIXME 这里需要判断，是否是关键字；
     Object* it = env.find(p_sym->m_data);
     if (it) {
         const varlisp::Builtin * p_b = boost::get<varlisp::Builtin>(&(*it));
@@ -66,11 +66,12 @@ Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
     }
-    // TODO FIXME 这里需要判断，是否是关键字；
+    if (varlisp::keywords_t::is_keyword(p_sym->m_data)) {
+        return true;
+    }
     Object* it = env.find(p_sym->m_data);
     return bool(it);
 }
-
 
 /**
  * @brief
@@ -92,11 +93,12 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": list-environment not implement)");
         // NOTE TODO 只枚举环境本身！
+        // 这里需要判断，是否是关键字；
     }
     else {
+        // 被子环境覆盖了的夫环境变量，不会输出。
+        // keyword不允许覆盖定义
         std::set<std::string> outted;
-        // TODO FIXME 这里需要判断，是否是关键字；
-        // 另外，需要一个set，以便记录输出了哪些符号（parent被覆盖）
         for (varlisp::Environment * p_env = &env; p_env; p_env = p_env->parent()) {
             for (auto it = p_env->begin(); it != p_env->end(); ++it) {
                 if (outted.find(it->first) == outted.end()) {
