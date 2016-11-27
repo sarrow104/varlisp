@@ -64,11 +64,28 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env, const varlisp::List&
     }
 }
 
+/**
+ * @brief (io-print "fmt" ...)
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_print(varlisp::Environment& env, const varlisp::List& args)
 {
     fmt_impl(std::cout, env, args, "io-print");
     return Object{Empty{}};
 }
+
+/**
+ * @brief (io-print "fmt\n" ...)
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
 Object eval_print_ln(varlisp::Environment& env, const varlisp::List& args)
 {
     fmt_impl(std::cout, env, args, "io-print-ln");
