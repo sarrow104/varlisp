@@ -9,6 +9,7 @@
 
 #include <fstream>
 
+#include <sss/debug/value_msg.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
 #include <sss/raw_print.hpp>
@@ -144,7 +145,7 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
                           ": requies string path as 1nd argument)");
     }
     std::string std_path = p_path->to_string_view().to_string();
-    int flag = 0;
+    int flag = O_RDONLY;
     if (args.length() >= 2) {
         const int* p_flag =
             getTypedValue<int>(env, args.tail[0].head, obj);
@@ -154,7 +155,14 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
         }
         flag = *p_flag;
     }
-    int fd = ::open(std_path.c_str(), flag);
+
+    // NOTE 当提供 O_CREAT 掩码的时候，必须使用mode_t 参数！
+    // 否则会忽略
+    // 00400 user has read permission
+    // 00200 user has write permission
+
+    int fd = ::open(std_path.c_str(), flag, S_IRUSR | S_IWUSR);
+    COLOG_DEBUG(SSS_VALUE_MSG(fd));
     return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
 }
 
@@ -171,11 +179,12 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "close";
     Object obj;
     const int* p_fd =
-        getTypedValue<int>(env, args.tail[0].head, obj);
+        getTypedValue<int>(env, args.head, obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies int fd as 1st argument)");
     }
+    COLOG_DEBUG(SSS_VALUE_MSG(*p_fd));
     
     // errno；
     // 由于我这个是脚本，不是真正编译程序；也就是说，从产生错误号，到获取
