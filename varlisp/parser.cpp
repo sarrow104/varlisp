@@ -322,7 +322,8 @@ Object Parser::parseSpecialIf()
 Object Parser::parseSpecialCond()
 {
     if (!this->m_toknizer.consume(varlisp::symbol("cond"))) {
-        SSS_POSITION_THROW(std::runtime_error, "expect 'cond'");
+        SSS_POSITION_THROW(std::runtime_error, "expect 'cond'; but",
+                           this->m_toknizer.lookahead(0));
     }
     bool has_else_clause = false;
     std::vector<std::pair<Object, Object>> conditions;
@@ -347,7 +348,8 @@ Object Parser::parseSpecialCond()
         }
     }
     if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-        SSS_POSITION_THROW(std::runtime_error, "expect ')'");
+        SSS_POSITION_THROW(std::runtime_error, "expect ')'; but",
+                           this->m_toknizer.lookahead(0));
     }
 
     return varlisp::Cond(conditions);
@@ -417,11 +419,13 @@ int parseParamVector(varlisp::Tokenizer& toknizer,
     return args.size() - old_len;
 }
 
+// (define symbol expr)
+// (define (symbol arg-list) "doc" (expr-list))
 Object Parser::parseSpecialDefine()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     if (!this->m_toknizer.consume(varlisp::symbol("define"))) {
-        SSS_POSITION_THROW(std::runtime_error, "expect 'quote'");
+        SSS_POSITION_THROW(std::runtime_error, "expect 'define'");
     }
 
     varlisp::Token tok = this->m_toknizer.lookahead();
@@ -436,7 +440,8 @@ Object Parser::parseSpecialDefine()
         varlisp::Object value = this->parseExpression();
 
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-            SSS_POSITION_THROW(std::runtime_error, "expect ')'");
+            SSS_POSITION_THROW(std::runtime_error, "expect ')'; but",
+                               this->m_toknizer.lookahead(0));
         }
 
         return Define(*p_name, value);
@@ -461,8 +466,19 @@ Object Parser::parseSpecialDefine()
             parseParamVector(m_toknizer, args);
 
             if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-                SSS_POSITION_THROW(std::runtime_error, "expect ')'");
+                SSS_POSITION_THROW(std::runtime_error, "expect ')'; but ",
+                                   this->m_toknizer.lookahead(0));
             }
+
+            varlisp::string_t help_msg;
+            varlisp::Token firstTok = this->m_toknizer.lookahead(0);
+            const std::string * p_msg = boost::get<std::string>(&firstTok);
+            if (!p_msg) {
+                SSS_POSITION_THROW(std::runtime_error, "expect \"help msg\" string; but ",
+                                   firstTok);
+            }
+            help_msg = varlisp::string_t(*p_msg);
+            this->m_toknizer.consume();
 
             std::vector<Object> body;
             while (true) {
@@ -472,11 +488,11 @@ Object Parser::parseSpecialDefine()
                 }
                 body.push_back(this->parseExpression());
             }
-
             if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
                 SSS_POSITION_THROW(std::runtime_error, "expect ')'");
             }
-            varlisp::Lambda lambda(std::move(args), std::move(body));
+
+            varlisp::Lambda lambda(std::move(args), std::move(help_msg), std::move(body));
 
             return varlisp::Define(*p_symbol, lambda);
         }
@@ -486,6 +502,7 @@ Object Parser::parseSpecialDefine()
     }
 }
 
+// (labmda (arg-list) "" expr-list)
 Object Parser::parseSpecialLambda()
 {
     if (!this->m_toknizer.consume(varlisp::symbol("lambda"))) {
@@ -501,6 +518,17 @@ Object Parser::parseSpecialLambda()
     if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
         SSS_POSITION_THROW(std::runtime_error, "expect ')'");
     }
+
+    varlisp::string_t help_msg;
+    varlisp::Token firstTok = this->m_toknizer.lookahead(0);
+    const std::string * p_msg = boost::get<std::string>(&firstTok);
+    if (!p_msg) {
+        SSS_POSITION_THROW(std::runtime_error, "expect \"help msg\" string; but ",
+                           firstTok);
+    }
+    help_msg = varlisp::string_t(*p_msg);
+    this->m_toknizer.consume();
+
     std::vector<Object> body;
     while (true) {
         varlisp::Token tok = this->m_toknizer.lookahead(0);
@@ -512,10 +540,11 @@ Object Parser::parseSpecialLambda()
     // // 貌似 Lambda的body部分，可以有很多语句；
     // varlisp::Object body = this->parseList();
     if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-        SSS_POSITION_THROW(std::runtime_error, "expect ')'");
+        SSS_POSITION_THROW(std::runtime_error, "expect ')'; but",
+                           this->m_toknizer.lookahead(0));
     }
     // return varlisp::Lambda(args, body);
-    return varlisp::Lambda(std::move(args), std::move(body));
+    return varlisp::Lambda(std::move(args), std::move(help_msg), std::move(body));
 }
 
 // '(' "eval" Expression+ ')'

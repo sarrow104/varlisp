@@ -91,6 +91,8 @@ private:
     std::shared_ptr<std::string> m_refer;
 };
 
+typedef String string_t;
+
 inline std::ostream& operator<<(std::ostream& o, const String& s)
 {
     s.print(o);

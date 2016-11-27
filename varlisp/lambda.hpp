@@ -13,18 +13,20 @@ namespace varlisp {
 //
 // 另外Lisp语法，可以提供一个&rest形参，以表示不定参数；具名以外，提供的参
 // 数，都会绑定给它，作为列表？
+// (define (arg-list) ["help-doc"] (body-expr-list))
 struct Lambda {
     std::vector<std::string> args;  // 形式参数
     std::vector<Object> body;       // 函数体
+    varlisp::string_t   help_doc;   // 帮助信息
 
     Lambda() = default;
-    Lambda(const std::vector<std::string>& a, const std::vector<Object>& b)
-        : args(a), body(b)
+    Lambda(const std::vector<std::string>& a, varlisp::string_t msg, const std::vector<Object>& b)
+        : args(a), body(b), help_doc(msg)
     {
     }
 
-    Lambda(std::vector<std::string>&& a, std::vector<Object>&& b)
-        : args(std::move(a)), body(std::move(b))
+    Lambda(std::vector<std::string>&& a, varlisp::string_t&& m, std::vector<Object>&& b)
+        : args(std::move(a)), body(std::move(b)), help_doc(std::move(m))
     {
     }
 
