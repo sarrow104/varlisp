@@ -107,9 +107,6 @@ Object eval_le(varlisp::Environment& env, const varlisp::List& args)
                   boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
-// TODO (! ) (not ) 当callable，为#f的时候，返回#t；反之，返回#f；
-// 需要注意的是，由于只有#t才判定为真，
-
 /**
  * @brief (not expr) -> !#t | !#f
  *
