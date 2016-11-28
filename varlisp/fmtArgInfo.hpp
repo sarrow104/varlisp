@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+
 #include <sss/util/Parser.hpp>
 
 namespace varlisp {

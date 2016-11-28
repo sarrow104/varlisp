@@ -1,11 +1,11 @@
-#include "object.hpp"
-#include "builtin_helper.hpp"
-#include "cast2bool_visitor.hpp"
-
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
 
 #include <algorithm>
+
+#include "object.hpp"
+#include "builtin_helper.hpp"
+#include "cast2bool_visitor.hpp"
 
 namespace varlisp {
 

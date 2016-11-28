@@ -8,7 +8,6 @@
 
 #include "String.hpp"
 
-
 namespace varlisp {
 struct Empty;
 struct Nill;

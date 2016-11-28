@@ -1,11 +1,11 @@
 #ifndef __LIST_HPP_1457603019__
 #define __LIST_HPP_1457603019__
 
-#include "object.hpp"
-
 #include <initializer_list>
 #include <stdexcept>
 #include <vector>
+
+#include "object.hpp"
 
 namespace varlisp {
 

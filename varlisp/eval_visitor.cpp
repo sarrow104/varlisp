@@ -1,9 +1,9 @@
 #include "eval_visitor.hpp"
 
+#include <sss/utlstring.hpp>
+
 #include "environment.hpp"
 #include "list.hpp"
-
-#include <sss/utlstring.hpp>
 
 namespace varlisp {
 

@@ -1,11 +1,12 @@
 #include "builtin_helpdoc_mgr.hpp"
-#include <fstream>
+
 #include <cctype>
+
+#include <fstream>
+#include <iostream>
 
 #include <sss/spliter.hpp>
 #include <sss/string_view.hpp>
-
-#include <iostream>
 
 namespace varlisp {
 builtin_helpdoc_mgr::builtin_helpdoc_mgr(const std::string& helpdoc_fname)

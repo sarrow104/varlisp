@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <list>
-
 #include <iostream>
 
 #include <boost/variant.hpp>

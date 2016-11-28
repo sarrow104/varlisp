@@ -1,11 +1,11 @@
 #pragma once
 
-#include "object.hpp"
-
 #include <stdexcept>
 
 #include <sss/util/PostionThrow.hpp>
 #include <boost/variant.hpp>
+
+#include "object.hpp"
 
 namespace varlisp {
 

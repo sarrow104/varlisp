@@ -1,9 +1,8 @@
 #include "gumboNode.hpp"
 
-#include <gumbo_query/QueryUtil.h>
-
 #include <sstream>
-// #include "object.hpp"
+
+#include <gumbo_query/QueryUtil.h>
 
 namespace varlisp {
 

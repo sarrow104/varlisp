@@ -1,9 +1,9 @@
 #ifndef __LOGIC_OR_HPP_1457944790__
 #define __LOGIC_OR_HPP_1457944790__
 
-#include "object.hpp"
-
 #include <utility>
+
+#include "object.hpp"
 
 namespace varlisp {
 struct Environment;

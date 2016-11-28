@@ -1,8 +1,8 @@
-#include "object.hpp"
-#include "builtin_helper.hpp"
+#include <cctype>
+
+#include <stdexcept>
 
 #include <uchardet/uchardet.h>
-#include <cctype>
 
 #include <sss/encoding.hpp>
 #include <sss/colorlog.hpp>
@@ -12,7 +12,8 @@
 #include <sss/ps.hpp>
 #include <sss/popenRWE.h>
 
-#include <stdexcept>
+#include "object.hpp"
+#include "builtin_helper.hpp"
 
 inline void encoding_normalize(std::string& encoding)
 {

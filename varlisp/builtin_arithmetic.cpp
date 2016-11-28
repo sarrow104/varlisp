@@ -1,10 +1,12 @@
+#include <limits>
+
+#include <boost/variant/multivisitors.hpp>
+
+#include <sss/debug/value_msg.hpp>
+
 #include "arithmetic_cast_visitor.hpp"
 #include "is_instant_visitor.hpp"
 #include "object.hpp"
-
-#include <sss/debug/value_msg.hpp>
-#include <boost/variant/multivisitors.hpp>
-#include <limits>
 
 namespace varlisp {
 

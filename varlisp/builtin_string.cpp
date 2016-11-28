@@ -1,16 +1,15 @@
-#include "builtin_helper.hpp"
-#include "object.hpp"
-#include "print_visitor.hpp"
-
-#include "arithmetic_cast_visitor.hpp"
-#include "arithmetic_t.hpp"
-#include "builtin_helper.hpp"
-
 #include <iterator>
 
 #include <sss/util/utf8.hpp>
 #include <sss/spliter.hpp>
 #include <sss/colorlog.hpp>
+
+#include "object.hpp"
+#include "builtin_helper.hpp"
+#include "print_visitor.hpp"
+#include "arithmetic_cast_visitor.hpp"
+#include "arithmetic_t.hpp"
+#include "builtin_helper.hpp"
 
 namespace varlisp {
 /**

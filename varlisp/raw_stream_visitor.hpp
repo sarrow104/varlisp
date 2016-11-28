@@ -1,8 +1,9 @@
 #ifndef __RAW_STREAM_VISITOR_HPP_1478481280__
 #define __RAW_STREAM_VISITOR_HPP_1478481280__
 
-#include <boost/variant.hpp>
 #include <iosfwd>
+
+#include <boost/variant.hpp>
 
 #include <sss/regex/cregex.hpp>
 

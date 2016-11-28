@@ -1,8 +1,10 @@
-#include <boost/variant.hpp>
 #include <iosfwd>
 #include <sstream>
 
+#include <boost/variant.hpp>
+
 #include <sss/regex/cregex.hpp>
+
 #include "fmtArgInfo.hpp"
 
 namespace varlisp {

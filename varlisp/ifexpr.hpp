@@ -1,9 +1,9 @@
 #ifndef __IFEXPR_HPP_1457602973__
 #define __IFEXPR_HPP_1457602973__
 
-#include "object.hpp"
-
 #include <utility>
+
+#include "object.hpp"
 
 namespace varlisp {
 struct Environment;

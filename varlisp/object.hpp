@@ -1,9 +1,10 @@
 #ifndef __OBJECT_HPP_1457602801__
 #define __OBJECT_HPP_1457602801__
 
+#include <iosfwd>
+
 #include <boost/variant.hpp>
 #include <boost/variant/recursive_wrapper.hpp>
-#include <iosfwd>
 
 #include <sss/regex/cregex.hpp>
 

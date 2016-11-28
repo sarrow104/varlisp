@@ -1,9 +1,9 @@
 #ifndef __CONDITION_HPP_1457934568__
 #define __CONDITION_HPP_1457934568__
 
-#include "object.hpp"
-
 #include <utility>
+
+#include "object.hpp"
 
 namespace varlisp {
 struct Environment;

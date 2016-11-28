@@ -1,3 +1,4 @@
+#include "parser.hpp"
 
 #include <sstream>
 
@@ -11,7 +12,6 @@
 
 #include "environment.hpp"
 #include "builtin_helper.hpp"
-#include "parser.hpp"
 #include "print_visitor.hpp"
 #include "tokenizer.hpp"
 

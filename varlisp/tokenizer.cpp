@@ -10,7 +10,6 @@
 #define SSS_COLOG_TURNOFF
 #endif
 
-// #include <sss/Terminal.hpp>
 #include <sss/colorlog.hpp>
 
 #include <ss1x/parser/oparser.hpp>

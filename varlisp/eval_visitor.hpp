@@ -1,10 +1,10 @@
 #ifndef __EVAL_VISITOR_HPP_1457603665__
 #define __EVAL_VISITOR_HPP_1457603665__
 
+#include <sss/util/PostionThrow.hpp>
+
 #include "object.hpp"
 #include "gumboNode.hpp"
-
-#include <sss/util/PostionThrow.hpp>
 
 namespace varlisp {
 struct Environment;

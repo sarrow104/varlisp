@@ -1,13 +1,12 @@
 #ifndef __STRICT_LESS_VISITOR_HPP_1457699825__
 #define __STRICT_LESS_VISITOR_HPP_1457699825__
 
-#include <sss/log.hpp>
-
 #include <boost/variant.hpp>
+
+#include <sss/log.hpp>
 
 #include "arithmetic_t.hpp"
 #include "arithmetic_cast_visitor.hpp"
-
 #include "environment.hpp"
 #include "object.hpp"
 

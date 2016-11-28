@@ -1,14 +1,12 @@
 #include "helpmsg_visitor.hpp"
 
+#include <sss/path.hpp>
+
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "environment.hpp"
-
 #include "keyword_t.hpp"
-
 #include "builtin_helpdoc_mgr.hpp"
-
-#include <sss/path.hpp>
 
 namespace varlisp {
 

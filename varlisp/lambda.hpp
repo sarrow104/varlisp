@@ -1,9 +1,9 @@
 #ifndef __LAMBDA_HPP_1457603378__
 #define __LAMBDA_HPP_1457603378__
 
-#include "object.hpp"
-
 #include <vector>
+
+#include "object.hpp"
 
 namespace varlisp {
 // Lambda

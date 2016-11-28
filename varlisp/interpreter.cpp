@@ -1,13 +1,14 @@
 #include "interpreter.hpp"
-#include "builtin.hpp"
-#include "parser.hpp"
+
+#include <algorithm>
+#include <memory>
 
 #include <sss/log.hpp>
 #include <sss/path.hpp>
 #include <sss/utlstring.hpp>
 
-#include <algorithm>
-#include <memory>
+#include "builtin.hpp"
+#include "parser.hpp"
 
 namespace varlisp {
 Interpreter::Interpreter() : m_status(status_OK)

@@ -1,9 +1,10 @@
 #include "cast2bool_visitor.hpp"
-#include "object.hpp"
-#include "environment.hpp"
-#include "String.hpp"
 
+#include "String.hpp"
 #include "builtin_helper.hpp"
+#include "environment.hpp"
+#include "object.hpp"
+
 namespace varlisp {
 
 bool cast2bool_visitor::operator()(const string_t& s) const

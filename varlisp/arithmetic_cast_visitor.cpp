@@ -1,10 +1,12 @@
 #include "arithmetic_cast_visitor.hpp"
+
+#include <cstdlib>
+
+#include <sss/raw_print.hpp>
+
 #include "is_instant_visitor.hpp"
 #include "eval_visitor.hpp"
 #include "object.hpp"
-
-#include <cstdlib>
-#include <sss/raw_print.hpp>
 
 namespace varlisp {
 

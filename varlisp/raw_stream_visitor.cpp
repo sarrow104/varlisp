@@ -1,10 +1,11 @@
 #include "raw_stream_visitor.hpp"
-#include "environment.hpp"
-#include "object.hpp"
+
+#include <stdexcept>
 
 #include <sss/util/PostionThrow.hpp>
 
-#include <stdexcept>
+#include "environment.hpp"
+#include "object.hpp"
 
 namespace varlisp {
 void raw_stream_visitor::operator()(const varlisp::symbol& s) const

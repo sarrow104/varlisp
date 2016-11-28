@@ -1,7 +1,7 @@
+#include <string.h>
+
 #include "object.hpp"
 #include "builtin_helper.hpp"
-
-#include <string.h>
 
 namespace varlisp {
 

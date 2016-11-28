@@ -1,7 +1,8 @@
 #pragma once
 
-#include <sss/regex/cregex.hpp>
 #include <boost/variant.hpp>
+
+#include <sss/regex/cregex.hpp>
 
 // 即，是否需要eval_visitor()的判断。
 // 是否立即值？

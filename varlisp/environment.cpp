@@ -1,10 +1,10 @@
 #include "environment.hpp"
-#include "eval_visitor.hpp"
 
 #include <sss/log.hpp>
 #include <sss/util/Memory.hpp>
-
 #include <sss/colorlog.hpp>
+
+#include "eval_visitor.hpp"
 
 namespace varlisp {
 

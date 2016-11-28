@@ -1,8 +1,9 @@
 #ifndef __CAST2BOOL_VISITOR_HPP_1457680829__
 #define __CAST2BOOL_VISITOR_HPP_1457680829__
 
-#include <sss/utlstring.hpp>
 #include <boost/variant.hpp>
+
+#include <sss/utlstring.hpp>
 
 // NOTE
 // 本visitor功能，和

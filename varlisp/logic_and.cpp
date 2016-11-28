@@ -1,13 +1,13 @@
 #include "logic_and.hpp"
 
+#include <sss/utlstring.hpp>
+
 #include "cast2bool_visitor.hpp"
 #include "environment.hpp"
 #include "eval_visitor.hpp"
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
 #include "builtin_helper.hpp"
-
-#include <sss/utlstring.hpp>
 
 namespace varlisp {
 Object LogicAnd::eval(Environment& env) const

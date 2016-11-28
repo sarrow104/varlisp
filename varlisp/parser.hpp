@@ -5,7 +5,6 @@
 #include <string>
 
 #include "tokenizer.hpp"
-
 #include "object.hpp"
 
 namespace varlisp {

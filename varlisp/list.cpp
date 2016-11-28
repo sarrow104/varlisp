@@ -1,8 +1,4 @@
 #include "list.hpp"
-#include "object.hpp"
-
-#include "print_visitor.hpp"
-#include "strict_equal_visitor.hpp"
 
 #include <sss/colorlog.hpp>
 #include <sss/log.hpp>
@@ -10,6 +6,10 @@
 
 #include <sstream>
 #include <stdexcept>
+
+#include "object.hpp"
+#include "print_visitor.hpp"
+#include "strict_equal_visitor.hpp"
 
 namespace varlisp {
 

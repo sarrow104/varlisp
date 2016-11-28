@@ -1,5 +1,4 @@
 #include "fmtArgInfo.hpp"
-#include "String.hpp"
 
 #include <iterator>
 
@@ -8,6 +7,8 @@
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
 #include <sss/util/utf8.hpp>
+
+#include "String.hpp"
 
 namespace varlisp {
 
