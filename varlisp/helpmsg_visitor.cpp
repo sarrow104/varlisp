@@ -39,7 +39,7 @@ varlisp::string_t helpmsg_visitor::operator()(const varlisp::symbol& s) const
         }
         Object obj;
         const Object& objref = varlisp::getAtomicValue(m_env, *it, obj);
-        if (const varlisp::Builtin * p_tmp = boost::get<varlisp::Builtin>(&objref)) {
+        if (boost::get<varlisp::Builtin>(&objref)) {
             return get_helpdoc_mgr().get(s.m_data);
         }
         else if (const auto * p_tmp = boost::get<varlisp::Lambda>(&objref)) {
