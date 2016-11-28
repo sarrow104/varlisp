@@ -35,16 +35,21 @@ struct Environment : private std::map<std::string, Object> {
     using BaseT::operator[];
 
     explicit Environment(Environment* parent = 0);
+    ~Environment();
 
     bool erase(const std::string& name);
 
     Environment * parent() const {
         return m_parent;
     }
+    void   defer_task_push(const Object& task);
+    void   defer_task_push(Object&& task);
+    size_t defer_task_size() const;
 
 private:
-    Environment* m_parent;
-    Interpreter* m_interpreter;
+    Environment*        m_parent;
+    Interpreter*        m_interpreter;
+    std::vector<Object> m_defer_task;
 };
 }  // namespace varlisp
 

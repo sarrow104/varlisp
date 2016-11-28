@@ -1,14 +1,50 @@
 #include "environment.hpp"
+#include "eval_visitor.hpp"
 
 #include <sss/log.hpp>
 #include <sss/util/Memory.hpp>
+
+#include <sss/colorlog.hpp>
 
 namespace varlisp {
 
 Environment::Environment(Environment* parent)
     : m_parent(parent), m_interpreter(0)
 {
-    // std::cout << __func__ << " " << this << " from " << parent << std::endl;
+    COLOG_DEBUG(this, "from", parent);
+}
+
+Environment::~Environment()
+{
+    while(!m_defer_task.empty()) {
+        const Object& task = m_defer_task.back();
+        try {
+            boost::apply_visitor(eval_visitor(*this), m_defer_task.back());
+        }
+        catch (std::exception& e) {
+            COLOG_ERROR(e.what());
+        }
+        catch (...)
+        {
+            COLOG_DEBUG("unkown exception while eval", task);
+        }
+        m_defer_task.pop_back();
+    }
+}
+
+void   Environment::defer_task_push(const Object& task)
+{
+    m_defer_task.push_back(task);
+}
+
+void   Environment::defer_task_push(Object&& task)
+{
+    m_defer_task.emplace_back(std::move(task));
+}
+
+size_t Environment::defer_task_size() const
+{
+    return m_defer_task.size();
 }
 
 const Object* Environment::find(const std::string& name) const
