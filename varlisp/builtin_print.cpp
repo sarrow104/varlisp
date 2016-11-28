@@ -111,32 +111,49 @@ Object eval_fmt(varlisp::Environment& env, const varlisp::List& args)
 }
 
 /**
- * @brief (format stream-fd "fmt-str" arg1 arg2 ... argn) -> int
+ * @brief (format stream-fd "fmt-str" arg1 arg2 ... argn) -> ...
  *
  * @param[in] env
  * @param[in] args
  *
  * @return
+ *  Nill
+ *      当stream-fd 正常的时候；
+ *  string
+ *      当stream-fd 是nil的时候。
  */
 Object eval_format(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "format";
     Object objFd;
-    const int* p_fd =
-        getTypedValue<int>(env, args.head, objFd);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+    const Object& fdRef = varlisp::getAtomicValue(env, args.head, objFd);
+    int fd = -1;
+    if (nullptr != boost::get<varlisp::Nill>(&fdRef)) {
+        fd = 0;
     }
-    if (*p_fd == 0) {
+    else if (const int* p_fd = boost::get<int>(&fdRef)) {
+        if (*p_fd <= 0) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": requies positive int as 1st argument)");
+        }
+        fd = *p_fd;
+    }
+    else {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies none-zero int as 1st argument)");
+                           ": requies int fd or nil as 1st argument)");
     }
 
     std::ostringstream oss;
     fmt_impl(oss, env, args.tail[0], funcName);
     std::string out = oss.str();
-    return varlisp::detail::writestring(*p_fd, sss::string_view{out});
+
+    if (fd == 0) {
+        return string_t{std::move(out)};
+    }
+    else {
+        varlisp::detail::writestring(fd, sss::string_view{out});
+        return varlisp::Nill{};
+    }
 }
 
 /**
