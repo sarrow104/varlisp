@@ -1,10 +1,13 @@
 #include "fmtArgInfo.hpp"
 #include "String.hpp"
 
+#include <iterator>
+
 #include <sss/bit_operation/bit_operation.h>
 #include <sss/string_view.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
+#include <sss/util/utf8.hpp>
 
 namespace varlisp {
 
@@ -185,6 +188,13 @@ void fmtArgInfo::print(std::ostream& o, double f) const
     char buf[32];
     char c_fmt[32];
     switch (this->type) {
+        case 'c': {
+            int32_t i = f;
+            sss::util::utf8::dumpout2utf8(&i, &i + 1,
+                                          std::ostream_iterator<char>(o));
+            break;
+        }
+
         case 'b': {
             std::ostringstream oss;
             ext::binary(oss) << f;
@@ -230,6 +240,11 @@ void fmtArgInfo::print(std::ostream& o, int32_t i) const
     char buf[32];
     char c_fmt[32];
     switch (this->type) {
+        case 'c': {
+            sss::util::utf8::dumpout2utf8(&i, &i + 1,
+                                          std::ostream_iterator<char>(o));
+        } break;
+
         case 'b': {
             std::ostringstream oss;
             ext::binary(oss) << i;
