@@ -2,10 +2,9 @@
 #include <cstdlib>
 
 #include <iostream>
+#include <initializer_list>
 
 #include <linenoise.hpp>
-
-#include <initializer_list>
 
 #include <sss/debug/value_msg.hpp>
 #include <sss/algorithm.hpp>
