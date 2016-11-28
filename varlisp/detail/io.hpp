@@ -55,8 +55,8 @@ inline int writechar(int fd, int ch)
     if (ch && ch != -1) {
         int len = sss::util::utf8::get_ucs_code_length(ch);
         sss::util::utf8::dumpout2utf8(&ch, &ch + 1, buf);
-        ::write(fd, buf, len);
-        return len;
+        // 返回值包括-1状态！
+        return ::write(fd, buf, len);;
     }
     return 0;
 }

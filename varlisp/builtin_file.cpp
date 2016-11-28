@@ -1,7 +1,3 @@
-#include "builtin_helper.hpp"
-#include "object.hpp"
-#include "raw_stream_visitor.hpp"
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -9,11 +5,16 @@
 
 #include <fstream>
 
-#include "detail/io.hpp"
 #include <sss/debug/value_msg.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
 #include <sss/raw_print.hpp>
+
+#include "object.hpp"
+#include "builtin_helper.hpp"
+#include "raw_stream_visitor.hpp"
+
+#include "detail/io.hpp"
 
 namespace varlisp {
 namespace detail {
@@ -342,7 +343,8 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
                            ": requies int fd as 2nd argument)");
     }
 
-    return detail::writechar(*p_fd, *p_ch);
+    int ec = detail::writechar(*p_fd, *p_ch);
+    return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
 
 }  // namespace
