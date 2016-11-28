@@ -183,6 +183,21 @@ void List::print_impl(std::ostream& o) const
     }
 }
 
+/**
+ * @brief clean 确保如果某节点head.which() == 0的时候，它没有tail！
+ */
+void List::clean()
+{
+    List * p = this;
+    while (p && !p->tail.empty()) {
+        if (p->head.which() == 0) {
+            this->tail.clear();
+            break;
+        }
+        p = &p->tail[0];
+    }
+}
+
 bool operator==(const List& lhs, const List& rhs)
 {
     // return boost::apply_visitor(strict_equal_visitor(), lhs.head, rhs.head)

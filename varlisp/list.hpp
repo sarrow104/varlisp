@@ -42,13 +42,13 @@ struct List {
 
     List* next_slot()
     {
-        List* p_list = this;
-        if (p_list->head.which()) {
-            p_list->tail.push_back(varlisp::List());
-            p_list = &p_list->tail[0];
+        if (this->tail.empty()) {
+            this->tail.push_back(varlisp::List());
         }
-        return p_list;
+        return &tail[0];
     }
+
+    void clean();
 
     const List* next() const { return this->tail.empty() ? 0 : &this->tail[0]; }
     void assign(const Object& value) { this->head = value; }
