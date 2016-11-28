@@ -16,6 +16,23 @@
 #include <sss/raw_print.hpp>
 
 namespace varlisp {
+namespace detail {
+inline const Object& car(const varlisp::List& args)
+{
+    return args.head;
+}
+
+inline const Object& cadr(const varlisp::List& args)
+{
+    return args.tail[0].head;
+}
+
+inline const Object& caddr(const varlisp::List& args)
+{
+    return args.tail[0].tail[0].head;
+}
+
+} // namespace detail
 
 /**
  * @brief (read-cat "path/to/file") -> string
@@ -30,7 +47,7 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "read-all";
     Object path;
     const string_t* p_path =
-        getTypedValue<string_t>(env, args.head, path);
+        getTypedValue<string_t>(env, detail::car(args), path);
     if (!p_path) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies a path string as 1st argument)");
@@ -69,7 +86,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     const char* funcName = append ? "write-append" : "write";
     Object path;
     const string_t* p_path =
-        getTypedValue<string_t>(env, args.tail[0].head, path);
+        getTypedValue<string_t>(env, detail::cadr(args), path);
     if (!p_path) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies path as 2nd argument to write)");
@@ -90,7 +107,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     std::ofstream::pos_type pos = ofs.tellp();
 
     Object obj;
-    const Object& firstArg = getAtomicValue(env, args.head, obj);
+    const Object& firstArg = getAtomicValue(env, detail::car(args), obj);
 
     if (const varlisp::List* p_list = boost::get<varlisp::List>(&firstArg)) {
         // NOTE this p_list must be an s-list!
@@ -105,7 +122,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
         }
     }
     else {
-        boost::apply_visitor(raw_stream_visitor(ofs, env), args.head);
+        boost::apply_visitor(raw_stream_visitor(ofs, env), detail::car(args));
     }
 
     std::ofstream::pos_type write_cnt = ofs.tellp() - pos;
@@ -140,7 +157,7 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "open";
     Object obj;
     const string_t* p_path =
-        getTypedValue<string_t>(env, args.head, obj);
+        getTypedValue<string_t>(env, detail::car(args), obj);
     if (!p_path) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies string path as 1nd argument)");
@@ -149,7 +166,7 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
     int flag = O_RDONLY;
     if (args.length() >= 2) {
         const int* p_flag =
-            getTypedValue<int>(env, args.tail[0].head, obj);
+            getTypedValue<int>(env, detail::cadr(args), obj);
         if (!p_flag) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": requies int flag as 2nd argument)");
@@ -168,6 +185,59 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
 }
 
 /**
+ * @brief
+ *     (getfdflag fd) -> flag | nil
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_getfdflag(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "getfdflag";
+    Object obj;
+    const int* p_fd =
+        getTypedValue<int>(env, detail::car(args), obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    int flag = ::fcntl(*p_fd, F_GETFL);
+    return flag == -1 ? Object{varlisp::Nill{}} : Object{flag};
+}
+
+/**
+ * @brief
+ *     (setfdflag fd flag) -> errno
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_setfdflag(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "setfdflag";
+    Object obj;
+    const int* p_fd =
+        getTypedValue<int>(env, detail::car(args), obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    int fd = *p_fd;
+    const int* p_flag =
+        getTypedValue<int>(env, detail::cadr(args), obj);
+    if (!p_flag) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int flag as 2nd argument)");
+    }
+    int ec = ::fcntl(fd, F_SETFL, *p_flag);
+    return ec == -1 ? errno : 0;
+}
+
+/**
  * @brief (close file_descriptor) -> errno
  *
  * @param[in] env
@@ -180,7 +250,7 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "close";
     Object obj;
     const int* p_fd =
-        getTypedValue<int>(env, args.head, obj);
+        getTypedValue<int>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies int fd as 1st argument)");
@@ -192,7 +262,6 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
     // 错误号，间隔了多少系统调用？错误号是否被覆盖。
     return ::close(*p_fd) == -1 ? errno : 0;
 }
-
 
 /**
  * @brief (read-line file_descriptor) -> string | nill
@@ -207,7 +276,7 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "read-line";
     Object obj;
     const int* p_fd =
-        getTypedValue<int>(env, args.head, obj);
+        getTypedValue<int>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies int fd as 1st argument)");
@@ -234,7 +303,7 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "read-line";
     Object obj;
     const int* p_fd =
-        getTypedValue<int>(env, args.head, obj);
+        getTypedValue<int>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies int fd as 1st argument)");
@@ -260,14 +329,14 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "read-line";
     Object obj;
     const int* p_fd =
-        getTypedValue<int>(env, args.head, obj);
+        getTypedValue<int>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies int fd as 1st argument)");
     }
     Object chObj;
     const int* p_ch =
-        getTypedValue<int>(env, args.tail[0].head, chObj);
+        getTypedValue<int>(env, detail::cadr(args), chObj);
     if (!p_ch) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies int fd as 2nd argument)");
