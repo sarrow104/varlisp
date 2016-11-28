@@ -46,7 +46,6 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
                           ", but given ", true_args.length());
     }
     const varlisp::List* p = &true_args;
-    bool need_exist = false;
     for (size_t i = 0; i != this->args.size();
          ++i, p = p->tail.empty() ? 0 : &p->tail[0]) {
         if (!p) {
@@ -62,10 +61,6 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
         inner[args[i]] = boost::apply_visitor(eval_visitor(env), p->head);
     }
 
-    if (need_exist) {
-        exit(1);
-    }
-
     size_t i = 0;
     for (const auto& obj : this->body) {
         if (i == this->body.size() - 1) {
@@ -79,13 +74,26 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
     // return boost::apply_visitor(eval_visitor(inner), this->body);
 }
 
-// 不可比较
+// 比较通过递归完成；分别比较各个部分元素
+// 但实际使用的时候，比如 operator < 的实现，需要先后判断 == 和 <
+// 导致两次循环比较。
+// 效率太低。最好，先实现一个compare函数，获得一个-1,0,1三值。
+// 再比较。
+// 所以，最好的办法，是序列化函数之后，比较字符串！
 bool operator==(const Lambda& lhs, const Lambda& rhs)
 {
-    // return lhs.args == rhs.args
-    //     && boost::apply_visitor(strict_equal_visitor(), lhs.body, rhs.body);
-    return false;
+    std::ostringstream os1;
+    std::ostringstream os2;
+    lhs.print(os1);
+    rhs.print(os2);
+    return os1.str() == os2.str();
 }
 
-bool operator<(const Lambda& lhs, const Lambda& rhs) { return false; }
+bool operator<(const Lambda& lhs, const Lambda& rhs) {
+    std::ostringstream os1;
+    std::ostringstream os2;
+    lhs.print(os1);
+    rhs.print(os2);
+    return os1.str() < os2.str();
+}
 }  // namespace varlisp
