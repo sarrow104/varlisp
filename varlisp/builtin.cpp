@@ -62,9 +62,14 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args);
 Object eval_read_line(varlisp::Environment& env, const varlisp::List& args);
 Object eval_read_char(varlisp::Environment& env, const varlisp::List& args);
 Object eval_write_char(varlisp::Environment& env, const varlisp::List& args);
+Object eval_getfdflag(varlisp::Environment& env, const varlisp::List& args);
+Object eval_setfdflag(varlisp::Environment& env, const varlisp::List& args);
 
 Object eval_split(varlisp::Environment& env, const varlisp::List& args);
 Object eval_join(varlisp::Environment& env, const varlisp::List& args);
+
+Object eval_split_char(varlisp::Environment &env, const varlisp::List &args);
+Object eval_join_char(varlisp::Environment &env, const varlisp::List &args);
 
 Object eval_substr(varlisp::Environment& env, const varlisp::List& args);
 Object eval_strlen(varlisp::Environment &env, const varlisp::List &args);
@@ -142,6 +147,8 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args);
 Object eval_errno(varlisp::Environment& env, const varlisp::List& args);
 Object eval_strerr(varlisp::Environment& env, const varlisp::List& args);
 
+Object eval_defer(varlisp::Environment& env, const varlisp::List& args);
+
 // NOTE 帮助信息，可以利用外部文件导入的方式。
 // 锚点，就是函数名；
 const builtin_info_t builtin_infos[] =
@@ -198,6 +205,8 @@ const builtin_info_t builtin_infos[] =
     {"write-append",    2,  2,  &eval_write_append},
     {"open",            1,  2,  &eval_open},
     {"close",           1,  1,  &eval_close},
+    {"getfdflag",       1,  1,  &eval_getfdflag},
+    {"setfdflag",       2,  2,  &eval_setfdflag},
 
     {"read-line",       1,  1,  &eval_read_line},
     {"read-char",       1,  1,  &eval_read_char},
@@ -208,6 +217,8 @@ const builtin_info_t builtin_infos[] =
     // 字符串拆分，组合
     {"split",           1,  2,  &eval_split},
     {"join",            1,  2,  &eval_join},
+    {"split-char",      1,  1,  &eval_split_char},
+    {"join-char",       1,  1,  &eval_join_char},
 
     // 网络
     {"http-get",        1,  3,  &eval_http_get},
@@ -298,6 +309,8 @@ const builtin_info_t builtin_infos[] =
 
     {"errno",           0,  0,  &eval_errno},
     {"strerr",          1,  1,  &eval_strerr},
+
+    {"defer",           1,  1,  &eval_defer},
 };
 
 void Builtin::regist_builtin_function(Environment& env)
