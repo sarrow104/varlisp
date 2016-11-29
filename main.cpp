@@ -14,6 +14,7 @@
 #include <sss/utlstring.hpp>
 #include <sss/string_view.hpp>
 #include <sss/utlstring.hpp>
+#include <sss/Terminal.hpp>
 
 #include "varlisp/interpreter.hpp"
 #include "varlisp/tokenizer.hpp"
@@ -76,11 +77,8 @@ int test_construct()
     return EXIT_SUCCESS;
 }
 
-// echo_in_load = false;          
-// quit_on_load_complete = false; 
-// load_init_script = false;      
-
-int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_script, int argc, char * argv[])
+int Interpret(bool echo_in_load, bool quit_on_load_complete,
+              bool load_init_script, int argc, char* argv[])
 {
     varlisp::Interpreter interpreter;
 
@@ -146,9 +144,7 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_scri
     std::string hist_path = sss::path::dirname(sss::path::getbin());
     sss::path::append(hist_path, "history.txt");
 
-    std::cout << hist_path << std::endl;
-
-    // const char * hist_path = ;
+    std::cout << SSS_VALUE_MSG(hist_path) << std::endl;
 
     linenoise::LoadHistory(hist_path.c_str());
     std::string app = sss::path::basename(sss::path::getbin());
@@ -157,6 +153,8 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_scri
     std::string last_command;
     int indent = 0;
 
+    std::string prompt_start = sss::Terminal::dark.data() + std::string("> ") + sss::Terminal::end.data();
+    std::string prompt_continue = sss::Terminal::dark.data() + std::string(": ") + sss::Terminal::end.data();
     while (st != varlisp::Interpreter::status_ERROR &&
            st != varlisp::Interpreter::status_QUIT) {
         // NOTE 缩进保持功能丢失了。
@@ -166,7 +164,7 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete, bool load_init_scri
         // upstream，对linenoise的更新之后，忘记我对哪里，做过修改……
         // 不过，好消息是，新的linenoise，对于tab补全遗留问题，做了修改。
         auto line = linenoise::Readline(
-            st == varlisp::Interpreter::status_UNFINISHED ? ": " : "> ",
+            st == varlisp::Interpreter::status_UNFINISHED ? prompt_continue.c_str() : prompt_start.c_str(),
             indent);
         indent = get_indent(line);
 
