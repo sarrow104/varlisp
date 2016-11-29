@@ -37,7 +37,7 @@ inline const Object& caddr(const varlisp::List& args)
 } // namespace detail
 
 /**
- * @brief (read-cat "path/to/file") -> string
+ * @brief (read-all "path/to/file") -> string
  *
  * @param[in] env
  * @param[in] args
@@ -342,6 +342,7 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
 
 REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
                "(read-char file_descriptor) -> int | nill");
+
 /**
  * @brief (write-char file_descriptor int) -> int | nill
  *
@@ -374,5 +375,37 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
 
 REGIST_BUILTIN("write-char", 2, 2, eval_write_char,
                "(write-char file_descriptor int) -> int | nill");
+
+/**
+ * @brief (write-string file_descriptor int) -> int | nill
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_write_string(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "write-char";
+    Object obj;
+    const int* p_fd =
+        getTypedValue<int>(env, detail::car(args), obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int fd as 1st argument)");
+    }
+    int fd = *p_fd;
+    const varlisp::string_t* p_str =
+        getTypedValue<varlisp::string_t>(env, detail::cadr(args), obj);
+    if (!p_str) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies string as 2nd argument)");
+    }
+    int ec = detail::writestring(fd, p_str->to_string_view());
+    return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
+}
+
+REGIST_BUILTIN("write-string", 2, 2, eval_write_string,
+               "(write-string file_descriptor string) -> int | nill");
 
 }  // namespace
