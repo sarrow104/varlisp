@@ -13,10 +13,17 @@ void Define::print(std::ostream& o) const
     o << ")";
 }
 
+// NOTE execute when this->name not declared yet!
 Object Define::eval(Environment& env) const
 {
     Object tmp;
-    env[this->name.m_data] = getAtomicValue(env, this->value, tmp);
+    Environment * top_env = env.ceiling();
+    if (top_env->find(this->name.m_data)) {
+        return Nill{};
+    }
+
+    top_env->operator[](this->name.m_data)
+        = getAtomicValue(env, this->value, tmp);
     // 为什么不再返回value呢？
     // 为例减少显示；
     // 既然是定义了变量，链式赋值，也意义不大了
