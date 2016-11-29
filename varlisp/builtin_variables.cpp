@@ -2,12 +2,15 @@
 
 #include <sss/util/PostionThrow.hpp>
 #include <sss/colorlog.hpp>
+#include <sss/debug/value_msg.hpp>
 
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "environment.hpp"
 #include "keyword_t.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "tokenizer.hpp"
+#include "keyword_t.hpp"
 
 namespace varlisp {
 
@@ -123,4 +126,177 @@ REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
                "(var-list) -> int\n"
                "(var-list env-name) -> int ; TODO");
 
+/**
+ * @brief
+ *      (let ((symbol expr)...)
+ *           (expr)...) -> result-of-last-expr
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_let(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "let";
+#if 0
+    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&args.head);
+    if (!p_sym) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": 1st must be a symbol)");
+    }
+    Object res;
+    env[p_sym->m_data] = varlisp::getAtomicValue(env, args.tail[0].head, res);
+    return varlisp::Nill{};
+#else
+    // NOTE let 貌似可以达到交互两个变量值的效果？
+    // (let ((a b) (b a)) ...)
+    const varlisp::List * p_sym_pairs = boost::get<varlisp::List>(&args.head);
+    COLOG_DEBUG(args.head);
+    if (!p_sym_pairs) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": 1st must be a list; but",
+                           args.head, ")");
+    }
+    varlisp::Environment inner(&env);
+    for (; p_sym_pairs && p_sym_pairs->head.which();
+         p_sym_pairs = p_sym_pairs->next()) {
+        COLOG_DEBUG(p_sym_pairs->head);
+        const varlisp::List* p_sym_pair =
+            boost::get<varlisp::List>(&p_sym_pairs->head);
+        if (!p_sym_pair) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": must be name-value  list; but",
+                               p_sym_pairs->head, ")");
+        }
+        if (p_sym_pair->length() != 2) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": must be name-value  list; but",
+                               p_sym_pairs->head, ")");
+        }
+        const varlisp::symbol* p_sym =
+            boost::get<varlisp::symbol>(&p_sym_pair->head);
+
+        if (!p_sym) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": must be name-value  list; but",
+                               p_sym_pairs->head, ")");
+        }
+        Object value;
+        inner[p_sym->m_data] = varlisp::getAtomicValue(inner,
+                                                       p_sym_pair->tail[0].head,
+                                                       value);
+    }
+    Object result;
+    for (const varlisp::List * p_exprs = args.next();
+         p_exprs && p_exprs->head.which();
+         p_exprs = p_exprs->next()) {
+        result = boost::apply_visitor(eval_visitor(inner), p_exprs->head);
+    }
+    
+    return result;
+#endif
+}
+
+REGIST_BUILTIN("let", 1, -1, eval_let,
+               "(let ((symbol expr)...) (expr)...) -> result-of-last-expr");
+
+namespace detail {
+bool is_symbol(const std::string& name)
+{
+    varlisp::Tokenizer t{name};
+    auto tok = t.top();
+    if (t.lookahead_nothrow(1).which()) {
+        return false;
+    }
+    varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&tok);
+    if (!p_sym) {
+        return false;
+    }
+    if (p_sym->m_data != name) {
+        return false;
+    }
+    if (varlisp::keywords_t::is_keyword(p_sym->m_data)) {
+        return false;
+    }
+    return true;
+}
+inline bool is_car_valid(const varlisp::List * p_list)
+{
+    return p_list && p_list->head.which();
+}
+} // namespace detail
+
+/**
+ * @brief
+ *      (setq symbol1 expr1 symbol2 expr2 ... ) -> value-of-last-expr
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "setq";
+    const varlisp::List * p_1st = &args;
+    const varlisp::List * p_2nd = p_1st->next();
+    Object * p_value = 0;
+    while (detail::is_car_valid(p_1st)) {
+        const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&p_1st->head);
+        if (!p_sym) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": 1st must be a symbol)");
+        }
+        p_value = env.find(p_sym->m_data);
+        if (!p_value) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": symbol, ", *p_sym, " not exist!)");
+        }
+        if (!detail::is_car_valid(p_2nd)) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": 2nd value for ", *p_sym, " is empty! '())");
+        }
+        Object res;
+        *p_value = varlisp::getAtomicValue(env, p_2nd->head, res);
+        p_1st = p_2nd->next();
+        if (p_1st) {
+            p_2nd = p_1st->next();
+        }
+    }
+    if (!p_value) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": last value nullptr error!)");
+    }
+    return *p_value;
+}
+
+REGIST_BUILTIN("setq", 2, -1, eval_setq,
+               "; 对符号引用到的变量做修改；如果变量不存在，则报错\n"
+               "((setq symbol1 expr1 symbol2 expr2 ... ) -> value-of-last-expr");
+
+/**
+ * @brief
+ *      (setf "varname" expr) -> nil
+ *
+ * http://www.lispworks.com/documentation/HyperSpec/Body/m_setf_.htm
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_setf(varlisp::Environment& env, const varlisp::List& args)
+{
+    // TODO FIXME
+    const char * funcName = "setf";
+    SSS_POSITION_THROW(std::runtime_error,
+                       "(",funcName,": not support yet!)");
+
+    return varlisp::Nill{};
+}
+
+REGIST_BUILTIN("setf", 2, 2, eval_setf,
+               "; setf 是使用了setq的宏；暂时不支持！\n"
+               "(setf \"varname\" expr) -> nil");
 } // namespace varlisp
