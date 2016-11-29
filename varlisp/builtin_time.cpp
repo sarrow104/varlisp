@@ -4,6 +4,7 @@
 
 #include "object.hpp"
 #include "builtin_helper.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 
@@ -26,4 +27,7 @@ Object eval_time(varlisp::Environment &env, const varlisp::List &args)
     COLOG_INFO("end eval ", exprstr.str());
     return res_ref;
 }
+
+REGIST_BUILTIN("time", 1, 1, eval_time, "(time expr) -> result-of-expr");
+
 } // namespace varlisp

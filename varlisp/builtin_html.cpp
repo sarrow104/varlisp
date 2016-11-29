@@ -5,6 +5,8 @@
 #include "list.hpp"
 #include "builtin_helper.hpp"
 
+#include "detail/buitin_info_t.hpp"
+
 namespace varlisp {
 
 /**
@@ -61,6 +63,10 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
+REGIST_BUILTIN("gumbo", 1, 2, eval_gumbo,
+               "(gumbo \"<html>\") -> gumboNode\n"
+               "(gumbo \"<html>\" \"query-string\") -> '(gumboNode)");
+
 /**
  * @brief
  *      (gumbo-query gumboNode "selector-string")
@@ -102,9 +108,11 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
     return ret_nodes;
 }
 
+REGIST_BUILTIN("gumbo-query", 2, 2, eval_gumbo_query,
+               "(gumbo-query gumboNode \"selector-string\") -> '(gumboNodes)");
 /**
  * @brief
- *      (gqnode:attr gumboNode "attrib-name") -> "attrib-value" | nil
+ *      (gqnode-attr gumboNode "attrib-name") -> "attrib-value" | nil
  *
  * @param[in] env
  * @param[in] args
@@ -113,7 +121,7 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "gqnode:attr";
+    const char* funcName = "gqnode-attr";
     Object gqnode;
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -137,9 +145,13 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
+REGIST_BUILTIN(
+    "gqnode-attr", 2, 2, eval_gqnode_attr,
+    "(gqnode-attr gumboNode \"attrib-name\") -> \"attrib-value\" | nil");
+
 /**
  * @brief
- *      (gqnode:hasAttr gumboNode "attrib-name") -> #t | #f
+ *      (gqnode-hasAttr gumboNode "attrib-name") -> #t | #f
  *
  * @param[in] env
  * @param[in] args
@@ -148,7 +160,7 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "gqnode:hasAttr";
+    const char* funcName = "gqnode-hasAttr";
     Object gqnode;
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -168,6 +180,9 @@ Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
     }
     return Object{Nill{}};
 }
+
+REGIST_BUILTIN("gqnode-hasAttr", 2, 2, eval_gqnode_hasAttr,
+               "(gqnode-hasAttr gumboNode \"attrib-name\") -> boolean");
 
 typedef std::string (gumboNode::*gbNodeMethod_t)() const;
 struct gumboNodeMethodWrapper {
@@ -195,7 +210,7 @@ private:
 
 /**
  * @brief
- *      (gqnode:valid gumboNode) -> #t | #f
+ *      (gqnode-valid gumboNode) -> #t | #f
  *
  * @param[in] env
  * @param[in] args
@@ -204,7 +219,7 @@ private:
  */
 Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "gqnode:valid";
+    const char* funcName = "gqnode-valid";
     Object gqnode;
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -215,9 +230,12 @@ Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args)
     return p_gqnode->valid();
 }
 
+REGIST_BUILTIN("gqnode-valid", 1, 1, eval_gqnode_valid,
+               "(gqnode-valid gumboNode) -> boolean");
+
 /**
  * @brief
- *      (gqnode:isText gumboNode) -> #t | #f
+ *      (gqnode-isText gumboNode) -> #t | #f
  *
  * @param[in] env
  * @param[in] args
@@ -226,7 +244,7 @@ Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "gqnode:isText";
+    const char* funcName = "gqnode-isText";
     Object gqnode;
     const gumboNode* p_gqnode =
         varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -240,10 +258,12 @@ Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
+REGIST_BUILTIN("gqnode-isText",   1,  1,  eval_gqnode_isText,
+               "(gqnode-isText gumboNode) -> boolean");
 
 /**
  * @brief
- *      (gqnode:text gumboNode) -> "text"
+ *      (gqnode-text gumboNode) -> "text"
  *
  * @param[in] env
  * @param[in] args
@@ -252,7 +272,7 @@ Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_gqnode_text(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "gqnode:text";
+    const char* funcName = "gqnode-text";
     return gumboNodeMethodWrapper(funcName, &gumboNode::text)(env, args);
     // Object gqnode;
     // const gumboNode* p_gqnode =
@@ -267,9 +287,12 @@ Object eval_gqnode_text(varlisp::Environment& env, const varlisp::List& args)
     // return Object{Nill{}};
 }
 
+REGIST_BUILTIN("gqnode-text", 1, 1, eval_gqnode_text,
+               "(gqnode-text gumboNode) -> \"text\"");
+
 /**
  * @brief
- *      (gqnode:textNeat gumboNode) -> "text"
+ *      (gqnode-textNeat gumboNode) -> "text"
  *
  * @param[in] env
  * @param[in] args
@@ -279,8 +302,8 @@ Object eval_gqnode_text(varlisp::Environment& env, const varlisp::List& args)
 Object eval_gqnode_textNeat(varlisp::Environment& env,
                             const varlisp::List& args)
 {
-    return gumboNodeMethodWrapper("gqnode:textNeat", &gumboNode::textNeat)(env, args);
-    // const char* funcName = "gqnode:textNeat";
+    return gumboNodeMethodWrapper("gqnode-textNeat", &gumboNode::textNeat)(env, args);
+    // const char* funcName = "gqnode-textNeat";
     // Object gqnode;
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -294,9 +317,12 @@ Object eval_gqnode_textNeat(varlisp::Environment& env,
     // return Object{Nill{}};
 }
 
+REGIST_BUILTIN("gqnode-textNeat", 1, 1, eval_gqnode_textNeat,
+               "(gqnode-textNeat gumboNode) -> \"text\"");
+
 /**
  * @brief
- *      (gqnode:ownText gumboNode) -> "text"
+ *      (gqnode-ownText gumboNode) -> "text"
  *
  * @param[in] env
  * @param[in] args
@@ -305,8 +331,8 @@ Object eval_gqnode_textNeat(varlisp::Environment& env,
  */
 Object eval_gqnode_ownText(varlisp::Environment& env, const varlisp::List& args)
 {
-    return gumboNodeMethodWrapper("gqnode:ownText", &gumboNode::onwText)(env, args);
-    // const char* funcName = "gqnode:ownText";
+    return gumboNodeMethodWrapper("gqnode-ownText", &gumboNode::onwText)(env, args);
+    // const char* funcName = "gqnode-ownText";
     // Object gqnode;
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -320,9 +346,12 @@ Object eval_gqnode_ownText(varlisp::Environment& env, const varlisp::List& args)
     // return Object{Nill{}};
 }
 
+REGIST_BUILTIN("gqnode-ownText", 1, 1, eval_gqnode_ownText,
+               "(gqnode-ownText gumboNode) -> \"text\"");
+
 /**
  * @brief
- *      (gqnode:tag gumboNode) -> "text"
+ *      (gqnode-tag gumboNode) -> "text"
  *
  * @param[in] env
  * @param[in] args
@@ -331,8 +360,8 @@ Object eval_gqnode_ownText(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_gqnode_tag(varlisp::Environment& env, const varlisp::List& args)
 {
-    return gumboNodeMethodWrapper("gqnode:tag", &gumboNode::tag)(env, args);
-    // const char* funcName = "gqnode:tag";
+    return gumboNodeMethodWrapper("gqnode-tag", &gumboNode::tag)(env, args);
+    // const char* funcName = "gqnode-tag";
     // Object gqnode;
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -346,9 +375,12 @@ Object eval_gqnode_tag(varlisp::Environment& env, const varlisp::List& args)
     // return Object{Nill{}};
 }
 
+REGIST_BUILTIN("gqnode-tag", 1, 1, eval_gqnode_tag,
+               "(gqnode-tag gumboNode) -> \"text\"");
+
 /**
  * @brief
- *      (gqnode:innerHtml gumboNode) -> "text"
+ *      (gqnode-innerHtml gumboNode) -> "text"
  *
  * @param[in] env
  * @param[in] args
@@ -358,8 +390,8 @@ Object eval_gqnode_tag(varlisp::Environment& env, const varlisp::List& args)
 Object eval_gqnode_innerHtml(varlisp::Environment& env,
                              const varlisp::List& args)
 {
-    return gumboNodeMethodWrapper("gqnode:innerHtml", &gumboNode::innerHtml)(env, args);
-    // const char* funcName = "gqnode:innerHtml";
+    return gumboNodeMethodWrapper("gqnode-innerHtml", &gumboNode::innerHtml)(env, args);
+    // const char* funcName = "gqnode-innerHtml";
     // Object gqnode;
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -373,9 +405,12 @@ Object eval_gqnode_innerHtml(varlisp::Environment& env,
     // return Object{Nill{}};
 }
 
+REGIST_BUILTIN("gqnode-innerHtml", 1, 1, eval_gqnode_innerHtml,
+               "(gqnode-innerHtml gumboNode) -> \"text\"");
+
 /**
  * @brief
- *      (gqnode:outerHtml gumboNode) -> "text"
+ *      (gqnode-outerHtml gumboNode) -> "text"
  *
  * @param[in] env
  * @param[in] args
@@ -385,8 +420,8 @@ Object eval_gqnode_innerHtml(varlisp::Environment& env,
 Object eval_gqnode_outerHtml(varlisp::Environment& env,
                              const varlisp::List& args)
 {
-    return gumboNodeMethodWrapper("gqnode:outerHtml", &gumboNode::outerHtml)(env, args);
-    // const char* funcName = "gqnode:outerHtml";
+    return gumboNodeMethodWrapper("gqnode-outerHtml", &gumboNode::outerHtml)(env, args);
+    // const char* funcName = "gqnode-outerHtml";
     // Object gqnode;
     // const gumboNode* p_gqnode =
     //     varlisp::getTypedValue<gumboNode>(env, args.head, gqnode);
@@ -399,6 +434,9 @@ Object eval_gqnode_outerHtml(varlisp::Environment& env,
     // }
     // return Object{Nill{}};
 }
+
+REGIST_BUILTIN("gqnode-outerHtml", 1, 1, eval_gqnode_outerHtml,
+               "(gqnode-outerHtml gumboNode) -> \"text\"");
 
 // NOTE 如何处理多个node，然后需要串成一个s-list的需求？
 // map-line ?
@@ -435,5 +473,8 @@ Object eval_gumbo_query_text(varlisp::Environment& env,
 
     return string_t(std::move(oss.str()));
 }
+
+REGIST_BUILTIN("gumbo-query-text",2,  2,  eval_gumbo_query_text,
+               "(gumbo-query-text \"<html>\" \"selector-string\") \"node->text\"");
 
 }  // namespace varlisp

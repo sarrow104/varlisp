@@ -8,6 +8,8 @@
 #include "is_instant_visitor.hpp"
 #include "object.hpp"
 
+#include "detail/buitin_info_t.hpp"
+
 namespace varlisp {
 
 template <typename T1, typename T2, typename Tr>
@@ -141,6 +143,8 @@ Object eval_add(varlisp::Environment& env, const varlisp::List& args)
     return arithmetic2object(sum);
 }
 
+REGIST_BUILTIN("+", 0, -1, eval_add, "(+ ...) -> number");
+
 Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
 {
     int args_cnt = args.length();
@@ -165,6 +169,8 @@ Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
+REGIST_BUILTIN("-", 0, -1, eval_sub, "(- arg ...) -> number");
+
 Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
 {
     arithmetic_t mul{1};
@@ -178,6 +184,8 @@ Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
 
     return arithmetic2object(mul);
 }
+
+REGIST_BUILTIN("*", 0, -1, eval_mul, "(* ...) -> number");
 
 Object eval_div(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -199,12 +207,18 @@ Object eval_div(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
+REGIST_BUILTIN("/", 1, -1, eval_div, "(/ arg ...) -> number");
+
 Object eval_pow(varlisp::Environment& env, const varlisp::List& args)
 {
-    double lhs = arithmetic2double(boost::apply_visitor(arithmetic_cast_visitor(env), args.head));
-    double rhs = arithmetic2double(boost::apply_visitor(arithmetic_cast_visitor(env), args.tail[0].head));
+    double lhs = arithmetic2double(
+        boost::apply_visitor(arithmetic_cast_visitor(env), args.head));
+    double rhs = arithmetic2double(
+        boost::apply_visitor(arithmetic_cast_visitor(env), args.tail[0].head));
 
     return Object(std::pow(lhs, rhs));
 }
+
+REGIST_BUILTIN("power", 2, 2, eval_pow, "(power arg1 arg2) -> number");
 
 }  // namespace varlisp

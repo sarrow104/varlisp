@@ -11,7 +11,11 @@
 #include "arithmetic_t.hpp"
 #include "builtin_helper.hpp"
 
+#include "detail/buitin_info_t.hpp"
+#include "detail/list_iterator.hpp"
+
 namespace varlisp {
+
 /**
  * @brief 拆分字符串
  *      (split "string to split") -> '("part1","part2", ...)
@@ -66,6 +70,9 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     return Object(ret);
 }
 
+REGIST_BUILTIN("split", 1,  2,  eval_split,
+               "(split \"string to split\") -> '(\"part1\",\"part2\", ...)\n"
+               "(split \"string to split\" \"seq-str\") -> '(\"part1\",\"part2\", ...)");
 /**
  * @brief join string list
  *      (join '("s1" "s2" ...)) -> "joined-text"
@@ -121,6 +128,9 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     return Object(string_t(std::move(oss.str())));
 }
 
+REGIST_BUILTIN("join", 1, 2, eval_join,
+               "(join '(\"s1\" \"s2\" ...)) -> \"joined-text\"\n"
+               "(join '(\"s1\" \"s2\" ...) \"seq\") -> \"joined-text\"");
 /**
  * @brief
  *    (substr "target-string" offset)
@@ -186,6 +196,10 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     }
 }
 
+REGIST_BUILTIN("substr", 2, 3, eval_substr,
+               "(substr \"target-string\" offset)\n"
+               "(substr \"target-string\" offset length) -> sub-str");
+
 /**
  * @brief
  *    (strlen "target-string")
@@ -208,123 +222,14 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
     return int(p_str->length());
 }
 
+REGIST_BUILTIN("strlen", 1, 1, eval_strlen,
+               "(strlen \"target-string\") -> length");
+
 // NOTE TODO 或许需要这样一个函数，给一个type列表，然后返回转换的结果；
 // 可以转换的，这个列表对应的指针，就是非0；
 // 错误信息呢？
 // 最好传入1：函数名；当前参数位置；然后类型名直接显示吗？也不对；底层
 // 类型名和展示给用户的类型也是不同的。
-
-namespace detail {
-template<typename Out>
-struct Converter
-{
-    Converter(Object& obj) : m_obj(obj)
-    {
-    }
-    Converter& operator = (const Out& v)
-    {
-        m_obj = v;
-        COLOG_DEBUG(v);
-        return *this;
-    }
-
-    Object& m_obj;
-};
-template<typename Out = varlisp::Object>
-struct list_back_inserter_t
-{
-    explicit list_back_inserter_t(varlisp::List& list)
-        : m_list(list), m_list_ptr(nullptr)
-    {
-        m_list_ptr = &m_list;
-        while (m_list_ptr && m_list_ptr->head.which()) {
-            COLOG_DEBUG(m_list_ptr, m_list_ptr->head.which(), m_list_ptr->head);
-            m_list_ptr = m_list_ptr->next_slot();
-        }
-    }
-    list_back_inserter_t(const list_back_inserter_t& ref)
-        : m_list(ref.m_list), m_list_ptr(ref.m_list_ptr)
-    {
-        COLOG_DEBUG(m_list_ptr, m_list_ptr->head.which(), m_list_ptr->head);
-    }
-    ~list_back_inserter_t() = default;
-    list_back_inserter_t operator++(int)  {
-        list_back_inserter_t ret(*this);
-        this->next();
-        COLOG_DEBUG(ret.m_list_ptr, m_list_ptr);
-        return ret;
-    }
-    list_back_inserter_t& operator++()  {
-        varlisp::List * p_l = m_list_ptr;
-        this->next();
-        COLOG_DEBUG(p_l, m_list_ptr);
-        return *this;
-    }
-    void next() {
-        m_list_ptr = m_list_ptr->next_slot();
-    }
-    varlisp::List & m_list;
-    varlisp::List * m_list_ptr;
-    Out operator*() {
-        COLOG_DEBUG(m_list_ptr, m_list_ptr->head.which());
-        return m_list_ptr->head;
-    }
-};
-
-template<typename T>
-struct list_const_iterator_t
-{
-    explicit list_const_iterator_t(const varlisp::List * p_list)
-        : m_list_ptr(p_list)
-    {
-        COLOG_DEBUG(m_list_ptr);
-    }
-    list_const_iterator_t(const list_const_iterator_t& ref)
-        : m_list_ptr(ref.m_list_ptr)
-    {
-        COLOG_DEBUG(m_list_ptr);
-    }
-    bool operator != (const list_const_iterator_t& ref) const {
-        return m_list_ptr != ref.m_list_ptr;
-    }
-    bool operator == (const list_const_iterator_t& ref) const {
-        return m_list_ptr == ref.m_list_ptr;
-    }
-    const T& operator* () const {
-        if (!m_list_ptr) {
-            SSS_POSITION_THROW(std::runtime_error, "nullptr");
-        }
-        const T * p_val = boost::get<T>(&m_list_ptr->head);
-        if (!p_val) {
-            SSS_POSITION_THROW(std::runtime_error, m_list_ptr->head.which(),
-                               m_list_ptr->head);
-        }
-        return  *p_val;
-    }
-    list_const_iterator_t operator++(int)  {
-        list_const_iterator_t ret(*this);
-        this->next();
-        return ret;
-    }
-    list_const_iterator_t& operator++()  {
-        this->next();
-        return *this;
-    }
-    void next() {
-        m_list_ptr = m_list_ptr->next();
-        if (!m_list_ptr->head.which()) {
-            m_list_ptr = 0;
-        }
-    }
-    const varlisp::List * m_list_ptr;
-};
-template<typename Out>
-list_back_inserter_t<Out> list_back_inserter(varlisp::List& list)
-{
-    return list_back_inserter_t<Out>(list);
-}
-
-} // namespace detail
 
 /**
  * @brief
@@ -340,7 +245,8 @@ Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "split-char";
     Object obj;
-    const varlisp::string_t * p_str = varlisp::getTypedValue<varlisp::string_t>(env, args.head, obj);
+    const varlisp::string_t *p_str =
+        varlisp::getTypedValue<varlisp::string_t>(env, args.head, obj);
     if (!p_str) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need an string as the 1st argument)");
@@ -351,6 +257,9 @@ Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
         detail::list_back_inserter<detail::Converter<int>>(ret));
     return ret;
 }
+
+REGIST_BUILTIN("split-char", 1, 1, eval_split_char,
+               "(split-char \"target-string\") -> '(int-char1 int-char2 ...)");
 
 /**
  * @brief
@@ -378,5 +287,8 @@ Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
                                   std::back_inserter(ret));
     return varlisp::string_t{std::move(ret)};
 }
+
+REGIST_BUILTIN("join-char",       1,  1,  eval_join_char,
+               "(join-char '(int-char1 int-char2 ...)) -> \"string\"");
 
 }  // namespace varlisp

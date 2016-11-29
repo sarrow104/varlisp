@@ -7,6 +7,7 @@
 #include "interpreter.hpp"
 #include "builtin_helper.hpp"
 
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 
@@ -31,8 +32,10 @@ Object eval_quit(varlisp::Environment& env, const varlisp::List& args)
     return true;
 }
 
+REGIST_BUILTIN("quit", 0, 0, eval_quit, "(quit) -> #t");
+
 /**
- * @brief (it:debug #t|#f) -> nil
+ * @brief (it-debug #t|#f) -> nil
  *
  * @param[in] env
  * @param[in] args
@@ -41,7 +44,7 @@ Object eval_quit(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "it:debug";
+    const char* funcName = "it-debug";
     Object status;
     const bool* p_status = getTypedValue<bool>(env, args.head, status);
     if (!p_status) {
@@ -60,4 +63,6 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
     sss::colog::set_log_levels(next_ll);
     return *p_status;
 }
+
+REGIST_BUILTIN("it-debug", 1, 1, eval_it_debug, "(it-debug #t|#f) -> nil");
 }  // namespace varlisp

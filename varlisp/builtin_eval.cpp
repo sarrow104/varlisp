@@ -1,8 +1,10 @@
 #include "object.hpp"
 
 #include "builtin_helper.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
+
 /**
  * @brief (eval '(...)) -> ...
  *
@@ -24,5 +26,7 @@ Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
     }
     return p_list->next()->eval(env);
 }
+
+REGIST_BUILTIN("eval", 1, 2, eval_eval, "(eval '(...)) -> ...");
 
 }  // namespace varlisp

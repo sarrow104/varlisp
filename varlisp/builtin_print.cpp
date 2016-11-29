@@ -8,6 +8,7 @@
 #include "fmtArgInfo.hpp"
 #include "fmt_print_visitor.hpp"
 #include "detail/io.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 
@@ -78,6 +79,8 @@ Object eval_print(varlisp::Environment& env, const varlisp::List& args)
     return Object{Empty{}};
 }
 
+REGIST_BUILTIN("io-print", 1, -1, eval_print, "(io-print \"fmt\" ...)");
+
 /**
  * @brief (io-print "fmt\n" ...)
  *
@@ -92,6 +95,8 @@ Object eval_print_ln(varlisp::Environment& env, const varlisp::List& args)
     std::cout << std::endl;
     return Object{Empty{}};
 }
+
+REGIST_BUILTIN("io-print-ln", 1, -1, eval_print_ln, "(io-print \"fmt\n\" ...)");
 
 /**
  * @brief (fmt "fmt-str" arg1 arg2 ... argn) -> "fmt-out"
@@ -108,6 +113,9 @@ Object eval_fmt(varlisp::Environment& env, const varlisp::List& args)
     std::string out = oss.str();
     return Object{string_t{std::move(out)}};
 }
+
+REGIST_BUILTIN("io-fmt", 1, -1, eval_fmt,
+               "(fmt \"fmt-str\" arg1 arg2 ... argn) -> \"fmt-out\"");
 
 /**
  * @brief (format stream-fd "fmt-str" arg1 arg2 ... argn) -> ...
@@ -155,6 +163,14 @@ Object eval_format(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
+REGIST_BUILTIN("format", 1, -1, eval_format,
+               "; format 按照python风格格式化一个fmt格式串；\n"
+               "; 如果out-fd是nil的话，则返回一个格式化后的字符串。\n"
+               "; 如果out-fd合法的话，则输出到对应的fd上；比如1,2分别\n"
+               "; 是stdout,stderr;\n"
+               "; 如果不合法，……\n"
+               "(format out-fd \"fmt\" ...) -> ...");
+
 /**
  * @brief (fmt-escape "normal-string-may-have-curly-bracket") -> "scaped-string"
  *
@@ -190,6 +206,11 @@ Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
     }
     return Object{string_t{std::move(escaped_str)}};
 }
+
+REGIST_BUILTIN("fmt-escape", 1, 1, eval_fmt_escape,
+               "; fmt-escape 转义可能被python风格误解的文本串并返回\n"
+               "(fmt-escape \"normal-string-may-have-curly-bracket\") ->\n"
+               " \"scaped-string\"");
 
 // NOTE ruby中，有这种格式串：
 //

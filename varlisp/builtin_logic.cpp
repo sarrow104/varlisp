@@ -3,8 +3,9 @@
 #include "builtin_helper.hpp"
 #include "strict_equal_visitor.hpp"
 #include "strict_less_visitor.hpp"
-
 #include "builtin_helper.hpp"
+
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 // 对于drracket来说，比较运算符，它会直接要求转换到real域；
@@ -37,6 +38,8 @@ Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
     return Object(boost::apply_visitor(strict_equal_visitor(env), obj1_ref, obj2_ref));
 }
 
+REGIST_BUILTIN("=", 2, 2, eval_eq, "(= arg1 arg2) -> boolean");
+
 /**
  * @brief (> obj1 obj2) -> #t | #f
  *
@@ -55,6 +58,8 @@ Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
                   boost::apply_visitor(strict_less_visitor(env), obj2_ref, obj1_ref));
 }
 
+REGIST_BUILTIN(">", 2, 2, eval_gt, "(> arg1 arg2) -> boolean");
+
 /**
  * @brief (< obj1 obj2) -> #t | #f
  *
@@ -72,6 +77,8 @@ Object eval_lt(varlisp::Environment& env, const varlisp::List& args)
     return Object(boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
+REGIST_BUILTIN("<", 2, 2, eval_lt, "(< arg1 arg2) -> boolean");
+
 /**
  * @brief (>= obj1 obj2) -> #t | #f
  *
@@ -88,6 +95,8 @@ Object eval_ge(varlisp::Environment& env, const varlisp::List& args)
     const Object& obj2_ref = varlisp::getAtomicValue(env, args.tail[0].head, obj2);
     return Object(!boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
+
+REGIST_BUILTIN(">=", 2, 2, eval_ge, "(>= arg1 arg2) -> boolean");
 
 /**
  * @brief (<= obj1 obj2) -> #t | #f
@@ -107,6 +116,8 @@ Object eval_le(varlisp::Environment& env, const varlisp::List& args)
                   boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
+REGIST_BUILTIN("<=", 2, 2, eval_le, "(<= arg1 arg2) -> boolean");
+
 /**
  * @brief (not expr) -> !#t | !#f
  *
@@ -119,6 +130,8 @@ Object eval_not(varlisp::Environment& env, const varlisp::List& args)
 {
     return !varlisp::is_true(env, args.head);
 }
+
+REGIST_BUILTIN("not", 1, 1, eval_not, "(not expr) -> boolean");
 
 /**
  * @brief
@@ -136,6 +149,8 @@ Object eval_null_q(varlisp::Environment& env, const varlisp::List& args)
     const Object& obj = getAtomicValue(env, args.head, tmp);
     return obj.which() == 1;
 }
+
+REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");
 
 /**
  * @brief
@@ -180,5 +195,8 @@ Object eval_equal(varlisp::Environment& env, const varlisp::List& args)
     }
     return is_equal;
 }
+
+REGIST_BUILTIN("equal", 2, 2, eval_equal,
+               "(equal '(list1) '(list2)) -> #t | #f");
 
 }  // namespace varlisp

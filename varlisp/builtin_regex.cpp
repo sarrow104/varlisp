@@ -1,6 +1,8 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 
+#include "detail/buitin_info_t.hpp"
+
 namespace varlisp {
 /**
  * @brief (regex "regex-string") -> regex-obj
@@ -21,6 +23,9 @@ Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
     }
     return sss::regex::CRegex(p_regstr->to_string());
 }
+
+REGIST_BUILTIN("regex", 1, 1, eval_regex,
+               "(regex \"regex-string\") -> regex-obj");
 
 /**
  * @brief (regex-match reg-obj target-string) -> bool
@@ -47,6 +52,9 @@ Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
     }
     return p_regobj->match(p_target->to_string());
 }
+
+REGIST_BUILTIN("regex-match", 2, 2, eval_regex_match,
+               "(regex-match reg-obj target-string) -> bool");
 
 /**
  * @brief (regex-search reg target offset = 0) -> (list sub0, sub1 ...)
@@ -103,6 +111,9 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
     return ret;
 }
 
+REGIST_BUILTIN("regex-search", 2, 3, eval_regex_search,
+               "(regex-search reg target offset = 0) -> (list sub0, sub1 ...)");
+
 /**
  * @brief
  *      (regex-replace reg-obj target fmt) -> string
@@ -139,6 +150,9 @@ Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
     p_regobj->substitute(p_target->to_string(), p_fmt->to_string(), out);
     return string_t(std::move(out));
 }
+
+REGIST_BUILTIN("regex-replace", 3, 3, eval_regex_replace,
+               "(regex-replace reg-obj target fmt) -> string");
 
 /**
  * @brief
@@ -189,6 +203,10 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
 
     return ret;
 }
+
+REGIST_BUILTIN(
+    "regex-split", 2, 2, eval_regex_split,
+    "(regex-split sep-reg \"target-string\") -> (list stem1 stem2 ...)");
 
 /**
  * @brief
@@ -258,5 +276,10 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
 
     return ret;
 }
+
+REGIST_BUILTIN("regex-collect", 2, 3, eval_regex_collect,
+               "(regex-collect reg \"target-string\")\n"
+               "(regex-collect reg \"target-string\" \"fmt-string\") ->"
+               " (list matched-sub1 matched-sub2 ...)");
 
 }  // namespace varlisp

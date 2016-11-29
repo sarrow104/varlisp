@@ -6,6 +6,7 @@
 
 #include "object.hpp"
 #include "builtin_helper.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 
@@ -84,6 +85,17 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     return ret;
 }
 
+REGIST_BUILTIN("map", 2, -1, eval_map,
+               "; map函数接受一个函数和N个列表，该函数接受N个参数；\n"
+               "; 返回一个列表。返回列表的每个元素都是使用输入的函数\n"
+               "; 对N个类别中的每个元素处理的结果\n"
+
+               "(map func list-1 list-2 ... list-n) ->\n"
+               "\t'(func(l1[1] l2[1] ... ln[1])\n"
+               "\t  func(l1[2] l2[2] ... ln[2])\n"
+               "\t  ...\n"
+               "\t  func(l1[n] l2[n] ... ln[n]))");
+
 /**
  * @brief
  *      (reduce func list) 
@@ -125,6 +137,14 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     return first_arg;
 }
 
+REGIST_BUILTIN("reduce", 2, 2, eval_reduce,
+               "; reduce让一个指定的函数(function)作用于列表的第一个\n"
+               "; 元素和第二个元素,然后在作用于上步得到的结果和第三个\n"
+               "; 元素，直到处理完列表中所有元素。\n"
+
+               "(reduce func list) ->\n"
+               "\tfunc(func(func(l[1] l[2]) l[3]) ... l[n-1]) l[n])");
+
 /**
  * @brief (filter func list)
  *           -> (sigma list[i] where (func list[i]) == #t)
@@ -164,5 +184,12 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     }
     return ret;
 }
+
+REGIST_BUILTIN("filter", 2, 2, eval_filter,
+               "; filter 根据func作用到每个元素的返回结果是否为#t；\n"
+               "; 决定是否在返回的列表中，包含该元素\n"
+
+               "(filter func list) ->\n"
+               "\t(sigma list[i] where (func list[i]) == #t)");
 
 } // namespace varlisp

@@ -6,6 +6,7 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "cast2bool_visitor.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 
@@ -86,6 +87,9 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
+REGIST_BUILTIN("sort", 2, 2, eval_sort,
+               "(sort func '(list)) -> '(sorted-list)");
+
 // TODO 原地sort list？
 // 疑问：针对变量？
 /**
@@ -102,5 +106,8 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
     // TODO FIXME
     return varlisp::Nill{};
 }
+
+REGIST_BUILTIN("sort!", 2, 2, eval_sort_bar,
+               "(sort! func '(list)) -> '(sorted-list) ; TODO");
 
 } // namespace varlisp

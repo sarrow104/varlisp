@@ -13,6 +13,8 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 
+#include "detail/buitin_info_t.hpp"
+
 namespace varlisp {
 
 // TODO
@@ -125,5 +127,10 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     return max_content;
 }
+
+REGIST_BUILTIN(
+    "http-get", 1, 3, eval_http_get,
+    "(http-get \"url\") -> \"<html>\"\n"
+    "(http-get \"url\" \"proxy-url\" proxy-port-number) -> \"<html>\"");
 
 }  // namespace varlisp

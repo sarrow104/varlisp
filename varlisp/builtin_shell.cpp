@@ -10,6 +10,8 @@
 #include "raw_stream_visitor.hpp"
 #include "builtin_helper.hpp"
 
+#include "detail/buitin_info_t.hpp"
+
 namespace varlisp {
 // 应该如何处理shell-eval时候的参数？
 // 比如，用户可能提供一个完整的命令行字符串——包括执行的命令，以及参数；
@@ -81,6 +83,10 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     return Object(ret);
 }
 
+REGIST_BUILTIN("shell", 1, -1,  eval_shell,
+               "(shell "") -> '(stdout, stderr)\n"
+               "(shell "" arg1 arg2 arg3) -> '(stdout, stderr)");
+
 /**
  * @brief (shell-cd "path/to/go") -> "new-work-dir"
  *
@@ -104,6 +110,9 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
                is_ok ? "succeed" : "failed", ")");
     return Object(string_t{std::move(sss::path::getcwd())});
 }
+
+REGIST_BUILTIN("shell-cd", 1, 1, eval_shell_cd,
+               "(shell-cd \"path/to/go\") -> \"new-work-dir\"");
 
 // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
 /**
@@ -181,6 +190,9 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
     return Object(ret);
 }
 
+REGIST_BUILTIN("shell-ls", 0, -1, eval_shell_ls,
+               "(ls \"dir1\" \"dir2\" ...) -> '(\"item1\",\"item2\", ...)");
+
 /**
  * @brief (pwd) -> "current-working-dir"
  *
@@ -195,5 +207,8 @@ Object eval_shell_pwd(varlisp::Environment& env, const varlisp::List& args)
     (void)args;
     return Object(string_t(std::move(sss::path::getcwd())));
 }
+
+REGIST_BUILTIN("shell-pwd", 0, 0, eval_shell_pwd,
+               "(pwd) -> \"current-working-dir\"");
 
 }  // namespace varlisp

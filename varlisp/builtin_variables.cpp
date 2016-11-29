@@ -7,6 +7,7 @@
 #include "builtin_helper.hpp"
 #include "environment.hpp"
 #include "keyword_t.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 
@@ -48,6 +49,8 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
+REGIST_BUILTIN("undef", 1, 1, eval_undef, "(undef symbol) -> boolean");
+
 /**
  * @brief
  *      (ifdef symbol) -> boolean
@@ -72,6 +75,8 @@ Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
     Object* it = env.find(p_sym->m_data);
     return bool(it);
 }
+
+REGIST_BUILTIN("ifdef", 1, 1, eval_ifdef, "(ifdef symbol) -> boolean");
 
 /**
  * @brief
@@ -114,5 +119,8 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
     return var_count;
 }
 
-} // namespace varlisp
+REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
+               "(var-list) -> int\n"
+               "(var-list env-name) -> int ; TODO");
 
+} // namespace varlisp

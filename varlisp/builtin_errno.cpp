@@ -2,6 +2,7 @@
 
 #include "object.hpp"
 #include "builtin_helper.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 
@@ -17,6 +18,8 @@ Object eval_errno(varlisp::Environment& env, const varlisp::List& args)
 {
     return errno;
 }
+
+REGIST_BUILTIN("errno", 0, 0, eval_errno, "(errno) -> int");
 
 /**
  * @brief (strerr) -> string
@@ -44,5 +47,7 @@ Object eval_strerr(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::string_t{std::string(::strerror(*p_err))};
 #endif
 }
+
+REGIST_BUILTIN("strerr", 1, 1, eval_strerr, "(strerr) -> string");
 
 } // namespace varlisp

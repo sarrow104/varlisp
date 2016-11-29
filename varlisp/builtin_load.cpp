@@ -8,6 +8,8 @@
 #include "builtin_helper.hpp"
 #include "interpreter.hpp"
 
+#include "detail/buitin_info_t.hpp"
+
 namespace varlisp {
 
 /**
@@ -66,5 +68,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
     return Object{Nill{}};
 }
+
+REGIST_BUILTIN("load", 1, 1, eval_load, "(load \"path/to/lisp\") -> nil");
 
 }  // namespace varlisp

@@ -15,6 +15,7 @@
 #include "raw_stream_visitor.hpp"
 
 #include "detail/io.hpp"
+#include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
 namespace detail {
@@ -64,6 +65,9 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
 
     return string_t(std::move(content));
 }
+
+REGIST_BUILTIN("read-all", 1, 1, eval_read_all,
+               "(read-all \"path/to/file\") -> string");
 
 /**
  * @brief eval_write_impl
@@ -138,10 +142,16 @@ Object eval_write(varlisp::Environment& env, const varlisp::List& args)
     return eval_write_impl(env, args, false);
 }
 
+REGIST_BUILTIN("write", 2, 2, eval_write,
+               "(write (list) path)\n(write item path)");
+
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args)
 {
     return eval_write_impl(env, args, true);
 }
+
+REGIST_BUILTIN("write-append", 2, 2, eval_write_append,
+               "(write-append (list) path)\n(write-append item path)");
 
 /**
  * @brief
@@ -185,6 +195,10 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
     return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
 }
 
+REGIST_BUILTIN("open", 1, 2, eval_open,
+               "(open \"path\") -> file_descriptor | nil;\n"
+               "(open \"path\" flag) -> file_descriptor | nil");
+
 /**
  * @brief
  *     (getfdflag fd) -> flag | nil
@@ -207,6 +221,9 @@ Object eval_getfdflag(varlisp::Environment& env, const varlisp::List& args)
     int flag = ::fcntl(*p_fd, F_GETFL);
     return flag == -1 ? Object{varlisp::Nill{}} : Object{flag};
 }
+
+REGIST_BUILTIN("getfdflag", 1, 1, eval_getfdflag,
+               "(getfdflag fd) -> flag | nil");
 
 /**
  * @brief
@@ -238,6 +255,9 @@ Object eval_setfdflag(varlisp::Environment& env, const varlisp::List& args)
     return ec == -1 ? errno : 0;
 }
 
+REGIST_BUILTIN("setfdflag", 2, 2, eval_setfdflag,
+               "(setfdflag fd flag) -> errno");
+
 /**
  * @brief (close file_descriptor) -> errno
  *
@@ -264,6 +284,8 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
     return ::close(*p_fd) == -1 ? errno : 0;
 }
 
+REGIST_BUILTIN("close", 1, 1, eval_close, "(close file_descriptor) -> errno");
+
 /**
  * @brief (read-line file_descriptor) -> string | nill
  *
@@ -289,7 +311,8 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::string_t{std::move(line)};
 }
 
-// static bool x = init_helpdoc(&eval_read_line)("(read-line ....)");
+REGIST_BUILTIN("read-line", 1, 1, eval_read_line,
+               "(read-line file_descriptor) -> string | nill");
 
 /**
  * @brief (read-char file_descriptor) -> int | nill
@@ -301,7 +324,7 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char * funcName = "read-line";
+    const char * funcName = "read-char";
     Object obj;
     const int* p_fd =
         getTypedValue<int>(env, detail::car(args), obj);
@@ -317,6 +340,8 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
     return ch;
 }
 
+REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
+               "(read-char file_descriptor) -> int | nill");
 /**
  * @brief (write-char file_descriptor int) -> int | nill
  *
@@ -327,7 +352,7 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
  */
 Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char * funcName = "read-line";
+    const char * funcName = "write-char";
     Object obj;
     const int* p_fd =
         getTypedValue<int>(env, detail::car(args), obj);
@@ -346,5 +371,8 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
     int ec = detail::writechar(*p_fd, *p_ch);
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
+
+REGIST_BUILTIN("write-char", 2, 2, eval_write_char,
+               "(write-char file_descriptor int) -> int | nill");
 
 }  // namespace

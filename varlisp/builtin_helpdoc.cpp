@@ -2,6 +2,8 @@
 #include "builtin_helper.hpp"
 #include "helpmsg_visitor.hpp"
 
+#include "detail/buitin_info_t.hpp"
+
 namespace varlisp {
 
 /**
@@ -19,6 +21,8 @@ Object eval_help(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::Nill{};
 }
 
+REGIST_BUILTIN("help", 1, 1, eval_help, "(help symbol) -> nil");
+
 /**
  * @brief (get-help symbol) -> string
  *
@@ -31,5 +35,7 @@ Object eval_get_help(varlisp::Environment& env, const varlisp::List& args)
 {
     return boost::apply_visitor(helpmsg_visitor(env), args.head);
 }
+
+REGIST_BUILTIN("get-help", 1, 1, eval_get_help, "(get-help symbol) -> string");
 
 } // namespace varlisp
