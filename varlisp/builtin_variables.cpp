@@ -299,4 +299,51 @@ Object eval_setf(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN("setf", 2, 2, eval_setf,
                "; setf 是使用了setq的宏；暂时不支持！\n"
                "(setf \"varname\" expr) -> nil");
+
+/**
+ * @brief
+ *      (swap var1 var2) -> nil
+ *
+ * http://www.lispworks.com/documentation/HyperSpec/Body/m_setf_.htm
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_swap(varlisp::Environment& env, const varlisp::List& args)
+{
+    // TODO FIXME
+    const char * funcName = "swap";
+    const varlisp::symbol * p_sym1 = boost::get<varlisp::symbol>(&args.head);
+    if (!p_sym1) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": 1st must be a symbol)");
+    }
+
+    const varlisp::symbol * p_sym2 = boost::get<varlisp::symbol>(&args.tail[0].head);
+    if (!p_sym2) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": 2nd must be a symbol)");
+    }
+
+    Object * p_val1 = env.find(p_sym1->m_data);
+    if (!p_val1) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": 1st symbol, ", *p_sym1, " not exist)");
+    }
+    Object * p_val2 = env.find(p_sym2->m_data);
+    if (!p_val2) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": 2nd symbol, ", *p_sym2, " not exist)");
+    }
+
+    std::swap(*p_val1, *p_val2);
+    return varlisp::Nill{};
+}
+
+REGIST_BUILTIN("swap", 2, 2, eval_swap,
+               "; swap 交换两个变量的值；变量查找办法同setq\n"
+               "(swap var1 var2) -> nil");
+
 } // namespace varlisp
