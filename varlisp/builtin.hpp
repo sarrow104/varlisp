@@ -32,6 +32,9 @@ public:
     static void regist_builtin_function(Environment& env);
 
 public:
+    int type() const {
+        return m_type;
+    }
     void print(std::ostream& o) const;
 
     bool operator==(const Builtin& rhs) const
