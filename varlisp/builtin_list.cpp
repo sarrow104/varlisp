@@ -165,16 +165,42 @@ REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
  */
 Object eval_length(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char * funcName = "length";
     Object obj;
     const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj);
     if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error, "(length: need s-List as the 1st argument)");
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": need s-List as the 1st argument)");
     }
     return int(p_list->length() - 1);
 }
 
 REGIST_BUILTIN("length", 1, 1, eval_length,
                "(length '(list)) -> quote-list-length");
+
+/**
+ * @brief
+ *    (empty? '(list)) -> boolean
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return 
+ */
+Object eval_empty_q(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "empty?";
+    Object obj;
+    const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj);
+    if (!p_list) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": need s-List as the 1st argument)");
+    }
+    return p_list->length() == 1;
+}
+
+REGIST_BUILTIN("empty?", 1, 1, eval_empty_q,
+               "(empty? '(list)) -> boolean");
 
 /**
  * @brief
