@@ -116,4 +116,23 @@ Object eval_slist_q(varlisp::Environment &env, const varlisp::List &args)
 
 REGIST_BUILTIN("slist?", 1, 1, eval_slist_q, "(slist? expr) -> boolean");
 
+/**
+ * @brief
+ *    (null? nil) -> #t
+ *    (null? (not nil)) -> #f
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_null_q(varlisp::Environment& env, const varlisp::List& args)
+{
+    Object tmp;
+    const Object& obj = getAtomicValue(env, args.head, tmp);
+    return obj.which() == 1;
+}
+
+REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");
+
 } // namespace varlisp

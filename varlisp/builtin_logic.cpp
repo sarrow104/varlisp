@@ -135,25 +135,6 @@ REGIST_BUILTIN("not", 1, 1, eval_not, "(not expr) -> boolean");
 
 /**
  * @brief
- *    (null? nil) -> #t
- *    (null? (not nil)) -> #f
- *
- * @param[in] env
- * @param[in] args
- *
- * @return
- */
-Object eval_null_q(varlisp::Environment& env, const varlisp::List& args)
-{
-    Object tmp;
-    const Object& obj = getAtomicValue(env, args.head, tmp);
-    return obj.which() == 1;
-}
-
-REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");
-
-/**
- * @brief
  *    (equal '(list1) '(list2)) -> #t | #f
  *
  * @param[in] env
