@@ -42,6 +42,7 @@ struct Environment : private std::map<std::string, Object> {
     Environment * parent() const {
         return m_parent;
     }
+    Environment * ceiling();
     void   defer_task_push(const Object& task);
     void   defer_task_push(Object&& task);
     size_t defer_task_size() const;

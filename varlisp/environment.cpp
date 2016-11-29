@@ -110,4 +110,12 @@ bool Environment::erase(const std::string& name)
     return erased;
 }
 
+Environment * Environment::ceiling(){
+    Environment * p_curent = this;
+    while (p_curent && p_curent->m_parent) {
+        p_curent = p_curent->m_parent;
+    }
+    return p_curent;
+}
+
 }  // namespace varlisp
