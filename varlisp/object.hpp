@@ -40,6 +40,7 @@ struct Lambda;
 struct Cond;
 struct LogicAnd;
 struct LogicOr;
+struct Environment;
 
 // struct String;
 typedef ::varlisp::String string_t;
@@ -55,17 +56,18 @@ typedef boost::variant<
     string_t,                               // 5
     sss::regex::CRegex,                     // 6
     symbol,                                 // 7
-    boost::recursive_wrapper<Builtin>,      // 8
-    boost::recursive_wrapper<Define>,       // 9
-    boost::recursive_wrapper<IfExpr>,       // 10
-    boost::recursive_wrapper<Cond>,         // 11
-    boost::recursive_wrapper<LogicAnd>,     // 12
-    boost::recursive_wrapper<LogicOr>,      // 13
-    boost::recursive_wrapper<List>,         // 14
+    gumboNode,                              // 8
+    boost::recursive_wrapper<Builtin>,      // 9
+    boost::recursive_wrapper<Define>,       // 10
+    boost::recursive_wrapper<IfExpr>,       // 11
+    boost::recursive_wrapper<Cond>,         // 12
+    boost::recursive_wrapper<LogicAnd>,     // 13
+    boost::recursive_wrapper<LogicOr>,      // 14
+    boost::recursive_wrapper<List>,         // 15
     // NOTE
     // quote-list只是作为一种函数存在！
-    boost::recursive_wrapper<Lambda>,       // 15
-    gumboNode                               // 16
+    boost::recursive_wrapper<Lambda>,       // 16
+    boost::recursive_wrapper<Environment>   // 17
     >
     Object;
 }  // namespace varlisp
@@ -78,6 +80,7 @@ typedef boost::variant<
 #include "list.hpp"
 #include "logic_and.hpp"
 #include "logic_or.hpp"
+#include "environment.hpp"
 
 #include "print_visitor.hpp"
 
