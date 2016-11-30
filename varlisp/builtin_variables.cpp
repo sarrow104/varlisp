@@ -7,6 +7,8 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "environment.hpp"
+#include "cast_visitor.hpp"
+#include "eval_visitor.hpp"
 #include "keyword_t.hpp"
 #include "detail/buitin_info_t.hpp"
 #include "tokenizer.hpp"
@@ -139,18 +141,7 @@ REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
 Object eval_let(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "let";
-#if 0
-    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&args.head);
-    if (!p_sym) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": 1st must be a symbol)");
-    }
-    Object res;
-    env[p_sym->m_data] = varlisp::getAtomicValue(env, args.tail[0].head, res);
-    return varlisp::Nill{};
-#else
-    // NOTE let 貌似可以达到交互两个变量值的效果？
-    // (let ((a b) (b a)) ...)
+
     const varlisp::List * p_sym_pairs = boost::get<varlisp::List>(&args.head);
     COLOG_DEBUG(args.head);
     if (!p_sym_pairs) {
@@ -183,7 +174,10 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
                                p_sym_pairs->head, ")");
         }
         Object value;
-        inner[p_sym->m_data] = varlisp::getAtomicValue(inner,
+        // NOTE let 貌似可以达到swap两个变量值的效果；
+        // 在于 getAtomicValue()的第一个参数是env，而不是inner
+        // (let ((a b) (b a)) ...)
+        inner[p_sym->m_data] = varlisp::getAtomicValue(env,
                                                        p_sym_pair->tail[0].head,
                                                        value);
     }
@@ -195,32 +189,12 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
     }
     
     return result;
-#endif
 }
 
 REGIST_BUILTIN("let", 1, -1, eval_let,
                "(let ((symbol expr)...) (expr)...) -> result-of-last-expr");
 
 namespace detail {
-bool is_symbol(const std::string& name)
-{
-    varlisp::Tokenizer t{name};
-    auto tok = t.top();
-    if (t.lookahead_nothrow(1).which()) {
-        return false;
-    }
-    varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&tok);
-    if (!p_sym) {
-        return false;
-    }
-    if (p_sym->m_data != name) {
-        return false;
-    }
-    if (varlisp::keywords_t::is_keyword(p_sym->m_data)) {
-        return false;
-    }
-    return true;
-}
 inline bool is_car_valid(const varlisp::List * p_list)
 {
     return p_list && p_list->head.which();
@@ -243,10 +217,17 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
     const varlisp::List * p_2nd = p_1st->next();
     Object * p_value = 0;
     while (detail::is_car_valid(p_1st)) {
+        // NOTE 这里需要的是一个将 Object cast 为 symbol的函数
         const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&p_1st->head);
+        Object tmpSymObj;
+        if (!p_sym) {
+            tmpSymObj = boost::apply_visitor(eval_visitor(env), p_1st->head);
+            p_sym = boost::get<varlisp::symbol>(&tmpSymObj);
+        }
+
         if (!p_sym) {
             SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": 1st must be a symbol)");
+                               "(", funcName, ": 1st must be a symbol; but ", p_1st->head, ")");
         }
         p_value = env.find(p_sym->m_data);
         if (!p_value) {
