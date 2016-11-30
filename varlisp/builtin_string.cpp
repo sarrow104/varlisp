@@ -254,7 +254,7 @@ Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
     varlisp::List ret = varlisp::List::makeSQuoteList();
     sss::util::utf8::dumpout2ucs(
         p_str->begin(), p_str->end(),
-        detail::list_back_inserter<detail::Converter<int>>(ret));
+        detail::list_back_inserter<int>(ret));
     return ret;
 }
 
