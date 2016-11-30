@@ -1,7 +1,9 @@
 #include "object.hpp"
 
 #include "builtin_helper.hpp"
+#include "cast_visitor.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/is_symbol.hpp"
 
 namespace varlisp {
 
@@ -134,5 +136,28 @@ Object eval_null_q(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");
+
+/**
+ * @brief
+ *    (cast lexical-value var) -> type-of-lexical-value
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_cast(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "cast";
+    Object tmp;
+    const varlisp::List * p_1st = &args;
+    const varlisp::List * p_2nd = p_1st->next();
+
+    return boost::apply_visitor(cast_visitor(env, p_1st->head, p_2nd->head),
+                                p_1st->head, p_2nd->head);
+}
+
+REGIST_BUILTIN("cast", 2, 2, eval_cast,
+               "(cast lexical-value var) -> type-of-lexical-value");
 
 } // namespace varlisp
