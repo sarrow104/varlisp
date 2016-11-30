@@ -5,6 +5,7 @@
 #include <sss/path.hpp>
 #include <sss/util/PostionThrow.hpp>
 #include <sss/util/StringSlice.hpp>
+#include <sss/colorlog.hpp>
 
 #ifndef DEBUG
 #define SSS_COLOG_TURNOFF
@@ -41,7 +42,7 @@ void Tokenizer::init(const std::string& data)
 
     // rule Expression_p;
     this->TokenEnd_p = (ss1x::parser::space_p ||
-                        ss1x::parser::char_set_p("()") || ss1x::parser::eof_p)
+                        ss1x::parser::char_set_p("()[]{}") || ss1x::parser::eof_p)
                            .name("TokenEnd_p");
 
     this->Integer_p =
@@ -183,17 +184,10 @@ void Tokenizer::init(const std::string& data)
                             tok = s.str();
                         })]).name("RawString_p");
 
-    this->LeftParen_p =
-        (char_p('(')[ss1x::parser::rule::ActionT([&](
-             StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
-            tok = varlisp::left_parenthese;
-        })]).name("LeftParen_p");
-
-    this->RightParent_p =
-        (char_p(')')[ss1x::parser::rule::ActionT([&](
-             StrIterator, StrIterator, ss1x::parser::rule::matched_value_t v) {
-            tok = varlisp::right_parenthese;
-        })]).name("RightParent_p");
+    this->Parenthese_p = (char_set_p("()[]{}")[ss1x::parser::rule::ActionT([&](
+             StrIterator beg, StrIterator, ss1x::parser::rule::matched_value_t v) {
+            tok = varlisp::parenthese_t(*beg);
+        })]).name("Parenthese_p");
 
     this->BoolTrue_p =
         ((ss1x::parser::char_p('#') >> ss1x::parser::char_set_p("Tt") >
@@ -211,19 +205,36 @@ void Tokenizer::init(const std::string& data)
                      ss1x::parser::rule::matched_value_t v) { tok = false; })])
             .name("BoolFalse_p");
 
+    this->Regex_p =
+        ((ss1x::parser::char_p('/') >> *(sequence("\\ ") | sequence("\\/") |
+                                         (char_ - char_p(' ') - char_p('/'))) >
+          ss1x::parser::char_p('/') >
+          &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+             StrIterator beg, StrIterator end, ss1x::parser::rule::matched_value_t v) {
+            tok = sss::regex::CRegex(std::string(beg + 1, end - 1));
+        })]).name("Regex_p");
+
     this->FallthrowError_p =
         (+(ss1x::parser::char_ -
            ss1x::parser::space_p)[ss1x::parser::rule::ActionT([&](
              StrIterator beg, StrIterator end,
              ss1x::parser::rule::matched_value_t) {
+
+               COLOG_ERROR(m_tokens, sss::raw_string(std::string(beg, end)));
             SSS_POSITION_THROW(std::runtime_error, "Un-recongnise string `",
                               std::string(beg, end), "`");
         })]).name("FallthrowError_p");
 
     this->Token_p =
-        (refer(Spaces_p) | refer(Comment_p) | refer(Integer_p) |
-         refer(Double_p) | refer(Symbol_p) | refer(String_p) |
-         refer(RawString_p) | refer(LeftParen_p) | refer(RightParent_p) |
+        (refer(Spaces_p) | refer(Comment_p) |
+         // 讲double放在int后面，只是为了验证解析器不会丢失匹配；我的Integer_p不会
+         // 遗漏'.'等字符。
+         refer(Integer_p) | refer(Double_p) |
+         refer(Regex_p) |
+         refer(Parenthese_p) |
+         refer(String_p) |
+         refer(RawString_p) |
+         refer(Symbol_p) |
          refer(BoolTrue_p) | refer(BoolFalse_p) | refer(FallthrowError_p));
 
     this->push(data);

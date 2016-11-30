@@ -10,6 +10,8 @@
 
 #include <ss1x/parser/oparser.hpp>
 
+#include <sss/regex/cregex.hpp>
+
 #include "symbol.hpp"
 
 namespace varlisp {
@@ -21,21 +23,26 @@ struct empty{
 };
 
 enum parenthese_t {
-    left_parenthese     = '(',
-    right_parenthese    = ')'
+    none_parenthese    = '\0',
+    left_parenthese    = '(',
+    right_parenthese   = ')',
+    left_bracket       = '[',
+    right_bracket      = ']',
+    left_curlybracket  = '{',
+    right_curlybracket = '}',
 };
 
-typedef boost::variant<empty,           // 0
-        parenthese_t,    // 1 括号
-        bool,            // 2 #t,#f 字符量
-        int,             // 3 integer 字符量
-        double,          // 4
-        std::string,     // 5 保存去掉括号后的字符串
-        symbol>          // 6 符号(包括关键字、运算符)
+typedef boost::variant<empty,   // 0
+        parenthese_t,           // 1 括号
+        bool,                   // 2 #t,#f 字符量
+        int,                    // 3 integer 字符量
+        double,                 // 4
+        std::string,            // 5 保存去掉括号后的字符串
+        symbol,                 // 6 符号(包括关键字、运算符)
+        sss::regex::CRegex>     // 7 正则表达式
         Token;
 
-        class token_visitor  :  public boost::static_visitor<void>
-{
+class token_visitor : public boost::static_visitor<void> {
 private:
     std::ostream& m_o;
 public:
@@ -72,7 +79,14 @@ public:
     }
     void operator() (parenthese_t p) const
     {
-        m_o << (p == varlisp::left_parenthese ? '(' : ')');
+        m_o << char(p);
+    }
+    void operator() (const sss::regex::CRegex& r) const
+    {
+        // NOTE FIXME
+        // 这里，应该对串中的空格，以及'/'进行转义后打印
+        // escaper()
+        m_o << '/' << r.regstr() << '/';
     }
 };
 
@@ -160,12 +174,12 @@ private:
     ss1x::parser::rule  c_str_escapseq_p;
     ss1x::parser::rule  String_p;
     ss1x::parser::rule  RawString_p;
-    ss1x::parser::rule  LeftParen_p;
-    ss1x::parser::rule  RightParent_p;
+    ss1x::parser::rule  Parenthese_p;
 
     ss1x::parser::rule  BoolTrue_p;
     ss1x::parser::rule  BoolFalse_p;
     ss1x::parser::rule  Token_p;
+    ss1x::parser::rule  Regex_p;
     ss1x::parser::rule  FallthrowError_p; // 当其他条件都匹配失败的时候，匹配这个，并消耗非空字符；
 
     // private:
