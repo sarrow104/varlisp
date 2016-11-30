@@ -12,7 +12,8 @@
 
 namespace varlisp {
 
-void fmt_impl(std::ostream& oss, varlisp::Environment& env, const varlisp::List& args, const char * funcName)
+void fmt_impl(std::ostream& oss, varlisp::Environment& env,
+              const varlisp::List& args, const char* funcName)
 {
     Object obj1;
     const string_t* p_fmt = getTypedValue<string_t>(env, args.head, obj1);
@@ -32,10 +33,7 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env, const varlisp::List&
     vecObjPtr.resize(arg_len, nullptr);
 
     const varlisp::List* p_arg = args.next();
-    while (p_arg) {
-        if (!p_arg->head.which()) {
-            SSS_POSITION_THROW(std::runtime_error, "varlisp::Empty");
-        }
+    while (p_arg && p_arg->head.which()) {
         vecArgPtr.push_back(&p_arg->head);
         p_arg = p_arg->next();
     }
