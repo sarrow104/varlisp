@@ -52,6 +52,7 @@ protected:
     // 这就是说，包括操作符，也是Symbol!
     Object parseExpression();
     Object parseList();
+    Object parseEnvironment();
 
     Object parseSpecialIf();
     Object parseSpecialCond();

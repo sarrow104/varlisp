@@ -14,6 +14,8 @@
 #include "builtin_helper.hpp"
 #include "print_visitor.hpp"
 #include "tokenizer.hpp"
+#include "detail/list_iterator.hpp"
+#include "keyword_t.hpp"
 
 namespace varlisp {
 
@@ -36,6 +38,23 @@ public:
         }
     }
 };
+
+// NOTE 如何解析 {} ？
+// 如何保存？
+// 创建一个Environment 然后move过去。
+// {} 一个空的Environment；
+// { (sym (expr))... }
+// 如何取值？
+// 双::!
+// (format 1 "{}" env-name::sym-name ...)
+// (with env-name
+//    (expr) ...)
+// 后者是借鉴js中的with语法；with块内的操作，默认是对该标识符
+// 作用域的属性、方法进行操作。可以少写几个字。
+// 我这里，是想操作其中的数据；
+// 不过，::的实现，貌似有些麻烦——我需要修改标识符的解析了。
+// 在这之前，可以额外定义函数。比如
+// (using env-name sym-name) 来获取特定的值，以及函数；using，也可以继续嵌套……
 
 // scripts
 //    -> *Expression
@@ -75,14 +94,9 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
 
             Object result;
             const Object& res = getAtomicValue(env, expr, result);
-            // std::cout << expr << " = " << res << std::endl;
             if (!is_silent) {
-#if 1
                 boost::apply_visitor(print_visitor(std::cout), res);
                 std::cout << std::endl;
-#else
-                std::cout << res.which() << " " << res << std::endl;
-#endif
             }
         }
         catch (std::runtime_error& e) {
@@ -109,37 +123,103 @@ int Parser::retrieve_symbols(std::vector<std::string>& symbols,
     }
 }
 
+namespace detail {
+inline int parenthese_type(parenthese_t pt)
+{
+    switch (pt) {
+        case varlisp::left_parenthese:
+        case varlisp::right_parenthese:
+            return 0;
+        case varlisp::left_bracket:
+        case varlisp::right_bracket:
+            return 1;
+        case varlisp::left_curlybracket:
+        case varlisp::right_curlybracket:
+            return 2;
+        default:
+            return -1;
+    }
+}
+
+} // namespace detail
+
 bool Parser::balance_preread()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     size_t token_cnt = 0;
-    int parenthese_balance = 0;
-    while (true) {
-        static const varlisp::Token left(varlisp::left_parenthese);
-        static const varlisp::Token right(varlisp::right_parenthese);
-        varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
-        if (!tok.which()) {
-            break;
+    std::vector<std::tuple<int,int,int>> pt_stack;
+    const static std::tuple<int, int,int > pt_zero;
+    std::vector<int> pt_types;
+    pt_types.push_back(-1);
+    COLOG_DEBUG(SSS_VALUE_MSG(pt_zero));
+    // int parenthese_balance = 0;
+    // int bracket_balance = 0;
+    // int curly_balance = 0;
+    for (varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
+         tok = this->m_toknizer.lookahead_nothrow(token_cnt), tok.which(); token_cnt++)
+    {
+        COLOG_DEBUG(tok);
+        const varlisp::parenthese_t * p_parenthese = boost::get<varlisp::parenthese_t>(&tok);
+        if (!p_parenthese) {
+            continue;
         }
-        if (tok == left) {
-            parenthese_balance++;
+
+        // 如何判断括号匹配失衡？
+        // 1. 左括号随时可以出现——只要当前括号是平衡的，那么三种左括号，都可以出现。
+        // 2. 右括号出现的时候，必须在左侧找到"空闲"的左括号；
+        // 3. 解析完成(eof)的失衡，必须没有孤立的括号。
+        //
+        // 简单优化了一下。让同类型的括号可以累加；
+        // 一旦有不同类型的括号，就使用栈。
+        // 这样，就可以保证括号的配对使用了。
+
+        if (pt_types.back() != detail::parenthese_type(*p_parenthese)) {
+            pt_stack.push_back(std::make_tuple(0, 0, 0));
+            pt_types.push_back(detail::parenthese_type(*p_parenthese));
         }
-        if (tok == right) {
-            parenthese_balance--;
+        COLOG_DEBUG(SSS_VALUE_MSG(pt_stack.size()), pt_stack);
+        switch (*p_parenthese) {
+            case varlisp::left_parenthese:
+                std::get<0>(pt_stack.back()) ++;
+                break;
+            case varlisp::right_parenthese:
+                std::get<0>(pt_stack.back()) --;
+                break;
+            case varlisp::left_bracket:
+                std::get<1>(pt_stack.back()) ++;
+                break;
+            case varlisp::right_bracket:
+                std::get<1>(pt_stack.back()) --;
+                break;
+            case varlisp::left_curlybracket:
+                std::get<2>(pt_stack.back()) ++;
+                break;
+            case varlisp::right_curlybracket:
+                std::get<2>(pt_stack.back()) --;
+                break;
+            default:
+                SSS_POSITION_THROW(std::runtime_error, "parenthese_t == 0");
         }
-        if (parenthese_balance < 0) {
+
+        if (pt_stack.back() == pt_zero) {
+            pt_stack.pop_back();
+            pt_types.pop_back();
+        }
+        else if (std::get<0>(pt_stack.back()) < 0 ||
+                 std::get<1>(pt_stack.back()) < 0 ||
+                 std::get<2>(pt_stack.back()) < 0)
+        {
             this->m_toknizer.print_token_stack(std::cout);
             this->m_toknizer.clear();
             SSS_POSITION_THROW(std::runtime_error, "parenthese not balance!");
         }
-        if (parenthese_balance == 0) {
+        if (pt_stack.empty()) {
             break;
         }
-        token_cnt++;
     }
-    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, parenthese_balance);
+    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, pt_stack.size());
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, token_cnt);
-    return parenthese_balance == 0;
+    return pt_stack.empty();
 }
 
 // Expression:
@@ -152,13 +232,24 @@ Object Parser::parseExpression()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     varlisp::Token tok = this->m_toknizer.top();
+    COLOG_DEBUG(tok);
 
     if (const varlisp::parenthese_t* p_v =
             boost::get<varlisp::parenthese_t>(&tok)) {
-        if (*p_v != varlisp::left_parenthese) {
-            SSS_POSITION_THROW(std::runtime_error, "unexpect ')'");
+        switch (*p_v) {
+            case varlisp::left_parenthese:
+            case varlisp::left_bracket:
+                return this->parseList();
+                break;
+
+            case varlisp::left_curlybracket:
+                // SSS_POSITION_THROW(std::runtime_error, "TODO {} parsing");
+                return this->parseEnvironment();
+                break;
+
+            default:
+                SSS_POSITION_THROW(std::runtime_error, "unexpect ", char(*p_v));
         }
-        return this->parseList();
     }
     else if (const bool* p_v = boost::get<bool>(&tok)) {
         this->m_toknizer.consume();
@@ -185,11 +276,52 @@ Object Parser::parseExpression()
             return varlisp::Object(*p_v);
         }
     }
+    else if (const sss::regex::CRegex* p_v = boost::get<sss::regex::CRegex>(&tok)) {
+        this->m_toknizer.consume();
+        return varlisp::Object(*p_v);
+    }
     else {
         SSS_POSITION_THROW(std::runtime_error,
                           "connot handle boost::variant which() == ",
                           tok.which());
     }
+}
+
+// { (sym (expr))... }
+Object Parser::parseEnvironment()
+{
+    if (!this->m_toknizer.consume(varlisp::left_curlybracket)) {
+        SSS_POSITION_THROW(std::runtime_error, "expect '{'");
+    }
+    Environment env;
+    // NOTE eval时机问题；
+    // 让内部的对象，通过这个env进行eval；
+
+    varlisp::Token tok;
+    while (tok = m_toknizer.top(), tok.which()) {
+        COLOG_DEBUG(tok);
+        if (!this->m_toknizer.consume(varlisp::left_parenthese)) {
+            break;
+        }
+        tok = m_toknizer.top();
+        const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&tok);
+        if (!p_sym) {
+            SSS_POSITION_THROW(std::runtime_error, "expected symbol; but ", tok);
+        }
+        if (keywords_t::is_keyword(p_sym->m_data)) {
+            SSS_POSITION_THROW(std::runtime_error, "unexpected ", *p_sym);
+        }
+        this->m_toknizer.consume();
+        env[p_sym->m_data] = this->parseExpression();
+        if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            SSS_POSITION_THROW(std::runtime_error, "expect ')'");
+        }
+    }
+    if (!this->m_toknizer.consume(varlisp::right_curlybracket)) {
+        SSS_POSITION_THROW(std::runtime_error, "expect '}'");
+    }
+    // return std::move(env);
+    return env;
 }
 
 // FIXME
@@ -199,51 +331,58 @@ Object Parser::parseExpression()
 Object Parser::parseList()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-    if (!this->m_toknizer.consume(varlisp::left_parenthese)) {
-        SSS_POSITION_THROW(std::runtime_error, "expect '('");
-    }
+    varlisp::parenthese_t end_pt = varlisp::none_parenthese;
+    if (this->m_toknizer.consume(varlisp::left_parenthese)) {
+        end_pt = varlisp::right_parenthese;
 
-    varlisp::Token next = this->m_toknizer.lookahead(0);
-    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, next);
+        varlisp::Token next = this->m_toknizer.lookahead(0);
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, next);
 
 #define define_builtin_symbol(a) \
-    static const varlisp::Token tok_##a(varlisp::symbol(#a));
-    define_builtin_symbol(if);
-    define_builtin_symbol(cond);
-    define_builtin_symbol(and);
-    define_builtin_symbol(or);
-    define_builtin_symbol(define);
-    define_builtin_symbol(lambda);
+        static const varlisp::Token tok_##a(varlisp::symbol(#a));
+        define_builtin_symbol(if);
+        define_builtin_symbol(cond);
+        define_builtin_symbol(and);
+        define_builtin_symbol(or);
+        define_builtin_symbol(define);
+        define_builtin_symbol(lambda);
 #undef define_builtin_symbol
 
-    if (next == tok_if) {
-        return this->parseSpecialIf();
+        if (next == tok_if) {
+            return this->parseSpecialIf();
+        }
+        else if (next == tok_cond) {
+            return this->parseSpecialCond();
+        }
+        else if (next == tok_and) {
+            return parseSpecialAnd();
+        }
+        else if (next == tok_or) {
+            return parseSpecialOr();
+        }
+        else if (next == tok_define) {
+            return this->parseSpecialDefine();
+        }
+        else if (next == tok_lambda) {
+            return this->parseSpecialLambda();
+        }
     }
-    else if (next == tok_cond) {
-        return this->parseSpecialCond();
+    else if (this->m_toknizer.consume(varlisp::left_bracket)) {
+        end_pt = varlisp::right_bracket;
     }
-    else if (next == tok_and) {
-        return parseSpecialAnd();
-    }
-    else if (next == tok_or) {
-        return parseSpecialOr();
-    }
-    else if (next == tok_define) {
-        return this->parseSpecialDefine();
-    }
-    else if (next == tok_lambda) {
-        return this->parseSpecialLambda();
+    else {
+        SSS_POSITION_THROW(std::runtime_error, "expect '(' or '['");
     }
     // NOTE (1 2 3) (list 1 2 3)
     // 的区别，仅在于第一个元素的不同；
     // 后者的第一个元素，相当于一个函数；其作用，就是将当前列表之后的部分整体返回！
     // 可以看做：(cdr (list list 1 2 3))
-    // else if (next == tok_list) {
-    //     // TODO
-    //     return this->parseSpecialList();
-    // }
 
     List current;
+    detail::list_back_inserter_t<detail::Converter<Object> > inserter(current);
+    if (end_pt == varlisp::right_bracket) {
+        *inserter ++ = varlisp::symbol("list");
+    }
     varlisp::Token tok;
 
     while (tok = m_toknizer.top(), tok.which()) {
@@ -252,34 +391,34 @@ Object Parser::parseList()
                 break;
 
             case 1:
-                if (tok == Token(varlisp::left_parenthese)) {
-                    current.append(Object(this->parseList()));
+                if (tok == Token(varlisp::left_parenthese) || tok == Token(varlisp::left_bracket)) {
+                    *inserter++ = this->parseList();
                 }
                 else {
-                    if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-                        SSS_POSITION_THROW(std::runtime_error, "expect ')'");
+                    if (!this->m_toknizer.consume(end_pt)) {
+                        SSS_POSITION_THROW(std::runtime_error, "expect ", char(end_pt));
                     }
                     return current;
                 }
                 break;
 
             case 2:
-                current.append(Object(boost::get<bool>(tok)));
+                *inserter++ = boost::get<bool>(tok);
                 m_toknizer.consume();
                 break;
 
             case 3:
-                current.append(Object(boost::get<int>(tok)));
+                *inserter++ = boost::get<int>(tok);
                 m_toknizer.consume();
                 break;
 
             case 4:
-                current.append(Object(boost::get<double>(tok)));
+                *inserter++ = boost::get<double>(tok);
                 m_toknizer.consume();
                 break;
 
             case 5:
-                current.append(Object(string_t(boost::get<std::string>(tok))));
+                *inserter++ = varlisp::string_t(std::move(boost::get<std::string>(tok)));
                 m_toknizer.consume();
                 break;
 
@@ -288,13 +427,20 @@ Object Parser::parseList()
                     COLOG_DEBUG(SSS_VALUE_MSG(tok));
                     const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&tok);
                     if (p_sym->is_nil()) {
-                        current.append(Object{Nill{}});
+                        *inserter++ = varlisp::Nill{};
                     }
                     else {
-                        current.append(Object(*p_sym));
+                        *inserter++ = *p_sym;
                     }
                 }
                 m_toknizer.consume();
+                break;
+
+            case 7:
+                {
+                    *inserter++ = boost::get<sss::regex::CRegex>(tok);
+                    m_toknizer.consume();
+                }
                 break;
         }
     }
