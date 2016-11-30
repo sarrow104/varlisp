@@ -47,6 +47,16 @@ size_t Environment::defer_task_size() const
     return m_defer_task.size();
 }
 
+
+void   Environment::print(std::ostream& o) const
+{
+    o << '{';
+    for (auto it = this->BaseT::begin(); it != this->BaseT::end(); ++it) {
+        o << '(' << it->first << ' ' << it->second << ')';
+    }
+    o << '}';
+}
+
 const Object* Environment::find(const std::string& name) const
 {
     const Environment* pe = this;
@@ -116,6 +126,17 @@ Environment * Environment::ceiling(){
         p_curent = p_curent->m_parent;
     }
     return p_curent;
+}
+
+bool Environment::operator == (const Environment& env) const
+{
+    // TODO
+    return false;
+}
+bool Environment::operator < (const Environment& env) const
+{
+    // TODO
+    return false;
 }
 
 }  // namespace varlisp

@@ -46,12 +46,27 @@ struct Environment : private std::map<std::string, Object> {
     void   defer_task_push(const Object& task);
     void   defer_task_push(Object&& task);
     size_t defer_task_size() const;
+    void   print(std::ostream& ) const;
+
+    Object eval(Environment& env) const
+    {
+        return *this;
+    }
+
+    bool operator == (const Environment& env) const;
+    bool operator < (const Environment& env) const;
 
 private:
     Environment*        m_parent;
     Interpreter*        m_interpreter;
     std::vector<Object> m_defer_task;
 };
+
+inline std::ostream& operator<<(std::ostream& o, const Environment& e)
+{
+    e.print(o);
+    return o;
+}
 }  // namespace varlisp
 
 #endif /* __EVIRONMENT_HPP_1457164527__ */
