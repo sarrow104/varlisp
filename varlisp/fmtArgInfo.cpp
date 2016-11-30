@@ -34,7 +34,10 @@ bool fmtArgInfo::parseSpec(Iter_t& beg, Iter_t end)
     if (parser_t::parseChar(beg, end, ':')) {
         char tmp_fill = ' ';
         rewinder_t r2(beg);
-        r2.commit(parser_t::parseAnyChar(beg, end, tmp_fill) &&
+        r2.commit((parser_t::parseIfChar(
+                       beg, end, static_cast<int (*)(int)>(&std::isalnum),
+                       tmp_fill) ||
+                   parser_t::parseSetChar(beg, end, " ", tmp_fill)) &&
                   this->parseAlign(beg, end)) ||
             r2.commit(this->parseAlign(beg, end));
         if (r2.is_commited()) {
@@ -151,31 +154,33 @@ void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
     }
 }
 
-void fmtArgInfo::fillN(std::ostream& o, size_t n) const
+void fmtArgInfo::fillN(std::ostream& o, char fill, size_t n) const
 {
+    COLOG_ERROR(SSS_VALUE_MSG(n));
     for (size_t i = 0; i < n; ++i) {
-        o.put(this->fill);
+        o.put(fill);
     }
 }
 
 void fmtArgInfo::print(std::ostream& o, const sss::string_view& s) const
 {
     if (this->width > s.size()) {
-        switch (this->align) {
+        char align = this->align ? this->align : '<';
+        switch (align) {
             case '<':
                 o.write(s.data(), s.size());
-                this->fillN(o, this->width - s.size());
+                this->fillN(o, this->fill, this->width - s.size());
                 break;
             case '=':
-                this->fillN(o, this->width - s.size());
+                this->fillN(o, this->fill, this->width - s.size());
                 o.write(s.data(), s.size());
                 break;
 
             case '>':
             case '^':
-                this->fillN(o, (this->width - s.size()) / 2);
+                this->fillN(o, this->fill, (this->width - s.size()) / 2);
                 o.write(s.data(), s.size());
-                this->fillN(o, this->width - (this->width - s.size()) / 2);
+                this->fillN(o, this->fill, this->width - (this->width - s.size()) / 2);
                 break;
         }
     }
@@ -184,11 +189,87 @@ void fmtArgInfo::print(std::ostream& o, const sss::string_view& s) const
     }
 }
 
+void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
+                        char fill, char align, size_t width) const
+{
+    COLOG_ERROR(s, sign, fill, align, width);
+    int byte_cnt = 0;
+    bool add_plus = sign == '+' && s.front() != '-' && s.front() != '+';
+    int prev_padd = 0;
+    switch (align) {
+        case '<':
+            if (add_plus) {
+                o.put('+');
+                byte_cnt++;
+            }
+            o.write(s.data(), s.size());
+            byte_cnt += s.size();
+            if (byte_cnt < int(width)) {
+                this->fillN(o, fill, width - byte_cnt);
+            }
+            break;
+
+        case '=':
+            if (width > add_plus ? 1 : 0 + s.size()) {
+                prev_padd = int(width - (add_plus ? 1 : 0) - s.size()) / 2;
+                this->fillN(o, fill, prev_padd);
+            }
+            if (add_plus) {
+                o.put('+');
+            }
+            o.write(s.data(), s.size());
+            if (width > add_plus ? 1 : 0 + s.size()) {
+                this->fillN(o, fill, int(width - (add_plus ? 1 : 0) - s.size() -
+                                         prev_padd));
+            }
+            break;
+
+        case '^':
+            if (add_plus) {
+                o.put('+');
+                width--;
+            }
+            if (s.front() == '-') {
+                o.put('-');
+                s.remove_prefix(1);
+                width--;
+            }
+            if (width > s.size()) {
+                this->fillN(o, fill, width - s.size());
+            }
+            o.write(s.data(), s.size());
+            break;
+
+        case '>':
+            COLOG_ERROR(SSS_VALUE_MSG(width));
+            if (width > (add_plus ? 1 : 0) + s.size()) {
+                this->fillN(o, fill, width - (add_plus ? 1 : 0) - s.size());
+            }
+            if (add_plus) {
+                o.write(&sign, 1);
+            }
+            o.write(s.data(), s.size());
+            break;
+    }
+}
+
 void fmtArgInfo::print(std::ostream& o, double f) const
 {
     char buf[32];
     char c_fmt[32];
-    switch (this->type) {
+    char type = 'f';
+    if (this->type) {
+        type = this->type;
+    }
+    char align = '>';
+    if (this->align) {
+        align = this->align;
+    }
+    char sign = '-';
+    if (this->sign) {
+        sign = this->sign;
+    }
+    switch (type) {
         case 'c': {
             int32_t i = f;
             sss::util::utf8::dumpout2utf8(&i, &i + 1,
@@ -209,20 +290,20 @@ void fmtArgInfo::print(std::ostream& o, double f) const
         case 'F':
         case 'g':
         case 'G':
-        case '%':
-            std::sprintf(c_fmt, "%%.%d%c", int(this->precision), this->type);
+            std::sprintf(c_fmt, "%%.%d%c", int(this->precision), type);
             std::sprintf(buf, c_fmt, f);
-            COLOG_DEBUG(c_fmt);
-            COLOG_DEBUG(buf);
-            this->print(o, sss::string_view(buf));
+            adjust(o, buf, sign, this->fill, align, this->width);
+            break;
+
+        case '%':
+            std::sprintf(c_fmt, "%%.%d%c%%%%", 2, 'f');
+            adjust(o, buf, sign, this->fill, align, this->width);
             break;
 
         default:
             std::sprintf(c_fmt, "%%.%df", int(this->precision));
             std::sprintf(buf, c_fmt, f);
-            COLOG_DEBUG(c_fmt);
-            COLOG_DEBUG(buf);
-            this->print(o, sss::string_view(buf));
+            adjust(o, buf, sign, this->fill, align, this->width);
             break;
     }
 }
@@ -240,6 +321,19 @@ void fmtArgInfo::print(std::ostream& o, int32_t i) const
 {
     char buf[32];
     char c_fmt[32];
+    char type = 'd';
+    if (this->type) {
+        type = this->type;
+    }
+    char align = '>';
+    if (this->align) {
+        align = this->align;
+    }
+    char sign = '-';
+    if (this->sign) {
+        sign = this->sign;
+    }
+
     switch (this->type) {
         case 'c': {
             sss::util::utf8::dumpout2utf8(&i, &i + 1,
@@ -259,15 +353,12 @@ void fmtArgInfo::print(std::ostream& o, int32_t i) const
         case 'X':
             std::sprintf(c_fmt, "%%%c", this->type);
             std::sprintf(buf, c_fmt, i);
-            COLOG_DEBUG(c_fmt);
-            COLOG_DEBUG(buf);
-            this->print(o, sss::string_view(buf));
+            adjust(o, buf, sign, this->fill, align, this->width);
             break;
 
         default:
             std::sprintf(buf, "%d", i);
-            COLOG_DEBUG(buf);
-            this->print(o, sss::string_view(buf));
+            adjust(o, buf, sign, this->fill, align, this->width);
             break;
     }
 }

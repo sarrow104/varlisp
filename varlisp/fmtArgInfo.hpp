@@ -87,9 +87,9 @@ struct fmtArgInfo {
     ~fmtArgInfo() = default;
     size_t index = 0u; // 变量引用下标；从0开始；没有显示提供下标，则当前下标为前一个"捕获"的下标+1；
     char fill = ' ';  // 填充符号；默认为空格；
-    char align = '<'; // 水平对齐方式；默认是字符串居左，数字居右。 '<','>','=','^'
-    char sign = '-';  // 符号位；
-    char type = ' ';  // 显示风格
+    char align = '\0'; // 水平对齐方式；默认是字符串居左，数字居右。 '<','>','=','^'
+    char sign = '\0';  // 符号位；数字默认'-'
+    char type = '\0';  // 显示风格
     size_t width = 0u;
     size_t precision = 6u;  // 精度；用于数字打印；小数的宽度。
     // size_t min_length; //
@@ -114,7 +114,8 @@ struct fmtArgInfo {
     void print(std::ostream& o, int32_t i) const;
     // void print(std::ostream& o, uint32_t i) const;
 
-    void fillN(std::ostream& o, size_t n) const;
+    void fillN(std::ostream& o, char fill, size_t n) const;
+    void adjust(std::ostream& o, sss::string_view s, char sign, char fill, char align, size_t width) const;
 };
 
 inline std::ostream& operator << (std::ostream& o, const fmtArgInfo& f)
