@@ -56,11 +56,10 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     varlisp::List ret = varlisp::List::makeSQuoteList();
     if (sep.length() == 1) {
         sss::ViewSpliter<char> sp(*p_content, sep[0]);
-        List *p_list = &ret;
+        auto ret_it = detail::list_back_inserter<Object>(ret);
         sss::string_view stem;
         while (sp.fetch_next(stem)) {
-            p_list = p_list->next_slot();
-            p_list->head = p_content->substr(stem);
+            *ret_it++ = p_content->substr(stem);
         }
     }
     else {
