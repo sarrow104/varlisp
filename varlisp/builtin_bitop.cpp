@@ -6,6 +6,7 @@
 #include "builtin_helper.hpp"
 
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 /**
@@ -20,7 +21,7 @@ Object eval_bit_and(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "&";
     Object res;
-    const int * p_var = varlisp::getTypedValue<int>(env, args.head, res);
+    const int * p_var = varlisp::getTypedValue<int>(env, detail::car(args), res);
     if (!p_var) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
@@ -53,7 +54,7 @@ Object eval_bit_or(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "|";
     Object res;
-    const int * p_var = varlisp::getTypedValue<int>(env, args.head, res);
+    const int * p_var = varlisp::getTypedValue<int>(env, detail::car(args), res);
     if (!p_var) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
@@ -86,7 +87,7 @@ Object eval_bit_rev(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "~";
     Object res;
-    const int * p_var = varlisp::getTypedValue<int>(env, args.head, res);
+    const int * p_var = varlisp::getTypedValue<int>(env, detail::car(args), res);
     if (!p_var) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
@@ -108,7 +109,7 @@ Object eval_bit_xor(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "^";
     Object res;
-    const int * p_var = varlisp::getTypedValue<int>(env, args.head, res);
+    const int * p_var = varlisp::getTypedValue<int>(env, detail::car(args), res);
     if (!p_var) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
@@ -141,14 +142,14 @@ Object eval_bit_shift_right(varlisp::Environment& env, const varlisp::List& args
 {
     const char * funcName = ">>";
     Object obj_arg;
-    const int * p_var = varlisp::getTypedValue<int>(env, args.head, obj_arg);
+    const int * p_var = varlisp::getTypedValue<int>(env, detail::car(args), obj_arg);
     if (!p_var) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
     }
 
     Object obj_shift;
-    const int * p_shift = varlisp::getTypedValue<int>(env, args.tail[0].head, obj_shift);
+    const int * p_shift = varlisp::getTypedValue<int>(env, detail::cadr(args), obj_shift);
     if (!p_shift) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
@@ -170,14 +171,14 @@ Object eval_bit_shift_left(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "<<";
     Object obj_arg;
-    const int * p_var = varlisp::getTypedValue<int>(env, args.head, obj_arg);
+    const int * p_var = varlisp::getTypedValue<int>(env, detail::car(args), obj_arg);
     if (!p_var) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
     }
 
     Object obj_shift;
-    const int * p_shift = varlisp::getTypedValue<int>(env, args.tail[0].head, obj_shift);
+    const int * p_shift = varlisp::getTypedValue<int>(env, detail::cadr(args), obj_shift);
     if (!p_shift) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": int as parameter needed)");
