@@ -7,6 +7,8 @@
 #include "builtin_helper.hpp"
 #include "cast2bool_visitor.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/list_iterator.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -67,22 +69,19 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
     std::sort(p_arg_list_vec.begin(), p_arg_list_vec.end(),
               [&env,&callable](const Object* v1, const Object* v2)->bool{
                   varlisp::List expr {callable};
-                  varlisp::List * p_expr = &expr;
+                  auto back_it = detail::list_back_inserter<Object>(expr);
                   COLOG_DEBUG(callable, *v1, *v2);
-                  p_expr = p_expr->next_slot();
-                  p_expr->head = *v1;
-                  p_expr = p_expr->next_slot();
-                  p_expr->head = *v2;
+                  *back_it++ = *v1;
+                  *back_it++ = *v2;
                   Object ret = expr.eval(env);
                   return boost::apply_visitor(cast2bool_visitor(env), ret);
               });
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
-    varlisp::List * p_ret_list = &ret;
+    auto back_it = detail::list_back_inserter<Object>(ret);
 
     for (int i = 0; i < arg_length; ++i) {
-        p_ret_list = p_ret_list->next_slot();
-        p_ret_list->head = *p_arg_list_vec[i];
+        *back_it++ = *p_arg_list_vec[i];
     }
     return ret;
 }
@@ -94,7 +93,7 @@ REGIST_BUILTIN("sort", 2, 2, eval_sort,
 // 疑问：针对变量？
 /**
  * @brief
- *      (sort! func '(list)) -> '(sorted-list)
+ *      (sort! func '(list)) -> nil
  *
  * @param[in] env
  * @param[in] args
@@ -103,11 +102,63 @@ REGIST_BUILTIN("sort", 2, 2, eval_sort,
  */
 Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
 {
-    // TODO FIXME
+    const char * funcName = "sort!";
+    const Object& callable = args.head;
+
+    Object symObj;
+    auto p_sym = varlisp::getSymbol(env, detail::cadr(args), symObj);
+    if (!p_sym) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": second must be symbol)");
+    }
+    Object * p_value = env.find(p_sym->m_data);
+    if (!p_value) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
+                           *p_sym, " not exist!)");
+    }
+
+    const varlisp::List * p_list = boost::get<varlisp::List>(p_value);
+    if (!p_list || !p_list->is_squote()) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
+                           *p_sym, " is not reference to a s-list!);"
+                           " but: ", boost::apply_visitor(eval_visitor(env), detail::cadr(args)));
+    }
+    p_list = p_list->next();
+
+    int arg_length = p_list->length();
+    COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
+    std::vector<Object>      tmp_obj_vec;
+    tmp_obj_vec.resize(arg_length);
+    std::vector<const Object*> p_arg_list_vec;
+    p_arg_list_vec.resize(arg_length);
+
+    for (int i = 0; i < arg_length; ++i, p_list = p_list->next()) {
+        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, p_list->head, tmp_obj_vec[i]);
+    }
+
+    // NOTE >< 等比较函数，对于字符串无效……
+    std::sort(p_arg_list_vec.begin(), p_arg_list_vec.end(),
+              [&env,&callable](const Object* v1, const Object* v2)->bool{
+                  varlisp::List expr {callable};
+                  auto back_it = detail::list_back_inserter<Object>(expr);
+                  COLOG_DEBUG(callable, *v1, *v2);
+                  *back_it++ = *v1;
+                  *back_it++ = *v2;
+                  Object ret = expr.eval(env);
+                  return boost::apply_visitor(cast2bool_visitor(env), ret);
+              });
+
+    varlisp::List ret = varlisp::List::makeSQuoteList();
+    auto back_it = detail::list_back_inserter<Object>(ret);
+
+    for (int i = 0; i < arg_length; ++i) {
+        *back_it++ = *p_arg_list_vec[i];
+    }
+    std::swap(*boost::get<varlisp::List>(p_value), ret);
     return varlisp::Nill{};
 }
 
 REGIST_BUILTIN("sort!", 2, 2, eval_sort_bar,
-               "(sort! func '(list)) -> '(sorted-list) ; TODO");
+               "(sort! func '(list)) -> Nil ; sort in-place");
 
 } // namespace varlisp
