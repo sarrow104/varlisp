@@ -15,6 +15,7 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 inline void encoding_normalize(std::string& encoding)
 {
@@ -54,7 +55,7 @@ namespace varlisp {
 Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::car(args), obj);
     if (!p_content) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(uchardet: 1st argument must be string)");
@@ -98,7 +99,7 @@ REGIST_BUILTIN("uchardet", 1, 1, eval_uchardet,
 Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::car(args), obj);
     if (!p_content) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(pychardet: 1st argument must be string)");
@@ -181,13 +182,13 @@ void trim(sss::string_view& s)
 Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const string_t * p_encodings = varlisp::getTypedValue<string_t>(env, args.head, obj1);
+    const string_t * p_encodings = varlisp::getTypedValue<string_t>(env, detail::car(args), obj1);
     if (!p_encodings) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(ivchardet: 1st argument must be encodings string)");
     }
     Object obj2;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj2);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::cadr(args), obj2);
     if (!p_content) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(ivchardet: 2nd argument must be content string)");
@@ -235,19 +236,19 @@ REGIST_BUILTIN("ivchardet", 2, 2, eval_ivchardet,
 Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const string_t * p_enc_from = varlisp::getTypedValue<string_t>(env, args.head, obj1);
+    const string_t * p_enc_from = varlisp::getTypedValue<string_t>(env, detail::car(args), obj1);
     if (!p_enc_from) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(iconv: 1st argument must be encodings string)");
     }
     Object obj2;
-    const string_t * p_enc_to = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj2);
+    const string_t * p_enc_to = varlisp::getTypedValue<string_t>(env, detail::cadr(args), obj2);
     if (!p_enc_to) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(iconv: 2nd argument must be encodings string)");
     }
     Object obj3;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.tail[0].tail[0].head, obj3);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::caddr(args), obj3);
     if (!p_content) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(iconv: 3rd argument must be content string)");
@@ -280,7 +281,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ensure-utf8";
     Object obj2;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, args.head, obj2);
+    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::car(args), obj2);
     if (!p_content) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": 1st argument must be content string)");
@@ -289,7 +290,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     Object obj1;
     const string_t * p_encodings = 0;
     if (args.length() >= 2) {
-        p_encodings = varlisp::getTypedValue<string_t>(env, args.tail[0].head, obj1);
+        p_encodings = varlisp::getTypedValue<string_t>(env, detail::cadr(args), obj1);
         if (!p_encodings) {
             SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": 2nd argument must be encodings string)");
