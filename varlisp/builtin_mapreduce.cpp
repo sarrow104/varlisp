@@ -7,6 +7,7 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/list_iterator.hpp"
 
 namespace varlisp {
 
@@ -62,22 +63,20 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
 
     COLOG_DEBUG(SSS_VALUE_MSG(min_items_count));
     varlisp::List ret = varlisp::List::makeSQuoteList();
-    varlisp::List * p_ret_list = &ret;
+    auto ret_it = detail::list_back_inserter<Object>(ret);
     const Object& callable = args.head;
     for (int i = 0; i < min_items_count; ++i) {
         COLOG_DEBUG("loop ", i, "begin");
         varlisp::List expr {callable};
-        varlisp::List * p_expr = &expr;
+        auto back_it = detail::list_back_inserter<Object>(expr);
 
         for (int j = 0; j < arg_length; ++j) {
             COLOG_DEBUG(SSS_VALUE_MSG(i), ',', SSS_VALUE_MSG(j), ',', p_arg_list_vec[j]->head);
-            p_expr = p_expr->next_slot();
-            p_expr->head = p_arg_list_vec[j]->head;
+            *back_it++ = p_arg_list_vec[j]->head;
             p_arg_list_vec[j] = p_arg_list_vec[j]->next();
         }
         COLOG_DEBUG(expr);
-        p_ret_list = p_ret_list->next_slot();
-        p_ret_list->head = expr.eval(env);
+        *ret_it++ = expr.eval(env);
         COLOG_DEBUG(ret);
         COLOG_DEBUG("loop ", i, "end");
     }
@@ -128,8 +127,9 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     while (p_arg_list && p_arg_list->head.which()) {
         Object second_arg = p_arg_list->head;
         varlisp::List expr {callable};
-        expr.append(first_arg);
-        expr.append(second_arg);
+        auto back_it = detail::list_back_inserter<Object>(expr);
+        *back_it++ = first_arg;
+        *back_it++ = second_arg;
         first_arg = expr.eval(env);
         p_arg_list = p_arg_list->next();
     }
@@ -169,17 +169,16 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     p_arg_list = p_arg_list->next();
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
-    varlisp::List * p_ret_list = &ret;
+    auto ret_it = detail::list_back_inserter<Object>(ret);
     int arg_cnt = p_arg_list->length();
     for (int i = 0; i < arg_cnt; ++i, p_arg_list = p_arg_list->next()) {
         varlisp::List expr {callable};
-
-        expr.append(p_arg_list->head);
+        auto back_it = detail::list_back_inserter<Object>(expr);
+        *back_it = p_arg_list->head;
         Object value = expr.eval(env);
 
         if (varlisp::is_true(env, value)) {
-            p_ret_list = p_ret_list->next_slot();
-            p_ret_list->head = p_arg_list->head;
+            *ret_it++ = p_arg_list->head;
         }
     }
     return ret;
