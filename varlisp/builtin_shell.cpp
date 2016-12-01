@@ -11,6 +11,7 @@
 #include "builtin_helper.hpp"
 
 #include "detail/buitin_info_t.hpp"
+#include "detail/list_iterator.hpp"
 
 namespace varlisp {
 // 应该如何处理shell-eval时候的参数？
@@ -55,7 +56,7 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 
     static sss::util::Escaper esp("\\ \"'[](){}?*$&");
     for (const varlisp::List* p_list = args.next();
-         p_list && p_list->head.which(); p_list = p_list->next()) {
+        p_list && p_list->head.which(); p_list = p_list->next()) {
         Object tmp;
         const Object& current = getAtomicValue(env, p_list->head, tmp);
         std::ostringstream inner_oss;
@@ -74,11 +75,10 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     std::tie(out, err) = sss::epoll::rwe_pipe_run(oss.str(), 1 + 2);
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
-    varlisp::List* p_list = &ret;
-    p_list = p_list->next_slot();
-    p_list->head = string_t(std::move(out));
-    p_list = p_list->next_slot();
-    p_list->head = string_t(std::move(err));
+    auto ret_it = detail::list_back_inserter<Object>(ret);
+
+    *ret_it++ = string_t(std::move(out));
+    *ret_it = string_t(std::move(err));
 
     return Object(ret);
 }
@@ -128,7 +128,7 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "shell-ls";
     varlisp::List ret = varlisp::List::makeSQuoteList();
     const List* p = &args;
-    List* p_list = &ret;
+    auto ret_it = detail::list_back_inserter<Object>(ret);
     if (args.length() && args.head.which()) {
         while (p && p->head.which()) {
             Object ls_arg;
@@ -139,8 +139,7 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
             }
             switch (sss::path::file_exists(p_ls_arg->to_string())) {
                 case sss::PATH_TO_FILE:
-                    p_list = p_list->next_slot();
-                    p_list->head = *p_ls_arg;
+                    *ret_it++ = *p_ls_arg;
                     break;
 
                 case sss::PATH_TO_DIRECTORY: {
@@ -148,14 +147,12 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
                     sss::path::glob_path gp(p_ls_arg->to_string(), fd);
                     while (gp.fetch()) {
                         if (fd.is_normal_dir()) {
-                            p_list = p_list->next_slot();
                             std::string item{fd.get_name()};
                             item += sss::path::sp_char;
-                            p_list->head = string_t(std::move(item));
+                            *ret_it++ = string_t(std::move(item));
                         }
                         else if (fd.is_normal_file()) {
-                            p_list = p_list->next_slot();
-                            p_list->head = string_t(fd.get_name());
+                            *ret_it++ = string_t(fd.get_name());
                         }
                     }
                 } break;
@@ -176,14 +173,12 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
         sss::path::glob_path gp(".", fd);
         while (gp.fetch()) {
             if (fd.is_normal_dir()) {
-                p_list = p_list->next_slot();
                 std::string item{fd.get_name()};
                 item += sss::path::sp_char;
-                p_list->head = string_t(std::move(item));
+                *ret_it++ = string_t(std::move(item));
             }
             else if (fd.is_normal_file()) {
-                p_list = p_list->next_slot();
-                p_list->head = string_t(fd.get_name());
+                *ret_it++ = string_t(fd.get_name());
             }
         }
     }
