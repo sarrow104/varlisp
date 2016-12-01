@@ -156,7 +156,7 @@ void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
 
 void fmtArgInfo::fillN(std::ostream& o, char fill, size_t n) const
 {
-    COLOG_ERROR(SSS_VALUE_MSG(n));
+    COLOG_DEBUG(SSS_VALUE_MSG(n));
     for (size_t i = 0; i < n; ++i) {
         o.put(fill);
     }
@@ -192,7 +192,7 @@ void fmtArgInfo::print(std::ostream& o, const sss::string_view& s) const
 void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
                         char fill, char align, size_t width) const
 {
-    COLOG_ERROR(s, sign, fill, align, width);
+    COLOG_DEBUG(s, sign, fill, align, width);
     int byte_cnt = 0;
     bool add_plus = sign == '+' && s.front() != '-' && s.front() != '+';
     int prev_padd = 0;
@@ -241,7 +241,7 @@ void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
             break;
 
         case '>':
-            COLOG_ERROR(SSS_VALUE_MSG(width));
+            COLOG_DEBUG(SSS_VALUE_MSG(width));
             if (width > (add_plus ? 1 : 0) + s.size()) {
                 this->fillN(o, fill, width - (add_plus ? 1 : 0) - s.size());
             }
