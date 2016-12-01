@@ -1,8 +1,10 @@
 #pragma once
 
 #include <stdexcept>
+#include <iterator>
 
 #include <sss/util/PostionThrow.hpp>
+#include <sss/colorlog.hpp>
 
 #include "../object.hpp"
 
@@ -62,6 +64,72 @@ struct list_back_inserter_t {
     }
 };
 
+struct list_object_const_iterator_t : std::iterator<std::forward_iterator_tag, Object>{
+
+    explicit list_object_const_iterator_t(const varlisp::List* p_list)
+        : m_list_ptr(p_list)
+    {
+        COLOG_DEBUG(m_list_ptr);
+    }
+    list_object_const_iterator_t()
+        : m_list_ptr(nullptr)
+    {
+        COLOG_DEBUG(m_list_ptr);
+    }
+    list_object_const_iterator_t(const list_object_const_iterator_t& ref)
+        : m_list_ptr(ref.m_list_ptr)
+    {
+        COLOG_DEBUG(m_list_ptr);
+    }
+    bool operator!=(const list_object_const_iterator_t& ref) const
+    {
+        return m_list_ptr != ref.m_list_ptr;
+    }
+    bool operator==(const list_object_const_iterator_t& ref) const
+    {
+        return m_list_ptr == ref.m_list_ptr;
+    }
+    const Object& operator*() const
+    {
+        if (!(*this)) {
+            SSS_POSITION_THROW(std::runtime_error, "nullptr");
+        }
+        return m_list_ptr->head;
+    }
+    const Object* operator->() const
+    {
+        return &m_list_ptr->head;
+    }
+    operator const void * () const
+    {
+        if (m_list_ptr && m_list_ptr->head.which()) {
+            return this;
+        }
+        else {
+            return nullptr;
+        }
+    }
+    list_object_const_iterator_t operator++(int)
+    {
+        list_object_const_iterator_t ret(*this);
+        this->next();
+        return ret;
+    }
+    list_object_const_iterator_t& operator++()
+    {
+        this->next();
+        return *this;
+    }
+    void next()
+    {
+        m_list_ptr = m_list_ptr->next();
+        if (!m_list_ptr->head.which()) {
+            m_list_ptr = 0;
+        }
+    }
+    const varlisp::List* m_list_ptr;
+};
+
 template <typename T>
 struct list_const_iterator_t {
     explicit list_const_iterator_t(const varlisp::List* p_list)
@@ -99,6 +167,15 @@ struct list_const_iterator_t {
         }
         return *p_val;
     }
+    operator const void * () const
+    {
+        if (m_list_ptr && m_list_ptr->head.which()) {
+            return this;
+        }
+        else {
+            return nullptr;
+        }
+    }
     list_const_iterator_t operator++(int)
     {
         list_const_iterator_t ret(*this);
@@ -119,13 +196,12 @@ struct list_const_iterator_t {
     }
     const varlisp::List* m_list_ptr;
 };
+
 template <typename Out>
 list_back_inserter_t<Converter<Out>> list_back_inserter(varlisp::List& list)
 {
     return list_back_inserter_t<Converter<Out>>(list);
 }
-
-// typedef list_back_inserter_t<Converter<Object> > list_object_back_inserter;
 
 }  // namespace detail
 
