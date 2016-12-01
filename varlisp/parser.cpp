@@ -555,10 +555,6 @@ int parseParamVector(varlisp::Tokenizer& toknizer,
             break;
         }
         const std::string& name = boost::get<varlisp::symbol>(tok).m_data;
-        if (!std::isalpha(name[0])) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "we need a variable name here, not `", name, "`");
-        }
         args.push_back(name);
         toknizer.consume();
     }
@@ -577,11 +573,6 @@ Object Parser::parseSpecialDefine()
     varlisp::Token tok = this->m_toknizer.lookahead();
 
     if (const varlisp::symbol* p_name = boost::get<varlisp::symbol>(&tok)) {
-        if (!std::isalpha(p_name->m_data[0])) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "we need a variable name here, not `",
-                               p_name->m_data, "`");
-        }
         this->m_toknizer.consume();
         varlisp::Object value = this->parseExpression();
 
@@ -601,11 +592,6 @@ Object Parser::parseSpecialDefine()
 
         tok = this->m_toknizer.lookahead();
         if (varlisp::symbol* p_symbol = boost::get<varlisp::symbol>(&tok)) {
-            if (!std::isalpha(p_symbol->m_data[0])) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                   "we need a variable name here, not `",
-                                   p_symbol->m_data, "`");
-            }
             this->m_toknizer.consume();
 
             std::vector<std::string> args;
