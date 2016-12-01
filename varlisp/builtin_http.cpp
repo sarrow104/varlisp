@@ -14,6 +14,7 @@
 #include "builtin_helper.hpp"
 
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -33,7 +34,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "http-get";
     Object url;
-    const string_t* p_url = getTypedValue<string_t>(env, args.head, url);
+    const string_t* p_url = getTypedValue<string_t>(env, detail::car(args), url);
     if (!p_url) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": requie downloading url as 1st argument !)");
@@ -45,13 +46,13 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     const int* p_port = 0;
 
     if (args.length() == 3) {
-        p_proxy = getTypedValue<string_t>(env, args.tail[0].head, proxy);
+        p_proxy = getTypedValue<string_t>(env, detail::cadr(args), proxy);
         if (!p_proxy) {
             SSS_POSITION_THROW(
                 std::runtime_error,
                 "(", funcName, ": 2nd parameter must be proxy domain string!)");
         }
-        p_port = getTypedValue<int>(env, args.tail[0].tail[0].head, port);
+        p_port = getTypedValue<int>(env, detail::caddr(args), port);
         if (!p_port) {
             SSS_POSITION_THROW(
                 std::runtime_error,
