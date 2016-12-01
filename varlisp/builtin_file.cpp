@@ -16,25 +16,9 @@
 
 #include "detail/io.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
-namespace detail {
-inline const Object& car(const varlisp::List& args)
-{
-    return args.head;
-}
-
-inline const Object& cadr(const varlisp::List& args)
-{
-    return args.tail[0].head;
-}
-
-inline const Object& caddr(const varlisp::List& args)
-{
-    return args.tail[0].tail[0].head;
-}
-
-} // namespace detail
 
 /**
  * @brief (read-all "path/to/file") -> string
