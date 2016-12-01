@@ -20,6 +20,9 @@ void Lambda::print(std::ostream& o) const
         o << this->args.back();
     }
     o << ") ";
+    if (!this->help_doc.empty()) {
+        o << sss::raw_string(this->help_doc) << " ";
+    }
     if (!this->body.empty()) {
         bool is_first = true;
         for (const auto& obj : this->body) {
