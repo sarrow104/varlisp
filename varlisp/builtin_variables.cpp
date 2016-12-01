@@ -13,6 +13,7 @@
 #include "detail/buitin_info_t.hpp"
 #include "tokenizer.hpp"
 #include "keyword_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -31,7 +32,7 @@ namespace varlisp {
 Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "undef";
-    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&args.head);
+    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&detail::car(args));
     if (!p_sym) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
@@ -69,7 +70,7 @@ REGIST_BUILTIN("undef", 1, 1, eval_undef, "(undef symbol) -> boolean");
 Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ifdef";
-    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&args.head);
+    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&detail::car(args));
     if (!p_sym) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
@@ -142,12 +143,12 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "let";
 
-    const varlisp::List * p_sym_pairs = boost::get<varlisp::List>(&args.head);
-    COLOG_DEBUG(args.head);
+    const varlisp::List * p_sym_pairs = boost::get<varlisp::List>(&detail::car(args));
+    COLOG_DEBUG(detail::car(args));
     if (!p_sym_pairs) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a list; but",
-                           args.head, ")");
+                           detail::car(args), ")");
     }
     varlisp::Environment inner(&env);
     for (; p_sym_pairs && p_sym_pairs->head.which();
@@ -194,13 +195,6 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN("let", 1, -1, eval_let,
                "(let ((symbol expr)...) (expr)...) -> result-of-last-expr");
 
-namespace detail {
-inline bool is_car_valid(const varlisp::List * p_list)
-{
-    return p_list && p_list->head.which();
-}
-} // namespace detail
-
 /**
  * @brief
  *      (setq symbol1 expr1 symbol2 expr2 ... ) -> value-of-last-expr
@@ -218,25 +212,23 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
     Object * p_value = 0;
     while (detail::is_car_valid(p_1st)) {
         // NOTE 这里需要的是一个将 Object cast 为 symbol的函数
-        const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&p_1st->head);
-        Object tmpSymObj;
+        Object tmpObj;
+        const varlisp::symbol * p_sym = varlisp::getSymbol(env,
+                                                           p_1st->head,
+                                                           tmpObj);
         if (!p_sym) {
-            tmpSymObj = boost::apply_visitor(eval_visitor(env), p_1st->head);
-            p_sym = boost::get<varlisp::symbol>(&tmpSymObj);
-        }
-
-        if (!p_sym) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": 1st must be a symbol; but ", p_1st->head, ")");
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": 1st must be a symbol; but ", p_1st->head,
+                               ")");
         }
         p_value = env.find(p_sym->m_data);
         if (!p_value) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": symbol, ", *p_sym, " not exist!)");
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
+                               *p_sym, " not exist!)");
         }
         if (!detail::is_car_valid(p_2nd)) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": 2nd value for ", *p_sym, " is empty! '())");
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": 2nd value for ", *p_sym, " is empty! '())");
         }
         Object res;
         *p_value = varlisp::getAtomicValue(env, p_2nd->head, res);
@@ -296,13 +288,13 @@ Object eval_swap(varlisp::Environment& env, const varlisp::List& args)
 {
     // TODO FIXME
     const char * funcName = "swap";
-    const varlisp::symbol * p_sym1 = boost::get<varlisp::symbol>(&args.head);
+    const varlisp::symbol * p_sym1 = boost::get<varlisp::symbol>(&detail::car(args));
     if (!p_sym1) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
     }
 
-    const varlisp::symbol * p_sym2 = boost::get<varlisp::symbol>(&args.tail[0].head);
+    const varlisp::symbol * p_sym2 = boost::get<varlisp::symbol>(&detail::cadr(args));
     if (!p_sym2) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 2nd must be a symbol)");
