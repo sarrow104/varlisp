@@ -47,6 +47,17 @@ inline int typedid(varlisp::Environment&, const varlisp::Object& obj)
     }
 }
 
+inline const varlisp::symbol* getSymbol(varlisp::Environment& env,
+                 const varlisp::Object& value, Object& obj)
+{
+    const varlisp::symbol* p_sym = boost::get<varlisp::symbol>(&value);
+    if (!p_sym) {
+        obj = boost::apply_visitor(eval_visitor(env), value);
+        p_sym = boost::get<varlisp::symbol>(&obj);
+    }
+    return p_sym;
+}
+
 template <typename T>
 inline const T* getTypedValue(varlisp::Environment& env,
                               const varlisp::Object& value, Object& obj)
