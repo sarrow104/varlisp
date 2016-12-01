@@ -63,9 +63,11 @@ void Tokenizer::init(const std::string& data)
             .name("Double_p");
 
     this->Symbol_p =
-        ((+(ss1x::parser::punct_p - ss1x::parser::char_set_p("#()\"'_")) |
+        ((+(ss1x::parser::punct_p - ss1x::parser::char_set_p("#()[]{}\"'_")) |
           ss1x::parser::alpha_p >>
-              *(ss1x::parser::alnum_p || ss1x::parser::char_p('_') || ss1x::parser::char_p('-') || ss1x::parser::char_p('?') || ss1x::parser::char_p(':')) >
+              *(ss1x::parser::alnum_p || ss1x::parser::char_p('_') ||
+                ss1x::parser::char_p('-') || ss1x::parser::char_p('?') ||
+                ss1x::parser::char_p(':') || ss1x::parser::char_p('!')) >
               &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
                                StrIterator beg, StrIterator end,
                                ss1x::parser::rule::matched_value_t v) {
