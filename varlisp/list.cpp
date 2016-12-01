@@ -162,14 +162,23 @@ Object List::eval(Environment& env) const
 
 void List::print(std::ostream& o) const
 {
-    o << "(";
-    this->print_impl(o);
-    o << ")";
+    if (this->is_squote()) {
+        o << "[";
+        this->print_impl(o, this->next());
+        o << "]";
+    }
+    else {
+        o << "(";
+        this->print_impl(o);
+        o << ")";
+    }
 }
 
-void List::print_impl(std::ostream& o) const
+void List::print_impl(std::ostream& o, const List * p) const
 {
-    const List* p = this;
+    if (p == nullptr) {
+        p = this;
+    }
     bool is_first = true;
     while (p && p->head.which()) {
         if (is_first) {

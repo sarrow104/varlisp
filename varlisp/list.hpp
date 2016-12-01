@@ -38,7 +38,7 @@ struct List {
     std::vector<List> tail;
 
     void print(std::ostream& o) const;
-    void print_impl(std::ostream& o) const;
+    void print_impl(std::ostream& o, const List* p = 0) const;
 
     List* next_slot()
     {
