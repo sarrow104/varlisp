@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include <sss/path.hpp>
+#include <sss/util/Parser.hpp>
 #include <sss/util/PostionThrow.hpp>
 #include <sss/util/StringSlice.hpp>
 #include <sss/colorlog.hpp>
@@ -40,17 +41,28 @@ void Tokenizer::init(const std::string& data)
                 tok = varlisp::empty();
             })];
 
-    // rule Expression_p;
     this->TokenEnd_p = (ss1x::parser::space_p ||
                         ss1x::parser::char_set_p("()[]{}") || ss1x::parser::eof_p)
                            .name("TokenEnd_p");
 
-    this->Integer_p =
+    this->Decimal_p =
         ((+digit_p >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator it_beg, StrIterator it_end,
              ss1x::parser::rule::matched_value_t) {
             tok = int(ss1x::parser::util::parseUint32_t(it_beg, it_end));
-        })]).name("Integer_p");
+        })]).name("Decimal_p");
+
+    this->Hex_p =
+        (((char_p('0') >> char_set_p("xX") > +xdigit_p) >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+             StrIterator it_beg, StrIterator it_end,
+             ss1x::parser::rule::matched_value_t) {
+            int h = 0;
+            for (StrIterator it = std::next(it_beg, 2); it != it_end; ++it) {
+                h <<= 4;
+                h += sss::util::Parser<StrIterator>::hexchar2number(*it);
+            }
+            tok = h;
+        })]).name("Hex_p");
 
     this->Double_p =
         ((double_p > &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
@@ -64,8 +76,8 @@ void Tokenizer::init(const std::string& data)
 
     this->Symbol_p =
         ((+(ss1x::parser::punct_p - ss1x::parser::char_set_p("#()[]{}\"'_")) |
-          ss1x::parser::alpha_p >>
-              *(ss1x::parser::alnum_p || ss1x::parser::char_p('_') ||
+          (ss1x::parser::utf8_range_p("一", "龥") | ss1x::parser::alpha_p) >>
+              *((ss1x::parser::utf8_range_p("一", "龥") | ss1x::parser::alnum_p) || ss1x::parser::char_p('_') ||
                 ss1x::parser::char_p('-') || ss1x::parser::char_p('?') ||
                 ss1x::parser::char_p(':') || ss1x::parser::char_p('!')) >
               &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
@@ -229,9 +241,12 @@ void Tokenizer::init(const std::string& data)
 
     this->Token_p =
         (refer(Spaces_p) | refer(Comment_p) |
-         // 讲double放在int后面，只是为了验证解析器不会丢失匹配；我的Integer_p不会
+         refer(Hex_p) |
+         refer(Decimal_p) |
+         // 将double放在int后面，只是为了验证解析器不会丢失匹配；我的Integer_p不会
          // 遗漏'.'等字符。
-         refer(Integer_p) | refer(Double_p) |
+         // refer(Integer_p) |
+         refer(Double_p) |
          refer(Regex_p) |
          refer(Parenthese_p) |
          refer(String_p) |

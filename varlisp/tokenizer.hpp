@@ -167,7 +167,8 @@ private:
     ss1x::parser::rule  Comment_p;
     ss1x::parser::rule  Spaces_p;
     ss1x::parser::rule  TokenEnd_p;
-    ss1x::parser::rule  Integer_p;
+    ss1x::parser::rule  Decimal_p;
+    ss1x::parser::rule  Hex_p;
     ss1x::parser::rule  Double_p;
     ss1x::parser::rule  Symbol_p;
 
