@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <iostream>
 
-#include <sss/util/Parser.hpp>
+#include <sss/string_view.hpp>
 
 namespace varlisp {
 // place holder syntax "{1}{2}{3}
@@ -85,28 +86,40 @@ namespace varlisp {
 struct fmtArgInfo {
     fmtArgInfo() : index(-1) {}
     ~fmtArgInfo() = default;
-    size_t index = 0u; // 变量引用下标；从0开始；没有显示提供下标，则当前下标为前一个"捕获"的下标+1；
-    char fill = ' ';  // 填充符号；默认为空格；
-    char align = '\0'; // 水平对齐方式；默认是字符串居左，数字居右。 '<','>','=','^'
-    char sign = '\0';  // 符号位；数字默认'-'
-    char type = '\0';  // 显示风格
-    size_t width = 0u;
-    size_t precision = 6u;  // 精度；用于数字打印；小数的宽度。
-    // size_t min_length; //
-    // 最小长度；不足的部分，会用fill填充；如果为0，则无填充；
-    // size_t max_length; // 最大长度；超出的部分会阶段；如果为0，则无截断限制。
-    typedef sss::string_view::const_iterator Iter_t;
-    typedef sss::util::Parser<Iter_t> parser_t;
-    typedef parser_t::Rewinder rewinder_t;
-    bool parse(Iter_t &beg, Iter_t end, size_t& last_id);
-    bool parseSpec(Iter_t &beg, Iter_t end);
-    bool parseId(Iter_t &beg, Iter_t end);
-    bool parseAlign(Iter_t &beg, Iter_t end);
-    bool parseSign(Iter_t &beg, Iter_t end);
-    bool parseWidgh(Iter_t &beg, Iter_t end);
-    bool parsePrecision(Iter_t &beg, Iter_t end);
-    bool parseType(Iter_t& beg, Iter_t end);
+    // 变量引用下标；从0开始；没有显示提供下标，则当前下标为前一个"捕获"的下标+1；
+    size_t index     = 0u;
+    // 填充符号；默认为空格；
+    char fill        = ' ';
+    // 水平对齐方式；默认是字符串居左，数字居右。 '<','>','=','^'
+    char align       = '\0';
+    // 符号位；数字默认'-'
+    char sign        = '\0';
+    // 显示风格
+    char type        = '\0';
+    size_t width     = 0u;
+    // 精度；用于数字打印；小数的宽度。
+    size_t precision = 6u;
 
+    typedef sss::string_view::const_iterator     Iter_t;
+
+    bool parse          ( Iter_t &beg, Iter_t end, size_t& last_id ) ;
+    bool parseSpec      ( Iter_t &beg, Iter_t end                  ) ;
+    bool parseId        ( Iter_t &beg, Iter_t end                  ) ;
+    bool parseAlign     ( Iter_t &beg, Iter_t end                  ) ;
+    bool parseSign      ( Iter_t &beg, Iter_t end                  ) ;
+    bool parseWidgh     ( Iter_t &beg, Iter_t end                  ) ;
+    bool parsePrecision ( Iter_t &beg, Iter_t end                  ) ;
+    bool parseType      ( Iter_t& beg, Iter_t end                  ) ;
+
+    // NOTE bool与const sss::string_view& s的重载是有问题的。
+    // 如果用 "xxx" 这种字符串字面值，来调用的话，由于都需要类型默认转换。
+    // 而 指针到bool是pod默认的，比我的 string_view 有限。于是，对字面值的直接调
+    // 用，会直接dispatch到这 print<bool>版。
+    // 因此，一旦设计到有bool的重载函数，最好具名！
+    // 如，print bool。
+    // 或者，提供c-str字面值的直接支持。
+    // 为例避免上述问题，最终的解决办法是，所有重载函数，都写成模板加特化的形式
+    // 。这样，才能精确匹配
     void print(std::ostream& o, const sss::string_view& s) const;
     void print(std::ostream& o, double lf) const;
     // void print(std::ostream& o, float f) const;
@@ -120,7 +133,8 @@ struct fmtArgInfo {
 
 inline std::ostream& operator << (std::ostream& o, const fmtArgInfo& f)
 {
-    o << '(' << f.index << ", " << f.fill << ", " << f.sign << ", " << f.type << ", " << f.width << ", " << f.precision << ')';
+    o << '(' << f.index << ", " << f.fill << ", " << f.sign << ", " << f.type
+      << ", " << f.width << ", " << f.precision << ')';
     return o;
 }
 
@@ -140,5 +154,4 @@ void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
               std::vector<sss::string_view>& padding);
 
 } // namespace varlisp
-
 
