@@ -41,9 +41,9 @@ inline bool regist_builtin_function(const char* name, int min, int max,
 
 #ifndef REGIST_BUILTIN
 #define REGIST_BUILTIN(name, low, high, func, help_msg)          \
+    Object func(varlisp::Environment&, const varlisp::List&);    \
     bool dummy##func = varlisp::detail::regist_builtin_function( \
-        name, low, high, &func,                                  \
-        help_msg);
+        name, low, high, &func, help_msg);
 #endif
 
 } // namespace detail
