@@ -24,6 +24,11 @@ namespace varlisp {
 //
 // 但显然，这是两种不兼容的工作方式。
 // 为此，特规定如下：
+
+REGIST_BUILTIN("shell", 1, -1,  eval_shell,
+               "(shell "") -> '(stdout, stderr)\n"
+               "(shell "" arg1 arg2 arg3) -> '(stdout, stderr)");
+
 /**
  * @brief
  *      (shell "") -> '(stdout, stderr)
@@ -83,9 +88,8 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     return Object(ret);
 }
 
-REGIST_BUILTIN("shell", 1, -1,  eval_shell,
-               "(shell "") -> '(stdout, stderr)\n"
-               "(shell "" arg1 arg2 arg3) -> '(stdout, stderr)");
+REGIST_BUILTIN("shell-cd", 1, 1, eval_shell_cd,
+               "(shell-cd \"path/to/go\") -> \"new-work-dir\"");
 
 /**
  * @brief (shell-cd "path/to/go") -> "new-work-dir"
@@ -111,8 +115,8 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     return Object(string_t{std::move(sss::path::getcwd())});
 }
 
-REGIST_BUILTIN("shell-cd", 1, 1, eval_shell_cd,
-               "(shell-cd \"path/to/go\") -> \"new-work-dir\"");
+REGIST_BUILTIN("shell-ls", 0, -1, eval_shell_ls,
+               "(ls \"dir1\" \"dir2\" ...) -> '(\"item1\",\"item2\", ...)");
 
 // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
 /**
@@ -185,8 +189,8 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
     return Object(ret);
 }
 
-REGIST_BUILTIN("shell-ls", 0, -1, eval_shell_ls,
-               "(ls \"dir1\" \"dir2\" ...) -> '(\"item1\",\"item2\", ...)");
+REGIST_BUILTIN("shell-pwd", 0, 0, eval_shell_pwd,
+               "(pwd) -> \"current-working-dir\"");
 
 /**
  * @brief (pwd) -> "current-working-dir"
@@ -202,8 +206,5 @@ Object eval_shell_pwd(varlisp::Environment& env, const varlisp::List& args)
     (void)args;
     return Object(string_t(std::move(sss::path::getcwd())));
 }
-
-REGIST_BUILTIN("shell-pwd", 0, 0, eval_shell_pwd,
-               "(pwd) -> \"current-working-dir\"");
 
 }  // namespace varlisp

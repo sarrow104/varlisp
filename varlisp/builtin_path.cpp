@@ -9,6 +9,11 @@
 #include "detail/list_iterator.hpp"
 
 namespace varlisp {
+
+REGIST_BUILTIN(
+    "fnamemodify", 2, 2, eval_fnamemodify,
+    "(fnamemodify \"path/string\" \"path modifier\") -> \"modified-fname\"");
+
 /**
  * @brief (fnamemodify "path/string" "path modifier") -> "modified-fname"
  *
@@ -38,9 +43,10 @@ Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
     return Object(string_t(std::move(mod_name)));
 }
 
-REGIST_BUILTIN(
-    "fnamemodify", 2, 2, eval_fnamemodify,
-    "(fnamemodify \"path/string\" \"path modifier\") -> \"modified-fname\"");
+REGIST_BUILTIN("glob", 1, 2, eval_glob,
+               "(glob \"paht/to/explorer\") -> '(\"fname1\", \"fname2\", ...)\n"
+               "(glob \"paht/to/explorer\" \"fname-filter\") ->"
+               " '(\"fname1\", \"fname2\", ...)");
 
 // {"glob",        1,  2,  &eval_glob}, //
 // 支持1到2个参数；分别是枚举路径和目标规则(可选)；
@@ -97,10 +103,13 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     return Object(ret);
 }
 
-REGIST_BUILTIN("glob", 1, 2, eval_glob,
-               "(glob \"paht/to/explorer\") -> '(\"fname1\", \"fname2\", ...)\n"
-               "(glob \"paht/to/explorer\" \"fname-filter\") ->"
-               " '(\"fname1\", \"fname2\", ...)");
+REGIST_BUILTIN(
+    "glob-recurse", 1, 3, eval_glob_recurse,
+    "(glob-recurse \"paht/to/explorer\") -> '(\"fname1\", \"fname2\", ...)\n"
+    "(glob-recurse \"paht/to/explorer\" \"fname-filter\") ->"
+    " '(\"fname1\", \"fname2\", ...)\n"
+    "(glob-recurse \"paht/to/explorer\" \"fname-filter\" depth) ->"
+    " '(\"fname1\", \"fname2\", ...)");
 
 // {"glob-recurse", 1,  3,  &eval_glob_recurse}, //
 // 参数同上；第三个可选参数，指查找深度；
@@ -165,13 +174,5 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
 
     return Object(ret);
 }
-
-REGIST_BUILTIN(
-    "glob-recurse", 1, 3, eval_glob_recurse,
-    "(glob-recurse \"paht/to/explorer\") -> '(\"fname1\", \"fname2\", ...)\n"
-    "(glob-recurse \"paht/to/explorer\" \"fname-filter\") ->"
-    " '(\"fname1\", \"fname2\", ...)\n"
-    "(glob-recurse \"paht/to/explorer\" \"fname-filter\" depth) ->"
-    " '(\"fname1\", \"fname2\", ...)");
 
 }  // namespace varlisp
