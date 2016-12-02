@@ -2,6 +2,7 @@
 
 #include <iterator>
 
+#include <sss/util/Parser.hpp>
 #include <sss/bit_operation/bit_operation.h>
 #include <sss/string_view.hpp>
 #include <sss/colorlog.hpp>
@@ -11,6 +12,10 @@
 #include "String.hpp"
 
 namespace varlisp {
+
+typedef sss::string_view::const_iterator Iter_t;
+typedef sss::util::Parser<Iter_t>        parser_t;
+typedef parser_t::Rewinder               rewinder_t;
 
 bool fmtArgInfo::parse(Iter_t& beg, Iter_t end, size_t& last_id)
 {
@@ -164,23 +169,27 @@ void fmtArgInfo::fillN(std::ostream& o, char fill, size_t n) const
 
 void fmtArgInfo::print(std::ostream& o, const sss::string_view& s) const
 {
+    char align = '<';
+    if (this->align) {
+        align = this->align;
+    }
     if (this->width > s.size()) {
-        char align = this->align ? this->align : '<';
         switch (align) {
             case '<':
                 o.write(s.data(), s.size());
                 this->fillN(o, this->fill, this->width - s.size());
                 break;
-            case '=':
-                this->fillN(o, this->fill, this->width - s.size());
-                o.write(s.data(), s.size());
-                break;
 
-            case '>':
+            case '=':
             case '^':
                 this->fillN(o, this->fill, (this->width - s.size()) / 2);
                 o.write(s.data(), s.size());
                 this->fillN(o, this->fill, this->width - (this->width - s.size()) / 2);
+                break;
+
+            case '>':
+                this->fillN(o, this->fill, this->width - s.size());
+                o.write(s.data(), s.size());
                 break;
         }
     }
@@ -255,8 +264,8 @@ void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
 
 void fmtArgInfo::print(std::ostream& o, double f) const
 {
-    char buf[32];
-    char c_fmt[32];
+    char buf[32] = "";
+    char c_fmt[32] = "";
     char type = 'f';
     if (this->type) {
         type = this->type;
@@ -314,13 +323,13 @@ void fmtArgInfo::print(std::ostream& o, double f) const
 
 void fmtArgInfo::print(std::ostream& o, bool b) const
 {
-    this->print(o, b ? "ture" : "false");
+    this->print(o, b ? sss::string_view("true") : sss::string_view("false"));
 }
 
 void fmtArgInfo::print(std::ostream& o, int32_t i) const
 {
-    char buf[32];
-    char c_fmt[32];
+    char buf[32] = "";
+    char c_fmt[32] = "";
     char type = 'd';
     if (this->type) {
         type = this->type;
