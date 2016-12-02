@@ -21,6 +21,9 @@ namespace varlisp {
 //    1
 // 其中：
 // > (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))
+
+REGIST_BUILTIN("=", 2, 2, eval_eq, "(= arg1 arg2) -> boolean");
+
 /**
  * @brief (= obj1 obj2) -> #t | #f
  *
@@ -39,7 +42,7 @@ Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
     return Object(boost::apply_visitor(strict_equal_visitor(env), obj1_ref, obj2_ref));
 }
 
-REGIST_BUILTIN("=", 2, 2, eval_eq, "(= arg1 arg2) -> boolean");
+REGIST_BUILTIN(">", 2, 2, eval_gt, "(> arg1 arg2) -> boolean");
 
 /**
  * @brief (> obj1 obj2) -> #t | #f
@@ -59,7 +62,7 @@ Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
                   boost::apply_visitor(strict_less_visitor(env), obj2_ref, obj1_ref));
 }
 
-REGIST_BUILTIN(">", 2, 2, eval_gt, "(> arg1 arg2) -> boolean");
+REGIST_BUILTIN("<", 2, 2, eval_lt, "(< arg1 arg2) -> boolean");
 
 /**
  * @brief (< obj1 obj2) -> #t | #f
@@ -78,7 +81,7 @@ Object eval_lt(varlisp::Environment& env, const varlisp::List& args)
     return Object(boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
-REGIST_BUILTIN("<", 2, 2, eval_lt, "(< arg1 arg2) -> boolean");
+REGIST_BUILTIN(">=", 2, 2, eval_ge, "(>= arg1 arg2) -> boolean");
 
 /**
  * @brief (>= obj1 obj2) -> #t | #f
@@ -97,7 +100,7 @@ Object eval_ge(varlisp::Environment& env, const varlisp::List& args)
     return Object(!boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
-REGIST_BUILTIN(">=", 2, 2, eval_ge, "(>= arg1 arg2) -> boolean");
+REGIST_BUILTIN("<=", 2, 2, eval_le, "(<= arg1 arg2) -> boolean");
 
 /**
  * @brief (<= obj1 obj2) -> #t | #f
@@ -117,7 +120,7 @@ Object eval_le(varlisp::Environment& env, const varlisp::List& args)
                   boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
 }
 
-REGIST_BUILTIN("<=", 2, 2, eval_le, "(<= arg1 arg2) -> boolean");
+REGIST_BUILTIN("not", 1, 1, eval_not, "(not expr) -> boolean");
 
 /**
  * @brief (not expr) -> !#t | !#f
@@ -132,7 +135,8 @@ Object eval_not(varlisp::Environment& env, const varlisp::List& args)
     return !varlisp::is_true(env, detail::car(args));
 }
 
-REGIST_BUILTIN("not", 1, 1, eval_not, "(not expr) -> boolean");
+REGIST_BUILTIN("equal", 2, 2, eval_equal,
+               "(equal '(list1) '(list2)) -> #t | #f");
 
 /**
  * @brief
@@ -177,8 +181,5 @@ Object eval_equal(varlisp::Environment& env, const varlisp::List& args)
     }
     return is_equal;
 }
-
-REGIST_BUILTIN("equal", 2, 2, eval_equal,
-               "(equal '(list1) '(list2)) -> #t | #f");
 
 }  // namespace varlisp

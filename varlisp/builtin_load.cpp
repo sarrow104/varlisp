@@ -12,6 +12,8 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("load", 1, 1, eval_load, "(load \"path/to/lisp\") -> nil");
+
 /**
  * @brief (load "path/to/lisp") -> nil
  *
@@ -68,7 +70,5 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
     return Object{Nill{}};
 }
-
-REGIST_BUILTIN("load", 1, 1, eval_load, "(load \"path/to/lisp\") -> nil");
 
 }  // namespace varlisp
