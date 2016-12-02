@@ -16,6 +16,10 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("split", 1,  2,  eval_split,
+               "(split \"string to split\") -> '(\"part1\",\"part2\", ...)\n"
+               "(split \"string to split\" \"seq-str\") -> '(\"part1\",\"part2\", ...)");
+
 /**
  * @brief 拆分字符串
  *      (split "string to split") -> '("part1","part2", ...)
@@ -69,9 +73,10 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     return Object(ret);
 }
 
-REGIST_BUILTIN("split", 1,  2,  eval_split,
-               "(split \"string to split\") -> '(\"part1\",\"part2\", ...)\n"
-               "(split \"string to split\" \"seq-str\") -> '(\"part1\",\"part2\", ...)");
+REGIST_BUILTIN("join", 1, 2, eval_join,
+               "(join '(\"s1\" \"s2\" ...)) -> \"joined-text\"\n"
+               "(join '(\"s1\" \"s2\" ...) \"seq\") -> \"joined-text\"");
+
 /**
  * @brief join string list
  *      (join '("s1" "s2" ...)) -> "joined-text"
@@ -127,9 +132,10 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     return Object(string_t(std::move(oss.str())));
 }
 
-REGIST_BUILTIN("join", 1, 2, eval_join,
-               "(join '(\"s1\" \"s2\" ...)) -> \"joined-text\"\n"
-               "(join '(\"s1\" \"s2\" ...) \"seq\") -> \"joined-text\"");
+REGIST_BUILTIN("substr", 2, 3, eval_substr,
+               "(substr \"target-string\" offset)\n"
+               "(substr \"target-string\" offset length) -> sub-str");
+
 /**
  * @brief
  *    (substr "target-string" offset)
@@ -195,9 +201,8 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     }
 }
 
-REGIST_BUILTIN("substr", 2, 3, eval_substr,
-               "(substr \"target-string\" offset)\n"
-               "(substr \"target-string\" offset length) -> sub-str");
+REGIST_BUILTIN("strlen", 1, 1, eval_strlen,
+               "(strlen \"target-string\") -> length");
 
 /**
  * @brief
@@ -221,8 +226,8 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
     return int(p_str->length());
 }
 
-REGIST_BUILTIN("strlen", 1, 1, eval_strlen,
-               "(strlen \"target-string\") -> length");
+REGIST_BUILTIN("split-char", 1, 1, eval_split_char,
+               "(split-char \"target-string\") -> '(int-char1 int-char2 ...)");
 
 // NOTE TODO 或许需要这样一个函数，给一个type列表，然后返回转换的结果；
 // 可以转换的，这个列表对应的指针，就是非0；
@@ -257,8 +262,8 @@ Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
     return ret;
 }
 
-REGIST_BUILTIN("split-char", 1, 1, eval_split_char,
-               "(split-char \"target-string\") -> '(int-char1 int-char2 ...)");
+REGIST_BUILTIN("join-char",       1,  1,  eval_join_char,
+               "(join-char '(int-char1 int-char2 ...)) -> \"string\"");
 
 /**
  * @brief
@@ -286,8 +291,5 @@ Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
                                   std::back_inserter(ret));
     return varlisp::string_t{std::move(ret)};
 }
-
-REGIST_BUILTIN("join-char",       1,  1,  eval_join_char,
-               "(join-char '(int-char1 int-char2 ...)) -> \"string\"");
 
 }  // namespace varlisp

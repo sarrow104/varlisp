@@ -17,6 +17,8 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("undef", 1, 1, eval_undef, "(undef symbol) -> boolean");
+
 /**
  * @brief
  *      (undef symbol) -> boolean
@@ -55,7 +57,7 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
-REGIST_BUILTIN("undef", 1, 1, eval_undef, "(undef symbol) -> boolean");
+REGIST_BUILTIN("ifdef", 1, 1, eval_ifdef, "(ifdef symbol) -> boolean");
 
 /**
  * @brief
@@ -82,7 +84,9 @@ Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
     return bool(it);
 }
 
-REGIST_BUILTIN("ifdef", 1, 1, eval_ifdef, "(ifdef symbol) -> boolean");
+REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
+               "(var-list) -> int\n"
+               "(var-list env-name) -> int ; TODO");
 
 /**
  * @brief
@@ -125,9 +129,8 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
     return var_count;
 }
 
-REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
-               "(var-list) -> int\n"
-               "(var-list env-name) -> int ; TODO");
+REGIST_BUILTIN("let", 1, -1, eval_let,
+               "(let ((symbol expr)...) (expr)...) -> result-of-last-expr");
 
 /**
  * @brief
@@ -168,6 +171,7 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
         }
         const varlisp::symbol* p_sym =
             boost::get<varlisp::symbol>(&p_sym_pair->head);
+        // FIXME no keywords here!
 
         if (!p_sym) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
@@ -192,8 +196,9 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
     return result;
 }
 
-REGIST_BUILTIN("let", 1, -1, eval_let,
-               "(let ((symbol expr)...) (expr)...) -> result-of-last-expr");
+REGIST_BUILTIN("setq", 2, -1, eval_setq,
+               "; 对符号引用到的变量做修改；如果变量不存在，则报错\n"
+               "((setq symbol1 expr1 symbol2 expr2 ... ) -> value-of-last-expr");
 
 /**
  * @brief
@@ -244,9 +249,9 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
     return *p_value;
 }
 
-REGIST_BUILTIN("setq", 2, -1, eval_setq,
-               "; 对符号引用到的变量做修改；如果变量不存在，则报错\n"
-               "((setq symbol1 expr1 symbol2 expr2 ... ) -> value-of-last-expr");
+REGIST_BUILTIN("setf", 2, 2, eval_setf,
+               "; setf 是使用了setq的宏；暂时不支持！\n"
+               "(setf \"varname\" expr) -> nil");
 
 /**
  * @brief
@@ -269,9 +274,9 @@ Object eval_setf(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::Nill{};
 }
 
-REGIST_BUILTIN("setf", 2, 2, eval_setf,
-               "; setf 是使用了setq的宏；暂时不支持！\n"
-               "(setf \"varname\" expr) -> nil");
+REGIST_BUILTIN("swap", 2, 2, eval_swap,
+               "; swap 交换两个变量的值；变量查找办法同setq\n"
+               "(swap var1 var2) -> nil");
 
 /**
  * @brief
@@ -314,9 +319,5 @@ Object eval_swap(varlisp::Environment& env, const varlisp::List& args)
     std::swap(*p_val1, *p_val2);
     return varlisp::Nill{};
 }
-
-REGIST_BUILTIN("swap", 2, 2, eval_swap,
-               "; swap 交换两个变量的值；变量查找办法同setq\n"
-               "(swap var1 var2) -> nil");
 
 } // namespace varlisp

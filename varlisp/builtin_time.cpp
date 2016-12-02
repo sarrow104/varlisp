@@ -8,6 +8,8 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("time", 1, 1, eval_time, "(time expr) -> result-of-expr");
+
 /**
  * @brief
  *      (time expr) -> result-of-expr
@@ -27,7 +29,5 @@ Object eval_time(varlisp::Environment &env, const varlisp::List &args)
     COLOG_INFO("end eval ", exprstr.str());
     return res_ref;
 }
-
-REGIST_BUILTIN("time", 1, 1, eval_time, "(time expr) -> result-of-expr");
 
 } // namespace varlisp

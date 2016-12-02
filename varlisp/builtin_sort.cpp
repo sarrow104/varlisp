@@ -12,6 +12,9 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("sort", 2, 2, eval_sort,
+               "(sort func '(list)) -> '(sorted-list)");
+
 /**
  * @brief
  *      (sort func '(list)) -> '(sorted-list)
@@ -86,8 +89,8 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
-REGIST_BUILTIN("sort", 2, 2, eval_sort,
-               "(sort func '(list)) -> '(sorted-list)");
+REGIST_BUILTIN("sort!", 2, 2, eval_sort_bar,
+               "(sort! func '(list)) -> Nil ; sort in-place");
 
 // TODO 原地sort list？
 // 疑问：针对变量？
@@ -157,8 +160,5 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
     std::swap(*boost::get<varlisp::List>(p_value), ret);
     return varlisp::Nill{};
 }
-
-REGIST_BUILTIN("sort!", 2, 2, eval_sort_bar,
-               "(sort! func '(list)) -> Nil ; sort in-place");
 
 } // namespace varlisp

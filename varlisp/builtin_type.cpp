@@ -7,6 +7,8 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("typeid", 1, 1, eval_typeid, "(typeid expr) -> integar");
+
 /**
  * @brief
  *      (typeid type) -> id
@@ -24,8 +26,6 @@ Object eval_typeid(varlisp::Environment &env, const varlisp::List &args)
     return varlisp::typedid(env, obj_ref);
 }
 
-REGIST_BUILTIN("typeid", 1, 1, eval_typeid, "(typeid expr) -> integar");
-
 template<typename T>
 bool between_co_range(const T& v, const T& min, const T& max)
 {
@@ -37,6 +37,8 @@ bool between_cc_range(const T& v, const T& min, const T& max)
 {
     return min <= v && v <= max;
 }
+
+REGIST_BUILTIN("number?", 1, 1, eval_number_q, "(number? expr) -> boolean");
 
 /**
  * @brief
@@ -57,7 +59,7 @@ Object eval_number_q(varlisp::Environment &env, const varlisp::List &args)
                                  varlisp::typedid(env, varlisp::Object{1.0}));
 }
 
-REGIST_BUILTIN("number?", 1, 1, eval_number_q, "(number? expr) -> boolean");
+REGIST_BUILTIN("boolean?", 1, 1, eval_boolean_q, "(boolean? expr) -> boolean");
 
 /**
  * @brief
@@ -77,7 +79,7 @@ Object eval_boolean_q(varlisp::Environment &env, const varlisp::List &args)
            varlisp::typedid(env, Object{true});
 }
 
-REGIST_BUILTIN("boolean?", 1, 1, eval_boolean_q, "(boolean? expr) -> boolean");
+REGIST_BUILTIN("string?",         1,  1,  eval_string_q, "(string? expr) -> boolean");
 
 /**
  * @brief
@@ -97,7 +99,7 @@ Object eval_string_q(varlisp::Environment &env, const varlisp::List &args)
            varlisp::typedid(env, Object{varlisp::string_t{}});
 }
 
-REGIST_BUILTIN("string?",         1,  1,  eval_string_q, "(string? expr) -> boolean");
+REGIST_BUILTIN("slist?", 1, 1, eval_slist_q, "(slist? expr) -> boolean");
 
 /**
  * @brief
@@ -116,7 +118,7 @@ Object eval_slist_q(varlisp::Environment &env, const varlisp::List &args)
     return p_list != 0;
 }
 
-REGIST_BUILTIN("slist?", 1, 1, eval_slist_q, "(slist? expr) -> boolean");
+REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");
 
 /**
  * @brief
@@ -135,7 +137,8 @@ Object eval_null_q(varlisp::Environment& env, const varlisp::List& args)
     return obj.which() == 1;
 }
 
-REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");
+REGIST_BUILTIN("cast", 2, 2, eval_cast,
+               "(cast lexical-value var) -> type-of-lexical-value");
 
 /**
  * @brief
@@ -156,8 +159,5 @@ Object eval_cast(varlisp::Environment& env, const varlisp::List& args)
     return boost::apply_visitor(cast_visitor(env, p_1st->head, p_2nd->head),
                                 p_1st->head, p_2nd->head);
 }
-
-REGIST_BUILTIN("cast", 2, 2, eval_cast,
-               "(cast lexical-value var) -> type-of-lexical-value");
 
 } // namespace varlisp
