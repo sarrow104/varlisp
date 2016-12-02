@@ -11,11 +11,16 @@
 
 namespace varlisp {
 
-// 如何判断，是否是call-able 的Object？
-// 1. builtin
-// 2. lambda
-//
-// 还有允许的参数个数……
+REGIST_BUILTIN("map", 2, -1, eval_map,
+               "; map函数接受一个函数和N个列表，该函数接受N个参数；\n"
+               "; 返回一个列表。返回列表的每个元素都是使用输入的函数\n"
+               "; 对N个类别中的每个元素处理的结果\n"
+
+               "(map func list-1 list-2 ... list-n) ->\n"
+               "\t'(func(l1[1] l2[1] ... ln[1])\n"
+               "\t  func(l1[2] l2[2] ... ln[2])\n"
+               "\t  ...\n"
+               "\t  func(l1[n] l2[n] ... ln[n]))");
 
 /**
  * @brief (map func list-1 list-2 ... list-n)
@@ -40,6 +45,9 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     // 感觉2不是很合适。因为用户可能显示传入nil或者'()作为参数——这样就无法区分了。
     // 重用最后一个元素也不会很合用；唯一合理的使用情形是，某list，只有一个元素。
     // 那么重用就显得合理。不然，不足的部分，你是选择重用第一个，还是最后一个元素呢？
+    // 如何判断，是否是call-able 的Object？
+    // 1. builtin
+    // 2. lambda
 
     int arg_length = args.next()->length();
     COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
@@ -84,16 +92,13 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     return ret;
 }
 
-REGIST_BUILTIN("map", 2, -1, eval_map,
-               "; map函数接受一个函数和N个列表，该函数接受N个参数；\n"
-               "; 返回一个列表。返回列表的每个元素都是使用输入的函数\n"
-               "; 对N个类别中的每个元素处理的结果\n"
+REGIST_BUILTIN("reduce", 2, 2, eval_reduce,
+               "; reduce让一个指定的函数(function)作用于列表的第一个\n"
+               "; 元素和第二个元素,然后在作用于上步得到的结果和第三个\n"
+               "; 元素，直到处理完列表中所有元素。\n"
 
-               "(map func list-1 list-2 ... list-n) ->\n"
-               "\t'(func(l1[1] l2[1] ... ln[1])\n"
-               "\t  func(l1[2] l2[2] ... ln[2])\n"
-               "\t  ...\n"
-               "\t  func(l1[n] l2[n] ... ln[n]))");
+               "(reduce func list) ->\n"
+               "\tfunc(func(func(l[1] l[2]) l[3]) ... l[n-1]) l[n])");
 
 /**
  * @brief
@@ -126,10 +131,7 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     p_arg_list = p_arg_list->next();
     while (p_arg_list && p_arg_list->head.which()) {
         Object second_arg = p_arg_list->head;
-        varlisp::List expr {callable};
-        auto back_it = detail::list_back_inserter<Object>(expr);
-        *back_it++ = first_arg;
-        *back_it++ = second_arg;
+        varlisp::List expr = varlisp::List::makeList( {callable, first_arg, second_arg});
         first_arg = expr.eval(env);
         p_arg_list = p_arg_list->next();
     }
@@ -137,13 +139,12 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     return first_arg;
 }
 
-REGIST_BUILTIN("reduce", 2, 2, eval_reduce,
-               "; reduce让一个指定的函数(function)作用于列表的第一个\n"
-               "; 元素和第二个元素,然后在作用于上步得到的结果和第三个\n"
-               "; 元素，直到处理完列表中所有元素。\n"
+REGIST_BUILTIN("filter", 2, 2, eval_filter,
+               "; filter 根据func作用到每个元素的返回结果是否为#t；\n"
+               "; 决定是否在返回的列表中，包含该元素\n"
 
-               "(reduce func list) ->\n"
-               "\tfunc(func(func(l[1] l[2]) l[3]) ... l[n-1]) l[n])");
+               "(filter func list) ->\n"
+               "\t(sigma list[i] where (func list[i]) == #t)");
 
 /**
  * @brief (filter func list)
@@ -172,9 +173,7 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     auto ret_it = detail::list_back_inserter<Object>(ret);
     int arg_cnt = p_arg_list->length();
     for (int i = 0; i < arg_cnt; ++i, p_arg_list = p_arg_list->next()) {
-        varlisp::List expr {callable};
-        auto back_it = detail::list_back_inserter<Object>(expr);
-        *back_it = p_arg_list->head;
+        varlisp::List expr = varlisp::List::makeList({callable, p_arg_list->head});
         Object value = expr.eval(env);
 
         if (varlisp::is_true(env, value)) {
@@ -183,12 +182,5 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     }
     return ret;
 }
-
-REGIST_BUILTIN("filter", 2, 2, eval_filter,
-               "; filter 根据func作用到每个元素的返回结果是否为#t；\n"
-               "; 决定是否在返回的列表中，包含该元素\n"
-
-               "(filter func list) ->\n"
-               "\t(sigma list[i] where (func list[i]) == #t)");
 
 } // namespace varlisp
