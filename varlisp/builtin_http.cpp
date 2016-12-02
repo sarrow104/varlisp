@@ -18,6 +18,11 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN(
+    "http-get", 1, 3, eval_http_get,
+    "(http-get \"url\") -> \"<html>\"\n"
+    "(http-get \"url\" \"proxy-url\" proxy-port-number) -> \"<html>\"");
+
 // TODO
 // 对于失败的下载，应该告知用户content-length，以及终止在何处(已经接受的bytes数)
 // 另外，ensure-utf，应该交给用户，而不是自动完成。
@@ -128,10 +133,5 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     return max_content;
 }
-
-REGIST_BUILTIN(
-    "http-get", 1, 3, eval_http_get,
-    "(http-get \"url\") -> \"<html>\"\n"
-    "(http-get \"url\" \"proxy-url\" proxy-port-number) -> \"<html>\"");
 
 }  // namespace varlisp

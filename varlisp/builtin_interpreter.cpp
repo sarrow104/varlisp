@@ -11,6 +11,8 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("quit", 0, 0, eval_quit, "(quit) -> #t");
+
 /**
  * @brief (quit)    ->  #t
  *
@@ -32,7 +34,7 @@ Object eval_quit(varlisp::Environment& env, const varlisp::List& args)
     return true;
 }
 
-REGIST_BUILTIN("quit", 0, 0, eval_quit, "(quit) -> #t");
+REGIST_BUILTIN("it-debug", 1, 1, eval_it_debug, "(it-debug #t|#f) -> nil");
 
 /**
  * @brief (it-debug #t|#f) -> nil
@@ -64,5 +66,4 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
     return *p_status;
 }
 
-REGIST_BUILTIN("it-debug", 1, 1, eval_it_debug, "(it-debug #t|#f) -> nil");
 }  // namespace varlisp

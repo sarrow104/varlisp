@@ -11,6 +11,10 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("gumbo", 1, 2, eval_gumbo,
+               "(gumbo \"<html>\") -> gumboNode\n"
+               "(gumbo \"<html>\" \"query-string\") -> '(gumboNode)");
+
 /**
  * @brief
  *      (gumbo "<html>") -> gumboNode
@@ -64,9 +68,8 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
-REGIST_BUILTIN("gumbo", 1, 2, eval_gumbo,
-               "(gumbo \"<html>\") -> gumboNode\n"
-               "(gumbo \"<html>\" \"query-string\") -> '(gumboNode)");
+REGIST_BUILTIN("gumbo-query", 2, 2, eval_gumbo_query,
+               "(gumbo-query gumboNode \"selector-string\") -> '(gumboNodes)");
 
 /**
  * @brief
@@ -108,8 +111,10 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
     return ret_nodes;
 }
 
-REGIST_BUILTIN("gumbo-query", 2, 2, eval_gumbo_query,
-               "(gumbo-query gumboNode \"selector-string\") -> '(gumboNodes)");
+REGIST_BUILTIN(
+    "gqnode-attr", 2, 2, eval_gqnode_attr,
+    "(gqnode-attr gumboNode \"attrib-name\") -> \"attrib-value\" | nil");
+
 /**
  * @brief
  *      (gqnode-attr gumboNode "attrib-name") -> "attrib-value" | nil
@@ -145,9 +150,8 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
-REGIST_BUILTIN(
-    "gqnode-attr", 2, 2, eval_gqnode_attr,
-    "(gqnode-attr gumboNode \"attrib-name\") -> \"attrib-value\" | nil");
+REGIST_BUILTIN("gqnode-hasAttr", 2, 2, eval_gqnode_hasAttr,
+               "(gqnode-hasAttr gumboNode \"attrib-name\") -> boolean");
 
 /**
  * @brief
@@ -181,9 +185,6 @@ Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-hasAttr", 2, 2, eval_gqnode_hasAttr,
-               "(gqnode-hasAttr gumboNode \"attrib-name\") -> boolean");
-
 typedef std::string (gumboNode::*gbNodeMethod_t)() const;
 struct gumboNodeMethodWrapper {
     gumboNodeMethodWrapper(const char* funcName, gbNodeMethod_t m) : m_funcName(funcName), m_method(m)
@@ -208,6 +209,9 @@ private:
     gbNodeMethod_t m_method;
 };
 
+REGIST_BUILTIN("gqnode-valid", 1, 1, eval_gqnode_valid,
+               "(gqnode-valid gumboNode) -> boolean");
+
 /**
  * @brief
  *      (gqnode-valid gumboNode) -> #t | #f
@@ -230,8 +234,8 @@ Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args)
     return p_gqnode->valid();
 }
 
-REGIST_BUILTIN("gqnode-valid", 1, 1, eval_gqnode_valid,
-               "(gqnode-valid gumboNode) -> boolean");
+REGIST_BUILTIN("gqnode-isText",   1,  1,  eval_gqnode_isText,
+               "(gqnode-isText gumboNode) -> boolean");
 
 /**
  * @brief
@@ -258,8 +262,8 @@ Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-isText",   1,  1,  eval_gqnode_isText,
-               "(gqnode-isText gumboNode) -> boolean");
+REGIST_BUILTIN("gqnode-text", 1, 1, eval_gqnode_text,
+               "(gqnode-text gumboNode) -> \"text\"");
 
 /**
  * @brief
@@ -287,8 +291,8 @@ Object eval_gqnode_text(varlisp::Environment& env, const varlisp::List& args)
     // return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-text", 1, 1, eval_gqnode_text,
-               "(gqnode-text gumboNode) -> \"text\"");
+REGIST_BUILTIN("gqnode-textNeat", 1, 1, eval_gqnode_textNeat,
+               "(gqnode-textNeat gumboNode) -> \"text\"");
 
 /**
  * @brief
@@ -317,8 +321,8 @@ Object eval_gqnode_textNeat(varlisp::Environment& env,
     // return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-textNeat", 1, 1, eval_gqnode_textNeat,
-               "(gqnode-textNeat gumboNode) -> \"text\"");
+REGIST_BUILTIN("gqnode-ownText", 1, 1, eval_gqnode_ownText,
+               "(gqnode-ownText gumboNode) -> \"text\"");
 
 /**
  * @brief
@@ -346,8 +350,8 @@ Object eval_gqnode_ownText(varlisp::Environment& env, const varlisp::List& args)
     // return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-ownText", 1, 1, eval_gqnode_ownText,
-               "(gqnode-ownText gumboNode) -> \"text\"");
+REGIST_BUILTIN("gqnode-tag", 1, 1, eval_gqnode_tag,
+               "(gqnode-tag gumboNode) -> \"text\"");
 
 /**
  * @brief
@@ -375,8 +379,8 @@ Object eval_gqnode_tag(varlisp::Environment& env, const varlisp::List& args)
     // return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-tag", 1, 1, eval_gqnode_tag,
-               "(gqnode-tag gumboNode) -> \"text\"");
+REGIST_BUILTIN("gqnode-innerHtml", 1, 1, eval_gqnode_innerHtml,
+               "(gqnode-innerHtml gumboNode) -> \"text\"");
 
 /**
  * @brief
@@ -405,8 +409,8 @@ Object eval_gqnode_innerHtml(varlisp::Environment& env,
     // return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-innerHtml", 1, 1, eval_gqnode_innerHtml,
-               "(gqnode-innerHtml gumboNode) -> \"text\"");
+REGIST_BUILTIN("gqnode-outerHtml", 1, 1, eval_gqnode_outerHtml,
+               "(gqnode-outerHtml gumboNode) -> \"text\"");
 
 /**
  * @brief
@@ -435,8 +439,8 @@ Object eval_gqnode_outerHtml(varlisp::Environment& env,
     // return Object{Nill{}};
 }
 
-REGIST_BUILTIN("gqnode-outerHtml", 1, 1, eval_gqnode_outerHtml,
-               "(gqnode-outerHtml gumboNode) -> \"text\"");
+REGIST_BUILTIN("gumbo-query-text",2,  2,  eval_gumbo_query_text,
+               "(gumbo-query-text \"<html>\" \"selector-string\") \"node->text\"");
 
 // NOTE 如何处理多个node，然后需要串成一个s-list的需求？
 // map-line ?
@@ -473,8 +477,5 @@ Object eval_gumbo_query_text(varlisp::Environment& env,
 
     return string_t(std::move(oss.str()));
 }
-
-REGIST_BUILTIN("gumbo-query-text",2,  2,  eval_gumbo_query_text,
-               "(gumbo-query-text \"<html>\" \"selector-string\") \"node->text\"");
 
 }  // namespace varlisp
