@@ -11,6 +11,7 @@
 #include <ss1x/parser/oparser.hpp>
 
 #include <sss/regex/cregex.hpp>
+#include <sss/raw_print.hpp>
 
 #include "symbol.hpp"
 
@@ -67,7 +68,7 @@ public:
     }
     void operator()(const std::string& s) const
     {
-        m_o << '"' << s << '"';
+        m_o << sss::raw_string(s);
     }
     void operator()(double d) const
     {

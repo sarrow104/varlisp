@@ -356,9 +356,11 @@ void Tokenizer::append(const std::string& scripts)
             std::distance(this->m_data.back().cbegin(), m_beg.back());
 
         if (offset) {
-            COLOG_DEBUG("erase(", this->m_data.back().substr(0, offset), ");");
+            COLOG_DEBUG("erase(",
+                        sss::raw_string(this->m_data.back().substr(0, offset)),
+                        ");");
             this->m_data.back().erase(0, offset);
-            COLOG_DEBUG("left(", this->m_data.back(), "); @",
+            COLOG_DEBUG("left(", sss::raw_string(this->m_data.back()), "); @",
                         &this->m_data.back());
         }
     }
