@@ -6,6 +6,8 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("errno", 0, 0, eval_errno, "(errno) -> int");
+
 /**
  * @brief (errno) -> int
  *
@@ -19,7 +21,7 @@ Object eval_errno(varlisp::Environment& env, const varlisp::List& args)
     return errno;
 }
 
-REGIST_BUILTIN("errno", 0, 0, eval_errno, "(errno) -> int");
+REGIST_BUILTIN("strerr", 1, 1, eval_strerr, "(strerr) -> string");
 
 /**
  * @brief (strerr) -> string
@@ -47,7 +49,5 @@ Object eval_strerr(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::string_t{std::string(::strerror(*p_err))};
 #endif
 }
-
-REGIST_BUILTIN("strerr", 1, 1, eval_strerr, "(strerr) -> string");
 
 } // namespace varlisp

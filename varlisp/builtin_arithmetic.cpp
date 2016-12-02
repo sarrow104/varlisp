@@ -128,6 +128,8 @@ struct arithmetic_div_visitor : public boost::static_visitor<arithmetic_t> {
     }
 };
 
+REGIST_BUILTIN("+", 0, -1, eval_add, "(+ ...) -> number");
+
 // DrRachet + 支持0个参数；-需要至少一个参数；
 Object eval_add(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -143,7 +145,7 @@ Object eval_add(varlisp::Environment& env, const varlisp::List& args)
     return arithmetic2object(sum);
 }
 
-REGIST_BUILTIN("+", 0, -1, eval_add, "(+ ...) -> number");
+REGIST_BUILTIN("-", 0, -1, eval_sub, "(- arg ...) -> number");
 
 Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -169,7 +171,7 @@ Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
-REGIST_BUILTIN("-", 0, -1, eval_sub, "(- arg ...) -> number");
+REGIST_BUILTIN("*", 0, -1, eval_mul, "(* ...) -> number");
 
 Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -185,7 +187,7 @@ Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
     return arithmetic2object(mul);
 }
 
-REGIST_BUILTIN("*", 0, -1, eval_mul, "(* ...) -> number");
+REGIST_BUILTIN("/", 1, -1, eval_div, "(/ arg ...) -> number");
 
 Object eval_div(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -207,7 +209,7 @@ Object eval_div(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
-REGIST_BUILTIN("/", 1, -1, eval_div, "(/ arg ...) -> number");
+REGIST_BUILTIN("power", 2, 2, eval_pow, "(power arg1 arg2) -> number");
 
 Object eval_pow(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -218,7 +220,5 @@ Object eval_pow(varlisp::Environment& env, const varlisp::List& args)
 
     return Object(std::pow(lhs, rhs));
 }
-
-REGIST_BUILTIN("power", 2, 2, eval_pow, "(power arg1 arg2) -> number");
 
 }  // namespace varlisp

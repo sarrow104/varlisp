@@ -43,6 +43,9 @@ inline void encoding_normalize(std::string& encoding)
 //
 namespace varlisp {
 
+REGIST_BUILTIN("uchardet", 1, 1, eval_uchardet,
+               "(uchardet \"content\") -> \"utf8\"");
+
 /**
  * @brief
  *      (uchardet "content") -> "utf8"
@@ -84,8 +87,8 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
     return string_t(std::move(encoding));
 }
 
-REGIST_BUILTIN("uchardet", 1, 1, eval_uchardet,
-               "(uchardet \"content\") -> \"utf8\"");
+REGIST_BUILTIN("pychardet", 1, 1, eval_pychardet,
+               "(pychardet \"content\") -> \"utf8\"");
 
 /**
  * @brief
@@ -154,9 +157,6 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
-REGIST_BUILTIN("pychardet", 1, 1, eval_pychardet,
-               "(pychardet \"content\") -> \"utf8\"");
-
 namespace detail {
 void trim(sss::string_view& s)
 {
@@ -169,6 +169,9 @@ void trim(sss::string_view& s)
 }
 
 } // namespace detail
+
+REGIST_BUILTIN("ivchardet", 2, 2, eval_ivchardet,
+               "(ivchardet \"encodings\" \"content\") -> \"utf8\"");
 
 /**
  * @brief
@@ -221,9 +224,9 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
                : Object{Nill{}};
 }
 
-REGIST_BUILTIN("ivchardet", 2, 2, eval_ivchardet,
-               "(ivchardet \"encodings\" \"content\") -> \"utf8\"");
-
+REGIST_BUILTIN(
+    "iconv", 3, 3, eval_iconv,
+    "(iconv \"enc-from\" \"enc-to\" \"content\") -> \"converted-out\"");
 /**
  * @brief
  *      (iconv "enc-from" "enc-to" "content") -> "converted-out"
@@ -263,9 +266,9 @@ Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
     return string_t(std::move(out));
 }
 
-REGIST_BUILTIN(
-    "iconv", 3, 3, eval_iconv,
-    "(iconv \"enc-from\" \"enc-to\" \"content\") -> \"converted-out\"");
+REGIST_BUILTIN("ensure-utf8", 2, 3, eval_ensure_utf8,
+               "(ensure-utf8 \"content\") -> \"utf8-content\"\n"
+               "(ensure-utf8 \"content\" \"fencodings\") -> \"utf8-content\"");
 
 /**
  * @brief
@@ -322,9 +325,5 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     }
     return *p_content;
 }
-
-REGIST_BUILTIN("ensure-utf8", 2, 3, eval_ensure_utf8,
-               "(ensure-utf8 \"content\") -> \"utf8-content\"\n"
-               "(ensure-utf8 \"content\" \"fencodings\") -> \"utf8-content\"");
 
 } // namespace varlisp

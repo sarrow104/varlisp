@@ -9,6 +9,8 @@
 #include "detail/car.hpp"
 
 namespace varlisp {
+
+REGIST_BUILTIN("&", 2, -1, eval_bit_and, "(& int1 int2 ...) -> int");
 /**
  * @brief (& int1 int2 ...) -> int
  *
@@ -40,7 +42,7 @@ Object eval_bit_and(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
-REGIST_BUILTIN("&", 2, -1, eval_bit_and, "(& int1 int2 ...) -> int");
+REGIST_BUILTIN("|", 2, -1, eval_bit_or, "(| int1 int2 ...) -> int");
 
 /**
  * @brief (| int1 int2 ...) -> int
@@ -73,7 +75,7 @@ Object eval_bit_or(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
-REGIST_BUILTIN("|", 2, -1, eval_bit_or, "(| int1 int2 ...) -> int");
+REGIST_BUILTIN("~", 1, 1, eval_bit_rev, "(~ int) -> int");
 
 /**
  * @brief (~ int) -> int
@@ -95,7 +97,7 @@ Object eval_bit_rev(varlisp::Environment& env, const varlisp::List& args)
     return ~(*p_var);
 }
 
-REGIST_BUILTIN("~", 1, 1, eval_bit_rev, "(~ int) -> int");
+REGIST_BUILTIN("^", 2, -1, eval_bit_xor, "(^ int1 int2 ...) -> int");
 
 /**
  * @brief (^ int1 int2 ...) -> int
@@ -128,7 +130,7 @@ Object eval_bit_xor(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
-REGIST_BUILTIN("^", 2, -1, eval_bit_xor, "(^ int1 int2 ...) -> int");
+REGIST_BUILTIN(">>", 2, 2, eval_bit_shift_right, "(>> int shift) -> int");
 
 /**
  * @brief (>> int shift) -> int
@@ -157,7 +159,7 @@ Object eval_bit_shift_right(varlisp::Environment& env, const varlisp::List& args
     return (*p_var) >> (*p_shift);
 }
 
-REGIST_BUILTIN(">>", 2, 2, eval_bit_shift_right, "(>> int shift) -> int");
+REGIST_BUILTIN("<<", 2, 2, eval_bit_shift_left, "(<< int shift) -> int");
 
 /**
  * @brief (<< int shift) -> int
@@ -185,7 +187,5 @@ Object eval_bit_shift_left(varlisp::Environment& env, const varlisp::List& args)
     }
     return (*p_var) << (*p_shift);
 }
-
-REGIST_BUILTIN("<<", 2, 2, eval_bit_shift_left, "(<< int shift) -> int");
 
 } // namespace varlisp

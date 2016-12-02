@@ -5,6 +5,8 @@
 #include "detail/buitin_info_t.hpp"
 
 namespace varlisp {
+
+REGIST_BUILTIN("defer", 1, 1, eval_defer, "(defer (expr)) -> result-ignored");
 /**
  * @brief (defer (expr)) -> result-ignored
  *   在上层语句完成之前，执行expr；
@@ -34,7 +36,5 @@ Object eval_defer(varlisp::Environment& env, const varlisp::List& args)
     env.defer_task_push(args.head);
     return varlisp::Nill{};
 }
-
-REGIST_BUILTIN("defer", 1, 1, eval_defer, "(defer (expr)) -> result-ignored");
 
 } // namespace varlisp

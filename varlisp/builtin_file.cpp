@@ -20,6 +20,9 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("read-all", 1, 1, eval_read_all,
+               "(read-all \"path/to/file\") -> string");
+
 /**
  * @brief (read-all "path/to/file") -> string
  *
@@ -49,9 +52,6 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
 
     return string_t(std::move(content));
 }
-
-REGIST_BUILTIN("read-all", 1, 1, eval_read_all,
-               "(read-all \"path/to/file\") -> string");
 
 /**
  * @brief eval_write_impl
@@ -121,21 +121,25 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     return Object(int(write_cnt));
 }
 
+REGIST_BUILTIN("write", 2, 2, eval_write,
+               "(write (list) path)\n(write item path)");
+
 Object eval_write(varlisp::Environment& env, const varlisp::List& args)
 {
     return eval_write_impl(env, args, false);
 }
 
-REGIST_BUILTIN("write", 2, 2, eval_write,
-               "(write (list) path)\n(write item path)");
+REGIST_BUILTIN("write-append", 2, 2, eval_write_append,
+               "(write-append (list) path)\n(write-append item path)");
 
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args)
 {
     return eval_write_impl(env, args, true);
 }
 
-REGIST_BUILTIN("write-append", 2, 2, eval_write_append,
-               "(write-append (list) path)\n(write-append item path)");
+REGIST_BUILTIN("open", 1, 2, eval_open,
+               "(open \"path\") -> file_descriptor | nil;\n"
+               "(open \"path\" flag) -> file_descriptor | nil");
 
 /**
  * @brief
@@ -179,9 +183,8 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
     return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
 }
 
-REGIST_BUILTIN("open", 1, 2, eval_open,
-               "(open \"path\") -> file_descriptor | nil;\n"
-               "(open \"path\" flag) -> file_descriptor | nil");
+REGIST_BUILTIN("getfdflag", 1, 1, eval_getfdflag,
+               "(getfdflag fd) -> flag | nil");
 
 /**
  * @brief
@@ -206,8 +209,8 @@ Object eval_getfdflag(varlisp::Environment& env, const varlisp::List& args)
     return flag == -1 ? Object{varlisp::Nill{}} : Object{flag};
 }
 
-REGIST_BUILTIN("getfdflag", 1, 1, eval_getfdflag,
-               "(getfdflag fd) -> flag | nil");
+REGIST_BUILTIN("setfdflag", 2, 2, eval_setfdflag,
+               "(setfdflag fd flag) -> errno");
 
 /**
  * @brief
@@ -239,8 +242,7 @@ Object eval_setfdflag(varlisp::Environment& env, const varlisp::List& args)
     return ec == -1 ? errno : 0;
 }
 
-REGIST_BUILTIN("setfdflag", 2, 2, eval_setfdflag,
-               "(setfdflag fd flag) -> errno");
+REGIST_BUILTIN("close", 1, 1, eval_close, "(close file_descriptor) -> errno");
 
 /**
  * @brief (close file_descriptor) -> errno
@@ -268,7 +270,8 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
     return ::close(*p_fd) == -1 ? errno : 0;
 }
 
-REGIST_BUILTIN("close", 1, 1, eval_close, "(close file_descriptor) -> errno");
+REGIST_BUILTIN("read-line", 1, 1, eval_read_line,
+               "(read-line file_descriptor) -> string | nill");
 
 /**
  * @brief (read-line file_descriptor) -> string | nill
@@ -295,8 +298,8 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::string_t{std::move(line)};
 }
 
-REGIST_BUILTIN("read-line", 1, 1, eval_read_line,
-               "(read-line file_descriptor) -> string | nill");
+REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
+               "(read-char file_descriptor) -> int | nill");
 
 /**
  * @brief (read-char file_descriptor) -> int | nill
@@ -324,8 +327,8 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
     return ch;
 }
 
-REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
-               "(read-char file_descriptor) -> int | nill");
+REGIST_BUILTIN("write-char", 2, 2, eval_write_char,
+               "(write-char file_descriptor int) -> int | nill");
 
 /**
  * @brief (write-char file_descriptor int) -> int | nill
@@ -357,8 +360,8 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
 
-REGIST_BUILTIN("write-char", 2, 2, eval_write_char,
-               "(write-char file_descriptor int) -> int | nill");
+REGIST_BUILTIN("write-string", 2, 2, eval_write_string,
+               "(write-string file_descriptor string) -> int | nill");
 
 /**
  * @brief (write-string file_descriptor int) -> int | nill
@@ -388,8 +391,5 @@ Object eval_write_string(varlisp::Environment& env, const varlisp::List& args)
     int ec = detail::writestring(fd, p_str->to_string_view());
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
-
-REGIST_BUILTIN("write-string", 2, 2, eval_write_string,
-               "(write-string file_descriptor string) -> int | nill");
 
 }  // namespace
