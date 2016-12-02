@@ -285,7 +285,9 @@ int main(int argc, char* argv[])
     while (i < argc) {
         if (has_match(argv[i], {"--echo", "-e"})) {
             if (++i >= argc) {
-                SSS_POSITION_THROW(std::runtime_error, "need one parameter after", sss::raw_string(argv[i]));
+                SSS_POSITION_THROW(std::runtime_error,
+                                   "need one parameter after",
+                                   sss::raw_string(argv[i]));
             }
             echo_in_load = bool(sss::string_cast<int>(argv[i]));
         }
