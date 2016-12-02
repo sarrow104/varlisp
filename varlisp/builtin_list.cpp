@@ -14,6 +14,8 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("car", 1, 1, eval_car, "(car (list item1 item2 ...)) -> item1");
+
 /**
  * @brief (car (list item1 item2 ...)) -> item1
  *
@@ -35,7 +37,8 @@ Object eval_car(varlisp::Environment& env, const varlisp::List& args)
     return p_list->car();
 }
 
-REGIST_BUILTIN("car", 1, 1, eval_car, "(car (list item1 item2 ...)) -> item1");
+REGIST_BUILTIN("cdr", 1, 1, eval_cdr,
+               "(cdr '(list item1 item2 ...)) -> '(item2 item3 ...)");
 
 /**
  * @brief (cdr '(list item1 item2 ...)) -> '(item2 item3 ...)
@@ -57,8 +60,8 @@ Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
     return p_list->cdr();
 }
 
-REGIST_BUILTIN("cdr", 1, 1, eval_cdr,
-               "(cdr '(list item1 item2 ...)) -> '(item2 item3 ...)");
+REGIST_BUILTIN("car-nth", 2, 2, eval_car_nth,
+               "(car-nth index '(list)) -> list[index]");
 
 /**
  * @brief
@@ -96,8 +99,8 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
-REGIST_BUILTIN("car-nth", 2, 2, eval_car_nth,
-               "(car-nth index '(list)) -> list[index]");
+REGIST_BUILTIN("cdr-nth", 2, 2, eval_cdr_nth,
+               "(cdr-nth index '(list)) -> (list-tail[index]...)");
 
 /**
  * @brief
@@ -135,8 +138,7 @@ Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
     }
 }
 
-REGIST_BUILTIN("cdr-nth", 2, 2, eval_cdr_nth,
-               "(cdr-nth index '(list)) -> (list-tail[index]...)");
+REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
 
 /**
  * @brief
@@ -160,7 +162,8 @@ Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
     return ret;
 }
 
-REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
+REGIST_BUILTIN("length", 1, 1, eval_length,
+               "(length '(list)) -> quote-list-length");
 
 /**
  * @brief
@@ -183,8 +186,8 @@ Object eval_length(varlisp::Environment& env, const varlisp::List& args)
     return int(p_list->length() - 1);
 }
 
-REGIST_BUILTIN("length", 1, 1, eval_length,
-               "(length '(list)) -> quote-list-length");
+REGIST_BUILTIN("empty?", 1, 1, eval_empty_q,
+               "(empty? '(list)) -> boolean");
 
 /**
  * @brief
@@ -207,8 +210,8 @@ Object eval_empty_q(varlisp::Environment& env, const varlisp::List& args)
     return p_list->length() == 1;
 }
 
-REGIST_BUILTIN("empty?", 1, 1, eval_empty_q,
-               "(empty? '(list)) -> boolean");
+REGIST_BUILTIN("append", 2, 2, eval_append,
+               "(append '(list1) '(list2)) -> '(list1 list2)");
 
 /**
  * @brief
@@ -245,8 +248,5 @@ Object eval_append(varlisp::Environment& env, const varlisp::List& args)
     // std::copy(detail::list_object_const_iterator_t(p_list2->next()), detail::list_object_const_iterator_t(), back_it);
     return ret;
 }
-
-REGIST_BUILTIN("append", 2, 2, eval_append,
-               "(append '(list1) '(list2)) -> '(list1 list2)");
 
 }  // namespace varlisp
