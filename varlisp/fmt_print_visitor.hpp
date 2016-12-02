@@ -4,6 +4,7 @@
 #include <boost/variant.hpp>
 
 #include <sss/regex/cregex.hpp>
+#include <sss/colorlog.hpp>
 
 #include "fmtArgInfo.hpp"
 
@@ -31,7 +32,11 @@ struct fmt_print_visitor : public boost::static_visitor<void> {
     }
 
     void operator()(const Empty&) const {}
-    void operator()(const Nill&) const { m_fmt.print(m_o, "nil"); }
+    void operator()(const Nill&) const {
+        // why must explicit using sss::string_view?
+        // or will call m_fmt.print<bool>()
+        m_fmt.print(m_o, sss::string_view("nil"));
+    }
     void operator()(bool v) const { m_fmt.print(m_o, v); }
     void operator()(int v) const { m_fmt.print(m_o, v); }
     void operator()(double v) const { m_fmt.print(m_o, v); }
