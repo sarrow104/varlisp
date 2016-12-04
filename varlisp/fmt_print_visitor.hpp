@@ -15,6 +15,8 @@ struct Nill;
 struct String;
 typedef String string_t;
 struct symbol;
+struct List;
+struct Environment;
 struct fmt_print_visitor : public boost::static_visitor<void> {
     std::ostream& m_o;
     const fmtArgInfo& m_fmt;
@@ -37,11 +39,13 @@ struct fmt_print_visitor : public boost::static_visitor<void> {
         // or will call m_fmt.print<bool>()
         m_fmt.print(m_o, sss::string_view("nil"));
     }
-    void operator()(bool v) const { m_fmt.print(m_o, v); }
-    void operator()(int v) const { m_fmt.print(m_o, v); }
+    void operator()(bool   v) const { m_fmt.print(m_o, v); }
+    void operator()(int    v) const { m_fmt.print(m_o, v); }
     void operator()(double v) const { m_fmt.print(m_o, v); }
-    void operator()(const string_t& v) const;
-    void operator()(const varlisp::symbol& s) const;
+    void operator()(const string_t&             v) const;
+    void operator()(const varlisp::symbol&      s) const;
+    void operator()(const varlisp::List&        l) const;
+    void operator()(const varlisp::Environment& e) const;
     void operator()(const sss::regex::CRegex& reg) const
     {
         std::string tmp;
