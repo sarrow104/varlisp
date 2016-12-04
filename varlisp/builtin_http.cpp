@@ -1,17 +1,20 @@
-#include <boost/system/error_code.hpp>
-#include <boost/asio.hpp>
+#include <cctype>
 
+#include <boost/asio.hpp>
+#include <boost/system/error_code.hpp>
+
+#include <sss/algorithm.hpp>
 #include <sss/colorlog.hpp>
+#include <sss/debug/value_msg.hpp>
 #include <sss/encoding.hpp>
 #include <sss/iConvpp.hpp>
 #include <sss/utlstring.hpp>
-#include <sss/debug/value_msg.hpp>
 
 #include <ss1x/asio/GetFile.hpp>
 #include <ss1x/asio/headers.hpp>
 
-#include "object.hpp"
 #include "builtin_helper.hpp"
+#include "object.hpp"
 
 #include "detail/buitin_info_t.hpp"
 #include "detail/car.hpp"
@@ -33,19 +36,20 @@ REGIST_BUILTIN(
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char * funcName = "http-get";
+    const char* funcName = "http-get";
     Object url;
-    const string_t* p_url = getTypedValue<string_t>(env, detail::car(args), url);
+    const string_t* p_url =
+        getTypedValue<string_t>(env, detail::car(args), url);
     if (!p_url) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": requie downloading url as 1st argument !)");
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requie downloading url as 1st argument !)");
     }
 
-    Object proxy;             
+    Object proxy;
     const string_t* p_proxy = 0;
     Object port;
     const int* p_port = 0;
@@ -53,15 +57,13 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     if (args.length() == 3) {
         p_proxy = getTypedValue<string_t>(env, detail::cadr(args), proxy);
         if (!p_proxy) {
-            SSS_POSITION_THROW(
-                std::runtime_error,
-                "(", funcName, ": 2nd parameter must be proxy domain string!)");
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": 2nd parameter must be proxy domain string!)");
         }
         p_port = getTypedValue<int>(env, detail::caddr(args), port);
         if (!p_port) {
-            SSS_POSITION_THROW(
-                std::runtime_error,
-                "(", funcName, ": 3rd parameter must be proxy port number!)");
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": 3rd parameter must be proxy port number!)");
         }
     }
 
@@ -75,8 +77,11 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     do {
         std::ostringstream oss;
         if (p_proxy) {
-            ec = ss1x::asio::proxyRedirectHttpGet(oss, headers, p_proxy->to_string(), *p_port, p_url->to_string());
-            // ss1x::asio::proxyGetFile(oss, headers, p_proxy->to_string(), *p_port, p_url->to_string());
+            ec = ss1x::asio::proxyRedirectHttpGet(oss, headers,
+                                                  p_proxy->to_string(), *p_port,
+                                                  p_url->to_string());
+            // ss1x::asio::proxyGetFile(oss, headers, p_proxy->to_string(),
+            // *p_port, p_url->to_string());
         }
         else {
             // ss1x::asio::getFile(oss, headers, p_url->to_string());
@@ -84,10 +89,11 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
         }
 
         if (headers.status_code != 200) {
-            COLOG_ERROR("(",funcName, ": http-status code:", headers.status_code, ")");
-            for (const auto& item : headers)
-            {
-                std::cerr << "header : " << item.first << ": " << item.second << std::endl;
+            COLOG_ERROR("(", funcName, ": http-status code:",
+                        headers.status_code, ")");
+            for (const auto& item : headers) {
+                std::cerr << "header : " << item.first << ": " << item.second
+                          << std::endl;
             }
             continue;
         }
@@ -103,18 +109,22 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
             if (content_length_str.empty()) {
                 break;
             }
-            size_t content_length = sss::string_cast<unsigned int>(content_length_str);
+            size_t content_length =
+                sss::string_cast<unsigned int>(content_length_str);
             COLOG_DEBUG(SSS_VALUE_MSG(oss.str().length()));
             size_t actual_recieved = oss.tellp();
             if (actual_recieved > content_length) {
-                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '>', SSS_VALUE_MSG(content_length));
+                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '>',
+                            SSS_VALUE_MSG(content_length));
                 break;
             }
             else if (actual_recieved < content_length) {
-                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '<', SSS_VALUE_MSG(content_length));
+                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '<',
+                            SSS_VALUE_MSG(content_length));
                 // retry
             }
-            if (actual_recieved > max_content.length() && actual_recieved <= content_length) {
+            if (actual_recieved > max_content.length() &&
+                actual_recieved <= content_length) {
                 max_content = oss.str();
             }
             if (max_content.length() == content_length) {
@@ -123,15 +133,26 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
         }
     } while (max_test-- > 0);
 
-    // http-headers? usage?
-    // std::string charset =
-    //     sss::trim_copy(headers.get("Content-Type", "charset"));
-    // if (!charset.empty()) {
-    //     COLOG_INFO("(http-get: charset from Content-Type = ",
-    //                sss::raw_string(charset), ")");
-    // }
+    // COLOG_INFO(headers.status_code, headers.http_version);
+    Environment ret;
+    ret["status_code"] = int(headers.status_code);
+    if (!headers.http_version.empty()) {
+        ret["http_version"] = string_t(std::move(headers.http_version));
+    }
 
-    return max_content;
+    for (const auto& it : headers) {
+        // COLOG_INFO(it.first, ": ", sss::raw_string(it.second));
+        if (sss::is_all(it.second, static_cast<int (*)(int)>(std::isdigit))) {
+            ret[it.first] = sss::string_cast<int>(it.second);
+        }
+        else {
+            ret[it.first] = string_t(std::move(it.second));
+        }
+    }
+    COLOG_INFO(ret);
+
+    return varlisp::List::makeSQuoteList(std::move(max_content),
+                                         std::move(ret));
 }
 
 }  // namespace varlisp
