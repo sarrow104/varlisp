@@ -6,6 +6,7 @@
 
 #include "object.hpp"
 #include "builtin_helper.hpp"
+#include "cast2bool_visitor.hpp"
 #include "detail/buitin_info_t.hpp"
 #include "detail/list_iterator.hpp"
 #include "detail/car.hpp"
@@ -201,7 +202,6 @@ Object eval_pipe_run(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "pipe-run";
     // NOTE 第一个参数是call-able；并且需要两个参数
     // 第二个参数，是不少于2个元素的s-list
-    const Object& callable = args.head;
     Object tmp;
     Object argument = varlisp::getAtomicValue(env, detail::car(args), tmp);
 
@@ -215,4 +215,69 @@ Object eval_pipe_run(varlisp::Environment &env, const varlisp::List &args)
     return argument;
 }
 
+REGIST_BUILTIN("is-all", 2, 2, eval_is_all,
+               "; is-all 用第一个参数作为函数，测试列表中，是否每个元素都符合要求\n"
+               "; 都符合，返回#t; 否则返回#f\n"
+               "(is-all test-func [v1...]) -> boolean");
+
+Object eval_is_all(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "is-all";
+    // NOTE 第一个参数是call-able；并且需要两个参数
+    // 第二个参数，是不少于1个元素的s-list
+    const Object& callable = args.head;
+    Object tmp;
+    const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
+    if (!p_arg_list || !p_arg_list->is_squote() || p_arg_list->length() < 2) {
+        SSS_POSITION_THROW(std::runtime_error,
+                          "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
+                          detail::cadr(args), ")");
+    }
+
+    bool is_all = true;
+    for (auto it = detail::list_object_const_iterator_t(p_arg_list->next()); it; ++it) {
+        varlisp::List expr = varlisp::List::makeList( {callable, *it});
+
+        Object res = expr.eval(env);
+        if (!boost::apply_visitor(cast2bool_visitor(env), res)) {
+            is_all = false;
+            break;
+        }
+    }
+
+    return is_all;
+}
+
+REGIST_BUILTIN("is-any", 2, 2, eval_is_any,
+               "; is-any 用第一个参数作为函数，测试列表中，是否存在某个元素符合要求\n"
+               "; 如果找到一个符合的，立即返回#t; 否则返回#f\n"
+               "(is-any test-func [v1...]) -> boolean");
+
+Object eval_is_any(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "is-all";
+    // NOTE 第一个参数是call-able；并且需要两个参数
+    // 第二个参数，是不少于1个元素的s-list
+    const Object& callable = args.head;
+    Object tmp;
+    const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
+    if (!p_arg_list || !p_arg_list->is_squote() || p_arg_list->length() < 2) {
+        SSS_POSITION_THROW(std::runtime_error,
+                          "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
+                          detail::cadr(args), ")");
+    }
+
+    bool is_any = false;
+    for (auto it = detail::list_object_const_iterator_t(p_arg_list->next()); it; ++it) {
+        varlisp::List expr = varlisp::List::makeList( {callable, *it});
+
+        Object res = expr.eval(env);
+        if (boost::apply_visitor(cast2bool_visitor(env), res)) {
+            is_any = true;
+            break;
+        }
+    }
+
+    return is_any;
+}
 } // namespace varlisp
