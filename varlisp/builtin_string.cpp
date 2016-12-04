@@ -277,7 +277,7 @@ REGIST_BUILTIN("join-char",       1,  1,  eval_join_char,
  */
 Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
 {
-    const char * funcName = "split-char";
+    const char * funcName = "join-char";
     Object obj;
     const varlisp::List * p_list = varlisp::getFirstListPtrFromArg(env, args, obj);
     if (!p_list) {
@@ -289,6 +289,50 @@ Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
     sss::util::utf8::dumpout2utf8(detail::list_const_iterator_t<int>(p_list),
                                   detail::list_const_iterator_t<int>(nullptr),
                                   std::back_inserter(ret));
+    return varlisp::string_t{std::move(ret)};
+}
+
+REGIST_BUILTIN("split-byte",       1,  1,  eval_split_byte,
+               "(split-byte \"target-string\") -> '(int-byte1 int-byte2 ...)");
+
+Object eval_split_byte(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "split-byte";
+    Object obj;
+    const varlisp::string_t *p_str =
+        varlisp::getTypedValue<varlisp::string_t>(env, args.head, obj);
+    if (!p_str) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": need an string as the 1st argument)");
+    }
+    varlisp::List ret = varlisp::List::makeSQuoteList();
+
+    // NOTE  谨防 0x80 0xFF 字符可能引起问题
+    auto back_it = detail::list_back_inserter<int>(ret);
+    for (auto it = p_str->begin(); it != p_str->end(); ++it) {
+        *back_it++ = int(uint8_t(*it));
+    }
+    return ret;
+}
+
+REGIST_BUILTIN("join-byte",       1,  1,  eval_join_byte,
+               "(join-byte '(int-byte1 int-byte2 ...)) -> \"string\"");
+
+Object eval_join_byte(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "join-byte";
+    Object obj;
+    const varlisp::List * p_list = varlisp::getFirstListPtrFromArg(env, args, obj);
+    if (!p_list) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": need quote list as the 1st argument)");
+    }
+    p_list = p_list->next();
+    std::string ret;
+    // FIXME 谨防 0x80 0xFF 字符可能引起问题
+    for (auto it = detail::list_const_iterator_t<int>(p_list); it; ++it) {
+        ret.push_back(char(*it & 0xFF));
+    }
     return varlisp::string_t{std::move(ret)};
 }
 
