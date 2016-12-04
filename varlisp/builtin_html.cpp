@@ -12,13 +12,12 @@
 namespace varlisp {
 
 REGIST_BUILTIN("gumbo", 1, 2, eval_gumbo,
+               "; gumbo 从 utf8 html 正文，生成gumbo-document 文档对象\n"
                "(gumbo \"<html>\") -> gumboNode\n"
                "(gumbo \"<html>\" \"query-string\") -> '(gumboNode)");
 
 /**
  * @brief
- *      (gumbo "<html>") -> gumboNode
- *      (gumbo "<html>" "query-string") -> '(gumboNode)
  *
  * @param[in] env
  * @param[in] args
@@ -69,7 +68,62 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("gumbo-query", 2, 2, eval_gumbo_query,
-               "(gumbo-query gumboNode \"selector-string\") -> '(gumboNodes)");
+               "; gumbo-query 类似jquery语法的 gumboNode 检索\n"
+               "; 范例\n"
+               ";\t h1 a.special\n"
+               ";\t span[id=\"that's\"]\n"
+               "; dsl 语法规则\n"
+               ";\t SelectorGroup\n"
+               ";\t  -> Selector ( ',' Selector ) *\n"
+               ";\t \n"
+               ";\t Selector\n"
+               ";\t  -> SimpleSelectorSequence ( ' ' SimpleSelectorSequence ) *  # 直系子孙\n"
+               ";\t  -> SimpleSelectorSequence ( '>' SimpleSelectorSequence ) *  # 儿子\n"
+               ";\t  -> SimpleSelectorSequence ( '+' SimpleSelectorSequence ) *  # 相邻\n"
+               ";\t  -> SimpleSelectorSequence ( '~' SimpleSelectorSequence ) *  # 同上\n"
+               ";\t \n"
+               ";\t SimpleSelectorSequence\n"
+               ";\t   -> ('*'|TypeSelector)? IDSelector           // begin with '#'\n"
+               ";\t   -> ('*'|TypeSelector)? ClassSelector        // begin with '.'\n"
+               ";\t   -> ('*'|TypeSelector)? AttributeSelector    // begin with '['\n"
+               ";\t   -> ('*'|TypeSelector)? PseudoclassSelector  // begin with ':'\n"
+               ";\t \n"
+               ";\t Nth\n"
+               ";\t  -> ('+'|'-')? (integer|'n'|\"odd\"|\"even\")\n"
+               ";\t \n"
+               ";\t Integer\n"
+               ";\t   -> [0-9]+\n"
+               ";\t \n"
+               ";\t PseudoclassSelector\n"
+               ";\t  -> ':' (\"not\"|\"has\"|\"haschild\") '(' SelectorGroup ')'\n"
+               ";\t  -> ':' (\"contains\"|\"containsown\") '(' (String | Identifier) ')' // 貌似是case sensitive\n"
+               ";\t  -> ':' (\"matches\"|\"matchesown\") // TODO not support!\n"
+               ";\t  -> ':' (\"nth-child\"|\"nth-last-child\"|\"nth-of-type\"|\"nth-last-of-type\") '(' Nth ')'\n"
+               ";\t  -> ':' \"first-child\"\n"
+               ";\t  -> ':' \"last-child\"\n"
+               ";\t  -> ':' \"first-of-type\"\n"
+               ";\t  -> ':' \"last-of-type\"\n"
+               ";\t  -> ':' \"only-child\"\n"
+               ";\t  -> ':' \"only-of-type\"\n"
+               ";\t  -> ':' \"empty\"\n"
+               ";\t  -> ':' \"lang\" '(' The-escaped-value ')' // TODO\n"
+               ";\t \n"
+               ";\t AttributeSelector\n"
+               ";\t  -> '[' Identifier ']'\n"
+               ";\t  -> '[' Identifier '=' (String|Identifier)']'\n"
+               ";\t  -> '[' Identifier (\"~=\"|\"!=\" |\"^=\" |\"$=\" |\"*=\") (String|Identifier) ']'\n"
+               ";\t  -> '[' Identifier '#' '=' ... // TODO support regex\n"
+               ";\t \n"
+               ";\t ClassSelector\n"
+               ";\t  -> '.' Identifier\n"
+               ";\t \n"
+               ";\t IDSelector\n"
+               ";\t  -> '#' Name\n"
+               ";\t \n"
+               ";\t TypeSelector\n"
+               ";\t  -> Identifier //check by \"gumbo_tag_enum\"\n"
+               "(gumbo-query gumboNode \"selector-string\")\n"
+               " -> '(gumboNodes)");
 
 /**
  * @brief
@@ -106,6 +160,32 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
         for (auto& item : vec) {
             *back_it++ = item;
         }
+    }
+
+    return ret_nodes;
+}
+
+REGIST_BUILTIN("gumbo-children", 1, 1, eval_gumbo_children,
+               "; gumbo-children 枚举子节点；"
+               "; 相当于更快的(gumbo-query gnode \"*\")\n"
+               "(gumbo-children gumboNode) -> '(gumboNodes)");
+
+Object eval_gumbo_children(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char* funcName = "gumbo-query";
+    Object gNode;
+    const gumboNode* p_node =
+        varlisp::getTypedValue<gumboNode>(env, detail::car(args), gNode);
+    if (!p_node) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": requires gumboNode as 1st argument to querying)");
+    }
+
+    varlisp::List ret_nodes = varlisp::List::makeSQuoteList();
+    std::vector<gumboNode> vec = p_node->children();
+    auto back_it = detail::list_back_inserter<Object>(ret_nodes);
+    for (auto& item : vec) {
+        *back_it++ = item;
     }
 
     return ret_nodes;
