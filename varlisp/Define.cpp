@@ -1,4 +1,7 @@
 #include "Define.hpp"
+
+#include <sss/colorlog.hpp>
+
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
 #include "builtin_helper.hpp"
@@ -21,9 +24,12 @@ Object Define::eval(Environment& env) const
     if (top_env->find(this->name.m_data)) {
         return Nill{};
     }
+    const Object& resRef = getAtomicValue(env, this->value, tmp);
+
+    COLOG_DEBUG(this->name.m_data, resRef);
 
     top_env->operator[](this->name.m_data)
-        = getAtomicValue(env, this->value, tmp);
+        = resRef;
     // 为什么不再返回value呢？
     // 为例减少显示；
     // 既然是定义了变量，链式赋值，也意义不大了
