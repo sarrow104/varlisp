@@ -8,6 +8,7 @@
 #include "builtin_helper.hpp"
 #include "detail/buitin_info_t.hpp"
 #include "detail/list_iterator.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -33,6 +34,7 @@ REGIST_BUILTIN("map", 2, -1, eval_map,
  */
 Object eval_map(varlisp::Environment &env, const varlisp::List &args)
 {
+    const char * funcName = "map";
     // NOTE 第一个参数是call-able；并且需要n个参数
     // 后续有n个s-list；并且，每个s-list的长度相同；
     // 需要注意的是，部分內建函数，我允许无限多个参数……
@@ -63,7 +65,8 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
         p_arg_list_vec[i] = varlisp::getFirstListPtrFromArg(env, *p_arg_list, tmp_obj_vec[i]);
         if (!p_arg_list_vec[i]) {
             SSS_POSITION_THROW(std::runtime_error,
-                              "(reduce: the other arguments must be s-list)");
+                              "(", funcName, ": the other arguments must be s-list; "
+                              " but", p_arg_list->head, ")");
         }
         p_arg_list_vec[i] = p_arg_list_vec[i]->next(); // descard "list"
         min_items_count = std::min(int(p_arg_list_vec[i]->length()), min_items_count);
@@ -94,7 +97,7 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
 
 REGIST_BUILTIN("reduce", 2, 2, eval_reduce,
                "; reduce让一个指定的函数(function)作用于列表的第一个\n"
-               "; 元素和第二个元素,然后在作用于上步得到的结果和第三个\n"
+               "; 元素和第二个元素,然后再作用于上步得到的结果和第三个\n"
                "; 元素，直到处理完列表中所有元素。\n"
 
                "(reduce func list) ->\n"
@@ -112,6 +115,7 @@ REGIST_BUILTIN("reduce", 2, 2, eval_reduce,
  */
 Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
 {
+    const char * funcName = "reduce";
     // NOTE 第一个参数是call-able；并且需要两个参数
     // 第二个参数，是不少于2个元素的s-list
     const Object& callable = args.head;
@@ -119,11 +123,11 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
     if (!p_arg_list) {
         SSS_POSITION_THROW(std::runtime_error,
-                          "(reduce: need a s-list at 2nd arguments)");
+                          "(", funcName, ": need a s-list at 2nd arguments)");
     }
     if (p_arg_list->length() < 3) {
         SSS_POSITION_THROW(std::runtime_error,
-                          "(reduce: the s-list must have at least two items)");
+                          "(", funcName, ": the s-list must have at least two items)");
     }
 
     p_arg_list = p_arg_list->next();
@@ -157,6 +161,7 @@ REGIST_BUILTIN("filter", 2, 2, eval_filter,
  */
 Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
 {
+    const char * funcName = "filter";
     // NOTE 第一个参数是只接受一个参数的call-able；
     // 第二个参数，是一个s-list，元素个数不定；
     const Object& callable = args.head;
@@ -164,7 +169,7 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
     if (!p_arg_list) {
         SSS_POSITION_THROW(std::runtime_error,
-                          "(reduce: need a s-list at 2nd arguments)");
+                          "(", funcName, ": need a s-list at 2nd arguments)");
     }
 
     p_arg_list = p_arg_list->next();
@@ -181,6 +186,33 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
         }
     }
     return ret;
+}
+
+REGIST_BUILTIN("pipe-run", 2, -1, eval_pipe_run,
+               "; pipe-run 函数嵌套调用，有时候会很繁琐；\n"
+               "; 对于前面一个调用的结果，可以用作后面一个调用的参数的情况，\n"
+               "; 可以用管道式操作来简化；\n"
+
+               "(pipe-run arguments func1 func2 ...) ->\n"
+               "\t(funcN(...(func2(func1(argument))...))");
+
+Object eval_pipe_run(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "pipe-run";
+    // NOTE 第一个参数是call-able；并且需要两个参数
+    // 第二个参数，是不少于2个元素的s-list
+    const Object& callable = args.head;
+    Object tmp;
+    Object argument = varlisp::getAtomicValue(env, detail::car(args), tmp);
+
+    const varlisp::List * p_func_list = args.next();
+
+    for (;detail::is_car_valid(p_func_list); p_func_list = p_func_list->next()) {
+        varlisp::List expr = varlisp::List::makeList({p_func_list->head, argument});
+        argument = expr.eval(env);
+    }
+
+    return argument;
 }
 
 } // namespace varlisp
