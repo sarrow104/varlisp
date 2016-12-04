@@ -32,7 +32,8 @@ struct Environment : private std::map<std::string, Object> {
     using BaseT::end;
     using BaseT::cbegin;
     using BaseT::cend;
-    using BaseT::operator[];
+    // using BaseT::operator[];
+    Object& operator [](const std::string& name);
 
     explicit Environment(Environment* parent = 0);
     ~Environment();
