@@ -194,6 +194,7 @@ Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
             case '{':
                 escaped_str += "{{";
                 break;
+
             case '}':
                 escaped_str += "}}";
                 break;
