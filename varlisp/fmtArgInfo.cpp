@@ -194,14 +194,14 @@ void print_hex(std::ostream& o, const sss::string_view& s, char type)
 
 void fmtArgInfo::print(std::ostream& o, const sss::string_view& s) const
 {
-    // TODO xX 形如 "\xAb\xCD
-    // 即，一个字节，变4个字节宽度
     char align = '<';
     if (this->align) {
         align = this->align;
     }
     size_t size = this->width;
     if (this->type == 'x' || this->type == 'X') {
+        // NOTE xX 形如 "\xAb\xCD
+        // 即，一个字节，变4个字节宽度
         size = 4 * s.size();
     }
     if (this->width > size) {
