@@ -56,7 +56,9 @@ void   Environment::print(std::ostream& o) const
 {
     o << '{';
     for (auto it = this->BaseT::begin(); it != this->BaseT::end(); ++it) {
-        o << '(' << it->first << ' ' << it->second << ')';
+        o << '(' << it->first << ' ';
+        boost::apply_visitor(print_visitor(o), it->second);
+        o << ')';
     }
     o << '}';
 }
