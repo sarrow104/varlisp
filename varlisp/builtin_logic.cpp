@@ -42,6 +42,26 @@ Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
     return Object(boost::apply_visitor(strict_equal_visitor(env), obj1_ref, obj2_ref));
 }
 
+REGIST_BUILTIN("!=", 2, 2, eval_not_eq, "(!= arg1 arg2) -> boolean");
+
+/**
+ * @brief
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_not_eq(varlisp::Environment& env, const varlisp::List& args)
+{
+    Object obj1;
+    const Object& obj1_ref = varlisp::getAtomicValue(env, detail::car(args), obj1);
+    Object obj2;
+    const Object& obj2_ref = varlisp::getAtomicValue(env, detail::cadr(args), obj2);
+
+    return !boost::apply_visitor(strict_equal_visitor(env), obj1_ref, obj2_ref);
+}
+
 REGIST_BUILTIN(">", 2, 2, eval_gt, "(> arg1 arg2) -> boolean");
 
 /**
