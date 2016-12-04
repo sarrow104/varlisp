@@ -73,15 +73,19 @@ struct List {
         return ret;
     }
 
-    static List makeSQuoteList(std::initializer_list<Object> l)
+    template<typename ...ArgsT>
+    static List makeSQuoteList(ArgsT&&... args)
     {
-        return makeList({Object{varlisp::symbol("list")}, makeList(std::move(l))});
+        return makeList({Object{varlisp::symbol("list")}, std::move(args)...});
     }
 
     static List makeSQuoteList()
     {
         return makeList({Object{varlisp::symbol("list")}});
     }
+
+    const Object * objAt(size_t i) const;
+    Object * objAt(size_t i);
 
     bool is_squote() const;
 

@@ -221,6 +221,38 @@ bool operator<(const List& lhs, const List& rhs)
     return false;
 }
 
+const Object * List::objAt(size_t i) const
+{
+    const List* p = this;
+    if (this->is_squote()) {
+        p = p->next();
+    }
+    while (i > 0 && p && p->head.which() && !p->tail.empty()) {
+        p = &p->tail[0];
+        --i;
+    }
+    if (i == 0) {
+        return &p->head;
+    }
+    return nullptr;
+}
+
+Object * List::objAt(size_t i)
+{
+    List* p = this;
+    if (this->is_squote()) {
+        p = p->next_slot();
+    }
+    while (i > 0 && p && p->head.which() && !p->tail.empty()) {
+        p = &p->tail[0];
+        --i;
+    }
+    if (i == 0) {
+        return &p->head;
+    }
+    return nullptr;
+}
+
 bool List::is_squote() const
 {
     if (this->head.which()) {
