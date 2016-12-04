@@ -10,6 +10,7 @@
 #include "object.hpp"
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -227,11 +228,11 @@ const Object * List::objAt(size_t i) const
     if (this->is_squote()) {
         p = p->next();
     }
-    while (i > 0 && p && p->head.which() && !p->tail.empty()) {
+    while (i > 0 && detail::is_car_valid(p) && !p->tail.empty()) {
         p = &p->tail[0];
         --i;
     }
-    if (i == 0) {
+    if (i == 0 && detail::is_car_valid(p)) {
         return &p->head;
     }
     return nullptr;
@@ -243,11 +244,11 @@ Object * List::objAt(size_t i)
     if (this->is_squote()) {
         p = p->next_slot();
     }
-    while (i > 0 && p && p->head.which() && !p->tail.empty()) {
+    while (i > 0 && detail::is_car_valid(p) && !p->tail.empty()) {
         p = &p->tail[0];
         --i;
     }
-    if (i == 0) {
+    if (i == 0 && detail::is_car_valid(p)) {
         return &p->head;
     }
     return nullptr;
