@@ -1,10 +1,14 @@
 #include "environment.hpp"
 
+#include <cctype>
+
 #include <sss/log.hpp>
 #include <sss/util/Memory.hpp>
 #include <sss/colorlog.hpp>
+#include <sss/algorithm.hpp>
 
 #include "eval_visitor.hpp"
+#include "detail/json_accessor.hpp"
 
 namespace varlisp {
 
@@ -59,32 +63,44 @@ void   Environment::print(std::ostream& o) const
 
 const Object* Environment::find(const std::string& name) const
 {
-    const Environment* pe = this;
-    const Object* ret = 0;
-    do {
-        auto it = pe->BaseT::find(name);
-        if (it != pe->BaseT::cend()) {
-            ret = &it->second;
-        }
-        pe = pe->m_parent;
-    } while (pe && !ret);
+    detail::json_accessor jc(name);
+    if (!jc.has_sub()) {
+        const Environment* pe = this;
+        const Object* ret = 0;
+        do {
+            auto it = pe->BaseT::find(name);
+            if (it != pe->BaseT::cend()) {
+                ret = &it->second;
+            }
+            pe = pe->m_parent;
+        } while (pe && !ret);
 
-    return ret;
+        return ret;
+    }
+    else {
+        return jc.access(*this);
+    }
 }
 
 Object* Environment::find(const std::string& name)
 {
-    Environment* pe = this;
-    Object* ret = 0;
-    do {
-        auto it = pe->BaseT::find(name);
-        if (it != pe->BaseT::end()) {
-            ret = &it->second;
-        }
-        pe = pe->m_parent;
-    } while (pe && !ret);
+    detail::json_accessor jc(name);
+    if (!jc.has_sub()) {
+        Environment* pe = this;
+        Object* ret = 0;
+        do {
+            auto it = pe->BaseT::find(name);
+            if (it != pe->BaseT::end()) {
+                ret = &it->second;
+            }
+            pe = pe->m_parent;
+        } while (pe && !ret);
 
-    return ret;
+        return ret;
+    }
+    else {
+        return jc.access(*this);
+    }
 }
 
 Interpreter* Environment::getInterpreter() const
@@ -126,6 +142,33 @@ Environment * Environment::ceiling(){
         p_curent = p_curent->m_parent;
     }
     return p_curent;
+}
+
+Object& Environment::operator [](const std::string& name)
+{
+    detail::json_accessor jc(name);
+    if (!jc.has_sub()) {
+        return this->BaseT::operator[](name);
+    }
+    else {
+        std::string env_name = jc.prefix();
+        auto it = this->BaseT::find(env_name);
+        if (it == this->BaseT::end()) {
+            it = this->BaseT::emplace_hint(it, std::move(env_name), Environment(this)); 
+            if (it == this->BaseT::end()) {
+                SSS_POSITION_THROW(std::runtime_error, "insert errror!");
+            }
+        }
+        Environment * p_inner = boost::get<Environment>(&it->second);
+        if (!p_inner) {
+            it->second = Environment(this);
+            p_inner = boost::get<Environment>(&it->second);
+            if (!p_inner) {
+                SSS_POSITION_THROW(std::runtime_error, "assignment error null");
+            }
+        }
+        return p_inner->operator[](jc.tail());
+    }
 }
 
 bool Environment::operator == (const Environment& env) const
