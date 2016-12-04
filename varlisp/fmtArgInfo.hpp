@@ -83,6 +83,9 @@ namespace varlisp {
 //   'G' 科学计数法；大写'E'；
 //   '%' 百分号形式，打印浮点数；附带'%'
 
+struct List;
+struct Environment;
+
 struct fmtArgInfo {
     fmtArgInfo() : index(-1) {}
     ~fmtArgInfo() = default;
@@ -109,7 +112,7 @@ struct fmtArgInfo {
     bool parseSign      ( Iter_t &beg, Iter_t end                  ) ;
     bool parseWidgh     ( Iter_t &beg, Iter_t end                  ) ;
     bool parsePrecision ( Iter_t &beg, Iter_t end                  ) ;
-    bool parseType      ( Iter_t& beg, Iter_t end                  ) ;
+    bool parseType      ( Iter_t &beg, Iter_t end                  ) ;
 
     // NOTE bool与const sss::string_view& s的重载是有问题的。
     // 如果用 "xxx" 这种字符串字面值，来调用的话，由于都需要类型默认转换。
@@ -120,15 +123,18 @@ struct fmtArgInfo {
     // 或者，提供c-str字面值的直接支持。
     // 为例避免上述问题，最终的解决办法是，所有重载函数，都写成模板加特化的形式
     // 。这样，才能精确匹配
-    void print(std::ostream& o, const sss::string_view& s) const;
-    void print(std::ostream& o, double lf) const;
+    void print(std::ostream& o, const sss::string_view& s ) const;
+    void print(std::ostream& o, double                  f ) const;
+    void print(std::ostream& o, bool                    b ) const;
+    void print(std::ostream& o, int32_t                 i ) const;
+    void print(std::ostream& o, const List&             l ) const;
+    void print(std::ostream& o, const Environment&      e ) const;
     // void print(std::ostream& o, float f) const;
-    void print(std::ostream& o, bool f) const;
-    void print(std::ostream& o, int32_t i) const;
     // void print(std::ostream& o, uint32_t i) const;
 
     void fillN(std::ostream& o, char fill, size_t n) const;
     void adjust(std::ostream& o, sss::string_view s, char sign, char fill, char align, size_t width) const;
+    void adjust_string(std::ostream& o, sss::string_view s, char fill, char align, size_t width) const;
 };
 
 inline std::ostream& operator << (std::ostream& o, const fmtArgInfo& f)
@@ -138,8 +144,8 @@ inline std::ostream& operator << (std::ostream& o, const fmtArgInfo& f)
     return o;
 }
 
-inline bool parseFmtInfo(const char*& current, const char* end, fmtArgInfo& info,
-                  size_t& last_id)
+inline bool parseFmtInfo(const char*& current, const char* end,
+                         fmtArgInfo& info, size_t& last_id)
 {
     return info.parse(current, end, last_id);
 }
@@ -154,4 +160,3 @@ void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
               std::vector<sss::string_view>& padding);
 
 } // namespace varlisp
-

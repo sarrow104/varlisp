@@ -8,8 +8,12 @@
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
 #include <sss/util/utf8.hpp>
+#include <sss/utlstring.hpp>
 
 #include "String.hpp"
+#include "list.hpp"
+#include "environment.hpp"
+#include "json_print_visitor.hpp"
 
 namespace varlisp {
 
@@ -96,7 +100,7 @@ bool fmtArgInfo::parsePrecision(Iter_t& beg, Iter_t end)
 };
 bool fmtArgInfo::parseType(Iter_t& beg, Iter_t end)
 {
-    return parser_t::parseSetChar(beg, end, "bcdeEfFgGnosxX%", this->type);
+    return parser_t::parseSetChar(beg, end, "bcdeEfFgGnosxX%j", this->type);
 }
 
 void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
@@ -167,34 +171,61 @@ void fmtArgInfo::fillN(std::ostream& o, char fill, size_t n) const
     }
 }
 
+namespace detail {
+void print_hex(std::ostream& o, const sss::string_view& s, char type)
+{
+    char hex_buf[4] = "\\x";
+    switch (type) {
+        case 'x':
+        case 'X':
+            for (size_t i = 0; i != s.size(); ++i) {
+                hex_buf[2] = sss::lower_hex2char(s[i] >> 4, type == 'x');
+                hex_buf[3] = sss::lower_hex2char(s[i],      type == 'x');
+                o.write(hex_buf, sizeof(hex_buf));
+            }
+            break;
+
+        default:
+            o.write(s.data(), s.size());
+            break;
+    }
+}
+} // namespace detail
+
 void fmtArgInfo::print(std::ostream& o, const sss::string_view& s) const
 {
+    // TODO xX 形如 "\xAb\xCD
+    // 即，一个字节，变4个字节宽度
     char align = '<';
     if (this->align) {
         align = this->align;
     }
-    if (this->width > s.size()) {
+    size_t size = this->width;
+    if (this->type == 'x' || this->type == 'X') {
+        size = 4 * s.size();
+    }
+    if (this->width > size) {
         switch (align) {
             case '<':
-                o.write(s.data(), s.size());
-                this->fillN(o, this->fill, this->width - s.size());
+                detail::print_hex(o, s, this->type);
+                this->fillN(o, this->fill, this->width - size);
                 break;
 
             case '=':
             case '^':
-                this->fillN(o, this->fill, (this->width - s.size()) / 2);
-                o.write(s.data(), s.size());
-                this->fillN(o, this->fill, this->width - (this->width - s.size()) / 2);
+                this->fillN(o, this->fill, (this->width - size) / 2);
+                detail::print_hex(o, s, this->type);
+                this->fillN(o, this->fill, this->width - (this->width - size) / 2);
                 break;
 
             case '>':
                 this->fillN(o, this->fill, this->width - s.size());
-                o.write(s.data(), s.size());
+                detail::print_hex(o, s, this->type);
                 break;
         }
     }
     else {
-        o.write(s.data(), s.size());
+        detail::print_hex(o, s, this->type);
     }
 }
 
@@ -204,7 +235,7 @@ void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
     COLOG_DEBUG(s, sign, fill, align, width);
     int byte_cnt = 0;
     bool add_plus = sign == '+' && s.front() != '-' && s.front() != '+';
-    int prev_padd = 0;
+    int prev_paded = 0;
     switch (align) {
         case '<':
             if (add_plus) {
@@ -220,8 +251,8 @@ void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
 
         case '=':
             if (width > add_plus ? 1 : 0 + s.size()) {
-                prev_padd = int(width - (add_plus ? 1 : 0) - s.size()) / 2;
-                this->fillN(o, fill, prev_padd);
+                prev_paded = int(width - (add_plus ? 1 : 0) - s.size()) / 2;
+                this->fillN(o, fill, prev_paded);
             }
             if (add_plus) {
                 o.put('+');
@@ -229,7 +260,7 @@ void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
             o.write(s.data(), s.size());
             if (width > add_plus ? 1 : 0 + s.size()) {
                 this->fillN(o, fill, int(width - (add_plus ? 1 : 0) - s.size() -
-                                         prev_padd));
+                                         prev_paded));
             }
             break;
 
@@ -259,6 +290,39 @@ void fmtArgInfo::adjust(std::ostream& o, sss::string_view s, char sign,
             }
             o.write(s.data(), s.size());
             break;
+    }
+}
+
+void fmtArgInfo::adjust_string(std::ostream& o, sss::string_view s, char fill, char align, size_t width) const
+{
+    if (width <= s.size()) {
+        o << s;
+    }
+    else {
+        int prev_paded = 0;
+        switch (align) {
+            case '<':
+                o.write(s.data(), s.size());
+                this->fillN(o, fill, width - s.size());
+                break;
+
+            case '=':
+                prev_paded = int(width - s.size()) / 2;
+                this->fillN(o, fill, prev_paded);
+                o.write(s.data(), s.size());
+                this->fillN(o, fill, int(width - s.size() - prev_paded));
+                break;
+
+            case '^':
+                this->fillN(o, fill, width - s.size());
+                o.write(s.data(), s.size());
+                break;
+
+            case '>':
+                this->fillN(o, fill, width - s.size());
+                o.write(s.data(), s.size());
+                break;
+        }
     }
 }
 
@@ -369,6 +433,40 @@ void fmtArgInfo::print(std::ostream& o, int32_t i) const
             std::sprintf(buf, "%d", i);
             adjust(o, buf, sign, this->fill, align, this->width);
             break;
+    }
+}
+
+void fmtArgInfo::print(std::ostream& o, const List&             l ) const
+{
+    std::ostringstream oss;
+    std::ostream * p_o = this->width ? &oss : &o;
+    if (this->type == 'j') {
+        varlisp::json_print_visitor jv(*p_o);
+        jv(l);
+    }
+    else {
+        *p_o << l;
+    }
+    if (this->width) {
+        this->adjust_string(o, oss.str(), this->fill ? this->fill : ' ',
+                            this->align ? this->align : '<', this->width);
+    }
+}
+
+void fmtArgInfo::print(std::ostream& o, const Environment&      e ) const
+{
+    std::ostringstream oss;
+    std::ostream * p_o = this->width ? &oss : &o;
+    if (this->type == 'j') {
+        varlisp::json_print_visitor jv(*p_o);
+        jv(e);
+    }
+    else {
+        *p_o << e;
+    }
+    if (this->width) {
+        this->adjust_string(o, oss.str(), this->fill ? this->fill : ' ',
+                            this->align ? this->align : '<', this->width);
     }
 }
 
