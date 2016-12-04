@@ -124,4 +124,15 @@ std::vector<gumboNode> gumboNode::find(const std::string& query) const
     return ret;
 }
 
+std::vector<gumboNode> gumboNode::children() const
+{
+    std::vector<gumboNode> ret;
+    if (this->valid()) {
+        for (size_t i = 0; i != mNode.childNum(); ++i) {
+            ret.emplace_back(mNode.childAt(i), mDocument);
+        }
+    }
+    return ret;
+}
+
 } // namespace varlisp

@@ -79,7 +79,9 @@ public:
     bool valid() const {
         return mNode.valid();
     }
+
     std::vector<gumboNode> find(const std::string& query) const;
+    std::vector<gumboNode> children() const;
 
 private:
     CNode mNode;
