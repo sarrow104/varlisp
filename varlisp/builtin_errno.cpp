@@ -6,10 +6,10 @@
 
 namespace varlisp {
 
-REGIST_BUILTIN("errno", 0, 0, eval_errno, "(errno) -> int");
+REGIST_BUILTIN("errno", 0, 0, eval_errno, "(errno) -> int64_t");
 
 /**
- * @brief (errno) -> int
+ * @brief (errno) -> int64_t
  *
  * @param[in] env
  * @param[in] args
@@ -18,7 +18,7 @@ REGIST_BUILTIN("errno", 0, 0, eval_errno, "(errno) -> int");
  */
 Object eval_errno(varlisp::Environment& env, const varlisp::List& args)
 {
-    return errno;
+    return int64_t(errno);
 }
 
 REGIST_BUILTIN("strerr", 1, 1, eval_strerr, "(strerr) -> string");
@@ -35,11 +35,11 @@ Object eval_strerr(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "strerr";
     Object obj;
-    const int* p_err =
-        getTypedValue<int>(env, args.head, obj);
+    const int64_t* p_err =
+        getTypedValue<int64_t>(env, args.head, obj);
     if (!p_err) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int errnor as 1st argument)");
+                           ": requies int64_t errnor as 1st argument)");
     }
 #if 0
     char buf[128] = "\0";

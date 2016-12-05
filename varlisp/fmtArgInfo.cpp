@@ -344,7 +344,7 @@ void fmtArgInfo::print(std::ostream& o, double f) const
     }
     switch (type) {
         case 'c': {
-            int32_t i = f;
+            int64_t i = f;
             sss::util::utf8::dumpout2utf8(&i, &i + 1,
                                           std::ostream_iterator<char>(o));
             break;
@@ -390,7 +390,7 @@ void fmtArgInfo::print(std::ostream& o, bool b) const
     this->print(o, b ? sss::string_view("true") : sss::string_view("false"));
 }
 
-void fmtArgInfo::print(std::ostream& o, int32_t i) const
+void fmtArgInfo::print(std::ostream& o, int64_t i) const
 {
     char buf[32] = "";
     char c_fmt[32] = "";
@@ -430,7 +430,7 @@ void fmtArgInfo::print(std::ostream& o, int32_t i) const
             break;
 
         default:
-            std::sprintf(buf, "%d", i);
+            std::sprintf(buf, "%ld", i);
             adjust(o, buf, sign, this->fill, align, this->width);
             break;
     }

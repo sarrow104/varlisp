@@ -76,7 +76,7 @@ REGIST_BUILTIN("car-nth", 2, 2, eval_car_nth,
 Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const int * p_nth = varlisp::getTypedValue<int>(env, detail::car(args), obj1);
+    const int64_t * p_nth = varlisp::getTypedValue<int64_t>(env, detail::car(args), obj1);
     if (!p_nth) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(car-nth: 1st argument must be an Integar)");
@@ -115,7 +115,7 @@ REGIST_BUILTIN("cdr-nth", 2, 2, eval_cdr_nth,
 Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const int * p_nth = varlisp::getTypedValue<int>(env, detail::car(args), obj1);
+    const int64_t * p_nth = varlisp::getTypedValue<int64_t>(env, detail::car(args), obj1);
     if (!p_nth) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(car-nth: 1st argument must be an Integar)");
@@ -183,7 +183,7 @@ Object eval_length(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need s-List as the 1st argument)");
     }
-    return int(p_list->length() - 1);
+    return int64_t(p_list->length() - 1);
 }
 
 REGIST_BUILTIN("empty?", 1, 1, eval_empty_q,

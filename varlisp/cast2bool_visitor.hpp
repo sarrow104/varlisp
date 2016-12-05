@@ -24,14 +24,14 @@ struct cast2bool_visitor : public boost::static_visitor<bool> {
         return false;
     }
 
-    bool operator()(double d) const { return bool(d); }
-    bool operator()(int d) const { return bool(d); }
-    bool operator()(bool b) const { return b; }
-    bool operator()(const string_t& s) const;
+    bool operator()(double d                 ) const { return bool(d); }
+    bool operator()(int64_t d                ) const { return bool(d); }
+    bool operator()(bool b                   ) const { return b;       }
+    bool operator()(const string_t& s        ) const ;
 
-    bool operator()(const varlisp::symbol& s) const;
+    bool operator()(const varlisp::symbol& s ) const ;
 
-    bool operator()(const List&) const
+    bool operator()(const List&              ) const
     {
         return false;
     }

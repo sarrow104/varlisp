@@ -136,20 +136,20 @@ Object eval_format(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "format";
     Object objFd;
     const Object& fdRef = varlisp::getAtomicValue(env, args.head, objFd);
-    int fd = -1;
+    int64_t fd = -1;
     if (nullptr != boost::get<varlisp::Nill>(&fdRef)) {
         fd = 0;
     }
-    else if (const int* p_fd = boost::get<int>(&fdRef)) {
+    else if (const int64_t* p_fd = boost::get<int64_t>(&fdRef)) {
         if (*p_fd <= 0) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": requies positive int as 1st argument)");
+                               ": requies positive int64_t as 1st argument)");
         }
         fd = *p_fd;
     }
     else {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd or nil as 1st argument)");
+                           ": requies int64_t fd or nil as 1st argument)");
     }
 
     std::ostringstream oss;

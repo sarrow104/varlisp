@@ -36,7 +36,7 @@ inline const Object& getAtomicValue(varlisp::Environment& env,
     return tmp;
 }
 
-inline int typedid(varlisp::Environment&, const varlisp::Object& obj)
+inline int64_t typedid(varlisp::Environment&, const varlisp::Object& obj)
 {
     switch(obj.which()) {
         case 0:

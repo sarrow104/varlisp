@@ -255,7 +255,7 @@ Object Parser::parseExpression()
         this->m_toknizer.consume();
         return varlisp::Object(*p_v);
     }
-    else if (const int* p_v = boost::get<int>(&tok)) {
+    else if (const int64_t* p_v = boost::get<int64_t>(&tok)) {
         this->m_toknizer.consume();
         return varlisp::Object(*p_v);
     }
@@ -411,7 +411,7 @@ Object Parser::parseList()
                 break;
 
             case 3:
-                *inserter++ = boost::get<int>(tok);
+                *inserter++ = boost::get<int64_t>(tok);
                 m_toknizer.consume();
                 break;
 

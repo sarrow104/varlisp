@@ -49,14 +49,14 @@ void Tokenizer::init(const std::string& data)
         ((+digit_p >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator it_beg, StrIterator it_end,
              ss1x::parser::rule::matched_value_t) {
-            tok = int(ss1x::parser::util::parseUint32_t(it_beg, it_end));
+            tok = int64_t(ss1x::parser::util::parseUint64_t(it_beg, it_end));
         })]).name("Decimal_p");
 
     this->Hex_p =
         (((char_p('0') >> char_set_p("xX") > +xdigit_p) >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator it_beg, StrIterator it_end,
              ss1x::parser::rule::matched_value_t) {
-            int h = 0;
+            int64_t h = 0;
             for (StrIterator it = std::next(it_beg, 2); it != it_end; ++it) {
                 h <<= 4;
                 h += sss::util::Parser<StrIterator>::hexchar2number(*it);

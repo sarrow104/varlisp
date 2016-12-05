@@ -126,7 +126,7 @@ struct fmtArgInfo {
     void print(std::ostream& o, const sss::string_view& s ) const;
     void print(std::ostream& o, double                  f ) const;
     void print(std::ostream& o, bool                    b ) const;
-    void print(std::ostream& o, int32_t                 i ) const;
+    void print(std::ostream& o, int64_t                 i ) const;
     void print(std::ostream& o, const List&             l ) const;
     void print(std::ostream& o, const Environment&      e ) const;
     // void print(std::ostream& o, float f) const;

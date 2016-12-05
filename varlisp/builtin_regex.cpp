@@ -92,10 +92,10 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
                           "(", funcName, ": need one string to search)");
     }
 
-    int offset = 0;
+    int64_t offset = 0;
     if (args.length() == 3) {
         Object obj;
-        if (const int *p_offset = getTypedValue<int>(env, detail::caddr(args), obj)) {
+        if (const int64_t *p_offset = getTypedValue<int64_t>(env, detail::caddr(args), obj)) {
             offset = *p_offset;
         }
     }
@@ -104,7 +104,7 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
         offset = 0;
     }
 
-    if (offset > int(p_target->length())) {
+    if (offset > int64_t(p_target->length())) {
         offset = p_target->length();
     }
 

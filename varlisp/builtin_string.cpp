@@ -167,18 +167,18 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
         boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
     if (!offset_number.which()) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need int as 2nd argument)");
+                          ": need int64_t as 2nd argument)");
     }
-    int offset_int = arithmetic2int(offset_number);
+    int64_t offset_int = arithmetic2int(offset_number);
 
     if (offset_int < 0) {
         offset_int = 0;
     }
-    if (offset_int > int(p_content->length())) {
+    if (offset_int > int64_t(p_content->length())) {
         offset_int = p_content->length();
     }
 
-    int length = -1;
+    int64_t length = -1;
     if (args.length() == 3) {
         p_arg = p_arg->next();
         Object length_obj;
@@ -188,7 +188,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
             arithmetic_cast_visitor(env), (length_obj_ref));
         if (!arithmetic_length.which()) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                              ": need int as 3rd argument)");
+                              ": need int64_t as 3rd argument)");
         }
         length = arithmetic2int(arithmetic_length);
     }
@@ -223,11 +223,11 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need an string as the 1st argument)");
     }
-    return int(p_str->length());
+    return int64_t(p_str->length());
 }
 
 REGIST_BUILTIN("split-char", 1, 1, eval_split_char,
-               "(split-char \"target-string\") -> '(int-char1 int-char2 ...)");
+               "(split-char \"target-string\") -> '(int64_t-char1 int64_t-char2 ...)");
 
 // NOTE TODO 或许需要这样一个函数，给一个type列表，然后返回转换的结果；
 // 可以转换的，这个列表对应的指针，就是非0；
@@ -238,7 +238,7 @@ REGIST_BUILTIN("split-char", 1, 1, eval_split_char,
 /**
  * @brief
  *    (split-char "target-string")
- *      -> '(int-char1 int-char2 ...)
+ *      -> '(int64_t-char1 int64_t-char2 ...)
  *
  * @param[in] env
  * @param[in] args
@@ -258,12 +258,12 @@ Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
     varlisp::List ret = varlisp::List::makeSQuoteList();
     sss::util::utf8::dumpout2ucs(
         p_str->begin(), p_str->end(),
-        detail::list_back_inserter<int>(ret));
+        detail::list_back_inserter<int64_t>(ret));
     return ret;
 }
 
 REGIST_BUILTIN("join-char",       1,  1,  eval_join_char,
-               "(join-char '(int-char1 int-char2 ...)) -> \"string\"");
+               "(join-char '(int64_t-char1 int64_t-char2 ...)) -> \"string\"");
 
 /**
  * @brief
@@ -286,14 +286,14 @@ Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
     }
     p_list = p_list->next();
     std::string ret;
-    sss::util::utf8::dumpout2utf8(detail::list_const_iterator_t<int>(p_list),
-                                  detail::list_const_iterator_t<int>(nullptr),
+    sss::util::utf8::dumpout2utf8(detail::list_const_iterator_t<int64_t>(p_list),
+                                  detail::list_const_iterator_t<int64_t>(nullptr),
                                   std::back_inserter(ret));
     return varlisp::string_t{std::move(ret)};
 }
 
 REGIST_BUILTIN("split-byte",       1,  1,  eval_split_byte,
-               "(split-byte \"target-string\") -> '(int-byte1 int-byte2 ...)");
+               "(split-byte \"target-string\") -> '(int64_t-byte1 int64_t-byte2 ...)");
 
 Object eval_split_byte(varlisp::Environment &env, const varlisp::List &args)
 {
@@ -308,15 +308,15 @@ Object eval_split_byte(varlisp::Environment &env, const varlisp::List &args)
     varlisp::List ret = varlisp::List::makeSQuoteList();
 
     // NOTE  谨防 0x80 0xFF 字符可能引起问题
-    auto back_it = detail::list_back_inserter<int>(ret);
+    auto back_it = detail::list_back_inserter<int64_t>(ret);
     for (auto it = p_str->begin(); it != p_str->end(); ++it) {
-        *back_it++ = int(uint8_t(*it));
+        *back_it++ = int64_t(uint8_t(*it));
     }
     return ret;
 }
 
 REGIST_BUILTIN("join-byte",       1,  1,  eval_join_byte,
-               "(join-byte '(int-byte1 int-byte2 ...)) -> \"string\"");
+               "(join-byte '(int64_t-byte1 int64_t-byte2 ...)) -> \"string\"");
 
 Object eval_join_byte(varlisp::Environment &env, const varlisp::List &args)
 {
@@ -330,7 +330,7 @@ Object eval_join_byte(varlisp::Environment &env, const varlisp::List &args)
     p_list = p_list->next();
     std::string ret;
     // FIXME 谨防 0x80 0xFF 字符可能引起问题
-    for (auto it = detail::list_const_iterator_t<int>(p_list); it; ++it) {
+    for (auto it = detail::list_const_iterator_t<int64_t>(p_list); it; ++it) {
         ret.push_back(char(*it & 0xFF));
     }
     return varlisp::string_t{std::move(ret)};

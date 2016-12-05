@@ -15,7 +15,15 @@ struct JParser
 {
     JParser(sss::string_view s, Object& ret)
     {
-        parse(s, ret);
+        sss::string_view s_bak = s;
+        try {
+            parse(s, ret);
+        }
+        catch (...)
+        {
+            COLOG_ERROR(sss::string_view(s_bak.begin(), s.begin() - s_bak.begin()));
+            throw;
+        }
     }
     bool parse(sss::string_view& s, Object& ret)
     {
@@ -105,12 +113,14 @@ struct JParser
             }
             std::string key;
             this->skip_white_space(s);
-            parse_string(s, key);
+            this->parse_string(s, key);
             this->skip_white_space(s);
             this->consume_or_throw(s, ':', "expect ':'");
             Object val;
+            this->skip_white_space(s);
             this->parse_value(s, val);
             env[key] = std::move(val);
+            this->skip_white_space(s);
         }
         this->consume_or_throw(s, '}', "expect '}'");
         ret = std::move(env);
@@ -134,6 +144,7 @@ struct JParser
             COLOG_DEBUG(s.front());
             this->parse_value(s, val);
             *back_it++ = val;
+            this->skip_white_space(s);
         }
         this->consume_or_throw(s, ']', "expect ']'");
         ret = std::move(list);
@@ -296,7 +307,7 @@ struct JParser
             ret = sss::string_cast<double>(std::string(s_saved.begin(), s.begin()));
         }
         else {
-            ret = sss::string_cast<int>(std::string(s_saved.begin(), s.begin()));
+            ret = sss::string_cast<int64_t>(std::string(s_saved.begin(), s.begin()));
         }
     }
 
@@ -337,7 +348,12 @@ struct JParser
     void consume_or_throw(sss::string_view& s, const T& v, sss::string_view msg)
     {
         if (!this->consume(s, v)) {
-            SSS_POSITION_THROW(std::runtime_error, msg.to_string());
+            if (s.empty()) {
+                SSS_POSITION_THROW(std::runtime_error, "enconter: eof; ", msg.to_string());
+            }
+            else {
+                SSS_POSITION_THROW(std::runtime_error, "enconter: ", sss::raw_char(s.front()), msg.to_string());
+            }
         }
     }
 };

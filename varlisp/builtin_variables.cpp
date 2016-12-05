@@ -85,14 +85,14 @@ Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
-               "(var-list) -> int\n"
-               "(var-list env-name) -> int ; TODO");
+               "(var-list) -> int64_t\n"
+               "(var-list env-name) -> int64_t ; TODO");
 
 /**
  * @brief
- *      (var-list) -> int
+ *      (var-list) -> int64_t
  *      枚举所有变量；并返回对象计数
- *      (var-list env-name) -> int # TODO
+ *      (var-list env-name) -> int64_t # TODO
  *      枚举提供的环境名所拥有的变量；并返回对象计数
  *
  * @param[in] env
@@ -103,7 +103,7 @@ REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
 Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ifdef";
-    int var_count = 0;
+    int64_t var_count = 0;
     if (args.length()) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": list-environment not implement)");

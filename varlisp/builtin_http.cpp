@@ -52,7 +52,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     Object proxy;
     const string_t* p_proxy = 0;
     Object port;
-    const int* p_port = 0;
+    const int64_t* p_port = 0;
 
     if (args.length() == 3) {
         p_proxy = getTypedValue<string_t>(env, detail::cadr(args), proxy);
@@ -60,7 +60,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": 2nd parameter must be proxy domain string!)");
         }
-        p_port = getTypedValue<int>(env, detail::caddr(args), port);
+        p_port = getTypedValue<int64_t>(env, detail::caddr(args), port);
         if (!p_port) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": 3rd parameter must be proxy port number!)");
@@ -135,7 +135,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     // COLOG_INFO(headers.status_code, headers.http_version);
     Environment ret;
-    ret["status_code"] = int(headers.status_code);
+    ret["status_code"] = int64_t(headers.status_code);
     if (!headers.http_version.empty()) {
         ret["http_version"] = string_t(std::move(headers.http_version));
     }
@@ -143,7 +143,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     for (const auto& it : headers) {
         // COLOG_INFO(it.first, ": ", sss::raw_string(it.second));
         if (sss::is_all(it.second, static_cast<int (*)(int)>(std::isdigit))) {
-            ret[it.first] = sss::string_cast<int>(it.second);
+            ret[it.first] = sss::string_cast<int64_t>(it.second);
         }
         else {
             ret[it.first] = string_t(std::move(it.second));

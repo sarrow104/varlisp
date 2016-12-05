@@ -55,7 +55,7 @@ Object eval_number_q(varlisp::Environment &env, const varlisp::List &args)
     Object obj;
     const Object& obj_ref = getAtomicValue(env, args.head, obj);
     return between_cc_range<int>(varlisp::typedid(env, obj_ref),
-                                 varlisp::typedid(env, varlisp::Object{1}),
+                                 varlisp::typedid(env, varlisp::Object{int64_t(1)}),
                                  varlisp::typedid(env, varlisp::Object{1.0}));
 }
 

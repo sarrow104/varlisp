@@ -108,7 +108,7 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
         p_loop_ctrl = p_loop_ctrl->next();
         Object tmpStart;
         Object tmpEnd;
-        Object tmpStep{1};
+        Object tmpStep{int64_t(1)};
         return eval_loop_step(
             env, *p_sym,
             varlisp::getAtomicValue(env, detail::car(*p_loop_ctrl), tmpStart),
@@ -249,7 +249,7 @@ Object eval_loop_step(varlisp::Environment& env,
 {
     // varlisp::List condition;
     // varlisp::List next;
-    Object zero{0};
+    Object zero{int64_t(0)};
     bool use_less = boost::apply_visitor(strict_less_visitor(env), zero, step);
 
     varlisp::Environment inner(&env);

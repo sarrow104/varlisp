@@ -2,6 +2,7 @@
 #define __OBJECT_HPP_1457602801__
 
 #include <iosfwd>
+#include <cstddef>
 
 #include <boost/variant.hpp>
 #include <boost/variant/recursive_wrapper.hpp>
@@ -51,7 +52,7 @@ typedef boost::variant<
     Empty,                                  // 0
     Nill,                                   // 1
     bool,                                   // 2
-    int,                                    // 3
+    int64_t,                                // 3
     double,                                 // 4
     string_t,                               // 5
     sss::regex::CRegex,                     // 6

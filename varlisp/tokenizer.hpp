@@ -36,7 +36,7 @@ enum parenthese_t {
 typedef boost::variant<empty,   // 0
         parenthese_t,           // 1 括号
         bool,                   // 2 #t,#f 字符量
-        int,                    // 3 integer 字符量
+        int64_t,                // 3 integer 字符量
         double,                 // 4
         std::string,            // 5 保存去掉括号后的字符串
         symbol,                 // 6 符号(包括关键字、运算符)
@@ -62,7 +62,7 @@ public:
     {
         m_o << (b ? "true" : "false");
     }
-    void operator()(int i) const
+    void operator()(int64_t i) const
     {
         m_o << i ;
     }

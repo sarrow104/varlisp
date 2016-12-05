@@ -44,13 +44,13 @@ struct cast_visitor : public boost::static_visitor<Object>
             return Nill{};
         }
     }
-    Object operator() (const int&, const double& f) const {
-        if (std::abs(f) > std::numeric_limits<int>::max()) {
+    Object operator() (const int64_t&, const double& f) const {
+        if (std::abs(f) > std::numeric_limits<int64_t>::max()) {
             return Nill{};
         }
-        return int(f);
+        return int64_t(f);
     }
-    Object operator() (const double&, const int& f) const {
+    Object operator() (const double&, const int64_t& f) const {
         return double(f);
     }
     template<typename T>
@@ -59,10 +59,10 @@ struct cast_visitor : public boost::static_visitor<Object>
         boost::apply_visitor(print_visitor(oss), m_value);
         return string_t{std::move(oss.str())};
     }
-    Object operator() (const int&, const string_t& s) const {
+    Object operator() (const int64_t&, const string_t& s) const {
         sss::string_view sv = s.to_string_view();
         try {
-            return sss::string_cast<int>(sv.to_string());
+            return sss::string_cast<int64_t>(sv.to_string());
         }
         catch(...) {
             return Nill{};

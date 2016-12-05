@@ -117,8 +117,8 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     std::ofstream::pos_type write_cnt = ofs.tellp() - pos;
 
     COLOG_INFO("(", funcName, ":", sss::raw_string(*p_path), " by ",
-               int(write_cnt), "bytes complete)");
-    return Object(int(write_cnt));
+               int64_t(write_cnt), "bytes complete)");
+    return Object(int64_t(write_cnt));
 }
 
 REGIST_BUILTIN("write", 2, 2, eval_write,
@@ -162,13 +162,13 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
                           ": requies string path as 1nd argument)");
     }
     std::string std_path = p_path->to_string_view().to_string();
-    int flag = O_RDONLY;
+    int64_t flag = O_RDONLY;
     if (args.length() >= 2) {
-        const int* p_flag =
-            getTypedValue<int>(env, detail::cadr(args), obj);
+        const int64_t* p_flag =
+            getTypedValue<int64_t>(env, detail::cadr(args), obj);
         if (!p_flag) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": requies int flag as 2nd argument)");
+                               ": requies int64_t flag as 2nd argument)");
         }
         flag = *p_flag;
     }
@@ -178,7 +178,7 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
     // 00400 user has read permission
     // 00200 user has write permission
 
-    int fd = ::open(std_path.c_str(), flag, S_IRUSR | S_IWUSR);
+    int64_t fd = ::open(std_path.c_str(), flag, S_IRUSR | S_IWUSR);
     COLOG_DEBUG(SSS_VALUE_MSG(fd));
     return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
 }
@@ -199,13 +199,13 @@ Object eval_getfdflag(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "getfdflag";
     Object obj;
-    const int* p_fd =
-        getTypedValue<int>(env, detail::car(args), obj);
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+                           ": requies int64_t fd as 1st argument)");
     }
-    int flag = ::fcntl(*p_fd, F_GETFL);
+    int64_t flag = ::fcntl(*p_fd, F_GETFL);
     return flag == -1 ? Object{varlisp::Nill{}} : Object{flag};
 }
 
@@ -225,21 +225,21 @@ Object eval_setfdflag(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "setfdflag";
     Object obj;
-    const int* p_fd =
-        getTypedValue<int>(env, detail::car(args), obj);
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+                           ": requies int64_t fd as 1st argument)");
     }
-    int fd = *p_fd;
-    const int* p_flag =
-        getTypedValue<int>(env, detail::cadr(args), obj);
+    int64_t fd = *p_fd;
+    const int64_t* p_flag =
+        getTypedValue<int64_t>(env, detail::cadr(args), obj);
     if (!p_flag) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int flag as 2nd argument)");
+                           ": requies int64_t flag as 2nd argument)");
     }
-    int ec = ::fcntl(fd, F_SETFL, *p_flag);
-    return ec == -1 ? errno : 0;
+    int64_t ec = ::fcntl(fd, F_SETFL, *p_flag);
+    return ec == -1 ? int64_t(errno) : int64_t(0);
 }
 
 REGIST_BUILTIN("close", 1, 1, eval_close, "(close file_descriptor) -> errno");
@@ -256,18 +256,18 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "close";
     Object obj;
-    const int* p_fd =
-        getTypedValue<int>(env, detail::car(args), obj);
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+                           ": requies int64_t fd as 1st argument)");
     }
     COLOG_DEBUG(SSS_VALUE_MSG(*p_fd));
     
     // errno；
     // 由于我这个是脚本，不是真正编译程序；也就是说，从产生错误号，到获取
     // 错误号，间隔了多少系统调用？错误号是否被覆盖。
-    return ::close(*p_fd) == -1 ? errno : 0;
+    return ::close(*p_fd) == -1 ? int64_t(errno) : int64_t(0);
 }
 
 REGIST_BUILTIN("read-line", 1, 1, eval_read_line,
@@ -285,11 +285,11 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "read-line";
     Object obj;
-    const int* p_fd =
-        getTypedValue<int>(env, detail::car(args), obj);
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+                           ": requies int64_t fd as 1st argument)");
     }
     std::string line = detail::readline(*p_fd);
     if (line.empty() && errno) {
@@ -299,10 +299,10 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
-               "(read-char file_descriptor) -> int | nill");
+               "(read-char file_descriptor) -> int64_t | nill");
 
 /**
- * @brief (read-char file_descriptor) -> int | nill
+ * @brief (read-char file_descriptor) -> int64_t | nill
  *
  * @param[in] env
  * @param[in] args
@@ -313,13 +313,13 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "read-char";
     Object obj;
-    const int* p_fd =
-        getTypedValue<int>(env, detail::car(args), obj);
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+                           ": requies int64_t fd as 1st argument)");
     }
-    int ch = detail::readchar(*p_fd);
+    int64_t ch = detail::readchar(*p_fd);
     if (ch == -1 || errno) {
         return varlisp::Nill{};
     }
@@ -328,10 +328,10 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("write-char", 2, 2, eval_write_char,
-               "(write-char file_descriptor int) -> int | nill");
+               "(write-char file_descriptor int64_t) -> int64_t | nill");
 
 /**
- * @brief (write-char file_descriptor int) -> int | nill
+ * @brief (write-char file_descriptor int64_t) -> int64_t | nill
  *
  * @param[in] env
  * @param[in] args
@@ -342,29 +342,29 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "write-char";
     Object obj;
-    const int* p_fd =
-        getTypedValue<int>(env, detail::car(args), obj);
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+                           ": requies int64_t fd as 1st argument)");
     }
     Object chObj;
-    const int* p_ch =
-        getTypedValue<int>(env, detail::cadr(args), chObj);
+    const int64_t* p_ch =
+        getTypedValue<int64_t>(env, detail::cadr(args), chObj);
     if (!p_ch) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 2nd argument)");
+                           ": requies int64_t fd as 2nd argument)");
     }
 
-    int ec = detail::writechar(*p_fd, *p_ch);
+    int64_t ec = detail::writechar(*p_fd, *p_ch);
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
 
 REGIST_BUILTIN("write-string", 2, 2, eval_write_string,
-               "(write-string file_descriptor string) -> int | nill");
+               "(write-string file_descriptor string) -> int64_t | nill");
 
 /**
- * @brief (write-string file_descriptor int) -> int | nill
+ * @brief (write-string file_descriptor int64_t) -> int64_t | nill
  *
  * @param[in] env
  * @param[in] args
@@ -375,20 +375,20 @@ Object eval_write_string(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "write-char";
     Object obj;
-    const int* p_fd =
-        getTypedValue<int>(env, detail::car(args), obj);
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_fd) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int fd as 1st argument)");
+                           ": requies int64_t fd as 1st argument)");
     }
-    int fd = *p_fd;
+    int64_t fd = *p_fd;
     const varlisp::string_t* p_str =
         getTypedValue<varlisp::string_t>(env, detail::cadr(args), obj);
     if (!p_str) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies string as 2nd argument)");
     }
-    int ec = detail::writestring(fd, p_str->to_string_view());
+    int64_t ec = detail::writestring(fd, p_str->to_string_view());
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
 

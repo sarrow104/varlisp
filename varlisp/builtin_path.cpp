@@ -165,7 +165,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     int depth = 0;
     if (args.length() > 2) {
         Object arg;
-        const int *p_depth = getTypedValue<int>(env, detail::caddr(args), arg);
+        const int64_t *p_depth = getTypedValue<int64_t>(env, detail::caddr(args), arg);
         if (!p_depth) {
             SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": third arg must be an integar)");

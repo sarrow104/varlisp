@@ -17,18 +17,18 @@ struct eval_visitor : public boost::static_visitor<Object> {
         return v.eval(m_env);
     }
 
-    Object operator()(const varlisp::symbol& s) const;
+    Object operator()(const varlisp::symbol& s    ) const ;
 
-    Object operator()(const sss::regex::CRegex& v) const { return v; }
-    Object operator()(const gumboNode& g) const { return g; }
-    Object operator()(const Empty&) const { return Object(); }
-    Object operator()(const Nill& n) const { return n; }
-    Object operator()(bool v) const { return v; }
-    Object operator()(int v) const { return v; }
-    Object operator()(double v) const { return v; }
-    Object operator()(const string_t& v) const { return v; }
-    Object operator()(const varlisp::Builtin& v) const { return v; }
-    Object operator()(const varlisp::Lambda& v) const { return v; }
+    Object operator()(const sss::regex::CRegex& v ) const { return v; }
+    Object operator()(const gumboNode& g          ) const { return g; }
+    Object operator()(const Empty&                ) const { return Object(); }
+    Object operator()(const Nill& n               ) const { return n; }
+    Object operator()(bool v                      ) const { return v; }
+    Object operator()(int64_t v                   ) const { return v; }
+    Object operator()(double v                    ) const { return v; }
+    Object operator()(const string_t& v           ) const { return v; }
+    Object operator()(const varlisp::Builtin& v   ) const { return v; }
+    Object operator()(const varlisp::Lambda& v    ) const { return v; }
 };
 }  // namespace varlisp
 
