@@ -4,6 +4,7 @@
 
 #include <sss/algorithm.hpp>
 #include <sss/spliter.hpp>
+#include <sss/colorlog.hpp>
 
 #include "../environment.hpp"
 #include "../list.hpp"
@@ -73,36 +74,6 @@ const Object * json_accessor::access(const Environment& env)
     }
 }
 
-const Object * json_accessor::find_name(const Object* obj, size_t id)
-{
-    const Environment * p_env = boost::get<varlisp::Environment>(obj);
-    const Object * p_ret = p_env->find(m_stems[id]);
-    if (!p_ret || id + 1 == m_stems.size()) {
-        return p_ret;
-    }
-    if (sss::is_all(m_stems[id + 1], static_cast<int(*)(int)>(std::isdigit))) {
-        return this->find_index(p_ret, id + 1);
-    }
-    else {
-        return find_name(p_ret, id + 1);
-    }
-}
-
-const Object * json_accessor::find_index(const Object * obj, size_t id)
-{
-    const List * p_list = boost::get<varlisp::List>(obj);
-    const Object * p_ret = p_list->objAt(sss::string_cast<int>(m_stems[id]));
-    if (!p_ret || id + 1 == m_stems.size()) {
-        return p_ret;
-    }
-    if (sss::is_all(m_stems[id + 1], static_cast<int(*)(int)>(std::isdigit))) {
-        return this->find_index(p_ret, id + 1);
-    }
-    else {
-        return find_name(p_ret, id + 1);
-    }
-}
-
 Object * json_accessor::access(Environment& env)
 {
     sss::Spliter sp(this->tail(), ':');
@@ -146,6 +117,21 @@ Object * json_accessor::access(Environment& env)
     }
 }
 
+const Object * json_accessor::find_name(const Object* obj, size_t id)
+{
+    const Environment * p_env = boost::get<varlisp::Environment>(obj);
+    const Object * p_ret = p_env->find(m_stems[id]);
+    if (!p_ret || id + 1 == m_stems.size()) {
+        return p_ret;
+    }
+    if (sss::is_all(m_stems[id + 1], static_cast<int(*)(int)>(std::isdigit))) {
+        return this->find_index(p_ret, id + 1);
+    }
+    else {
+        return find_name(p_ret, id + 1);
+    }
+}
+
 Object * json_accessor::find_name(Object* obj, size_t id)
 {
     Environment * p_env = boost::get<varlisp::Environment>(obj);
@@ -161,10 +147,16 @@ Object * json_accessor::find_name(Object* obj, size_t id)
     }
 }
 
-Object * json_accessor::find_index(Object * obj, size_t id)
+const Object * json_accessor::find_index(const Object * obj, size_t id)
 {
-    List * p_list = boost::get<varlisp::List>(obj);
-    Object * p_ret = p_list->objAt(sss::string_cast<int>(m_stems[id]));
+    const List * p_list = boost::get<varlisp::List>(obj);
+    int index = sss::string_cast<int>(m_stems[id]);
+    if (!p_list) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "require index ", index, ", not from a list;");
+    }
+ 
+    const Object * p_ret = p_list->objAt(index);
     if (!p_ret || id + 1 == m_stems.size()) {
         return p_ret;
     }
@@ -176,6 +168,25 @@ Object * json_accessor::find_index(Object * obj, size_t id)
     }
 }
 
+Object * json_accessor::find_index(Object * obj, size_t id)
+{
+    List * p_list = boost::get<varlisp::List>(obj);
+    int index = sss::string_cast<int>(m_stems[id]);
+    if (!p_list) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "require index ", index, ", not from a list;");
+    }
+    Object * p_ret = p_list->objAt(index);
+    if (!p_ret || id + 1 == m_stems.size()) {
+        return p_ret;
+    }
+    if (sss::is_all(m_stems[id + 1], static_cast<int(*)(int)>(std::isdigit))) {
+        return this->find_index(p_ret, id + 1);
+    }
+    else {
+        return find_name(p_ret, id + 1);
+    }
+}
 
 } // namespace detail
 } // namespace varlisp
