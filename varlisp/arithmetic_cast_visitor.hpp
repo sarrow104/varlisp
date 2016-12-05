@@ -21,7 +21,7 @@ struct arithmetic_cast_visitor : public boost::static_visitor<varlisp::arithmeti
     }
 
     varlisp::arithmetic_t operator()(double d) const { return d; }
-    varlisp::arithmetic_t operator()(int d) const { return d; }
+    varlisp::arithmetic_t operator()(int64_t d) const { return d; }
     varlisp::arithmetic_t operator()(bool b) const { return b ? 1.0 : 0.0; }
     varlisp::arithmetic_t operator()(const std::string& s) const;
 

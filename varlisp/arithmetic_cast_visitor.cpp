@@ -13,15 +13,15 @@ namespace varlisp {
 varlisp::arithmetic_t arithmetic_cast_visitor::operator()(
     const std::string& s) const
 {
-    int iv = 0;
+    int64_t iv = 0;
     double dv = 0;
     int offset = -1;
-    if (std::sscanf(s.c_str(), "%d%n", &iv, &offset) == 1 &&
-        offset == int(s.length())) {
+    if (std::sscanf(s.c_str(), "%ld%n", &iv, &offset) == 1 &&
+        offset == int64_t(s.length())) {
         return iv;
     }
     else if (std::sscanf(s.c_str(), "%lf%n", &dv, &offset) == 1 &&
-             offset == int(s.length())) {
+             offset == int64_t(s.length())) {
         return dv;
     }
     else {
@@ -29,6 +29,7 @@ varlisp::arithmetic_t arithmetic_cast_visitor::operator()(
                           sss::raw_string(s), " to arithmetic_t");
     }
 }
+
 varlisp::arithmetic_t arithmetic_cast_visitor::operator()(const varlisp::symbol& s) const
 {
     Object* p_obj = m_env.find(s.m_data);
