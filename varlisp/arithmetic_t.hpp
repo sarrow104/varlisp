@@ -11,7 +11,7 @@ namespace varlisp {
 
 struct Empty;
 
-typedef boost::variant<Empty, int, double> arithmetic_t;
+typedef boost::variant<Empty, int64_t, double> arithmetic_t;
 
 inline Object arithmetic2object(const arithmetic_t& a)
 {
@@ -20,7 +20,7 @@ inline Object arithmetic2object(const arithmetic_t& a)
             return Object{};
 
         case 1:
-            return boost::get<int>(a);
+            return boost::get<int64_t>(a);
 
         case 2:
             return boost::get<double>(a);
@@ -35,14 +35,14 @@ inline double arithmetic2double(const arithmetic_t& a)
                               "(not a valid number)");
 
         case 1:
-            return boost::get<int>(a);
+            return boost::get<int64_t>(a);
 
         case 2:
             return boost::get<double>(a);
     }
 }
 
-inline int arithmetic2int(const arithmetic_t& a)
+inline int64_t arithmetic2int(const arithmetic_t& a)
 {
     switch (a.which()) {
         case 0:
@@ -50,14 +50,15 @@ inline int arithmetic2int(const arithmetic_t& a)
                               "(not a valid number)");
 
         case 1:
-            return boost::get<int>(a);
+            return boost::get<int64_t>(a);
 
         case 2:
             {
                 double ret = boost::get<double>(a);
-                if (ret != int(ret)) {
+                if (ret != int64_t(ret)) {
                     SSS_POSITION_THROW(std::runtime_error,
-                                      "(unsafe convert from", ret, "to", int(ret), ")");
+                                       "(unsafe convert from", ret, "to",
+                                       int64_t(ret), ")");
                 }
 
                 return ret;
