@@ -22,12 +22,12 @@ struct print_visitor : public boost::static_visitor<void> {
         m_o << v;
     }
 
-    void operator()(const Empty&) const {}
-    void operator()(const Nill&) const { m_o << "nil"; }
-    void operator()(bool v) const { m_o << (v ? "#t" : "#f"); }
-    void operator()(const string_t& v) const;
-    void operator()(const varlisp::symbol& s) const;
-    void operator()(const sss::regex::CRegex& reg) const
+    void operator()(const Empty&                  ) const {}
+    void operator()(const Nill&                   ) const { m_o << "nil";             }
+    void operator()(bool v                        ) const { m_o << (v ? "#t" : "#f"); }
+    void operator()(const string_t& v             ) const ;
+    void operator()(const varlisp::symbol& s      ) const ;
+    void operator()(const sss::regex::CRegex& reg ) const
     {
         m_o << '/' << reg.regstr() << '/';
     }
