@@ -22,12 +22,12 @@ a lisp syntax like mini interpreter
       ...
 
 ### bitop
-  - (& int1 int2 ...) -> int
-  - (| int1 int2 ...) -> int
-  - (>> int shift) -> int
-  - (<< int shift) -> int
-  - (~ int) -> int
-  - (^ int1 int2 ...) -> int
+  - (& int1 int2 ...) -> int64_t
+  - (| int1 int2 ...) -> int64_t
+  - (>> int64_t shift) -> int64_t
+  - (<< int64_t shift) -> int64_t
+  - (~ int64_t) -> int64_t
+  - (^ int1 int2 ...) -> int64_t
 
 ### logic
   - (= obj1 obj2) -> #t | #f
@@ -45,7 +45,7 @@ a lisp syntax like mini interpreter
   - (ensure-utf8 "content") -> "utf8-content"
 
 ### errno
-  - (errno) -> int
+  - (errno) -> int64_t
   - (strerr) -> string
 
 ### eval
@@ -59,9 +59,9 @@ a lisp syntax like mini interpreter
   - (getfdflag fd) -> flag | nil
   - (close file_descriptor) -> errno
   - (read-line file_descriptor) -> string | nill
-  - (read-char file_descriptor) -> int | nill
-  - (write-char file_descriptor int) -> int | nill
-  - (write-string file_descriptor string) -> int | nill
+  - (read-char file_descriptor) -> int64_t | nill
+  - (write-char file_descriptor int64_t) -> int64_t | nill
+  - (write-string file_descriptor string) -> int64_t | nill
 
 ### string
   - (split "string-to-be-split")
@@ -71,8 +71,8 @@ a lisp syntax like mini interpreter
   - (substr "target-string" offset)
   - (substr "target-string" offset length)
   - (split-char "target-string")
-      -> '(int-char1 int-char2 ...)
-  - (join-char '(int-char1 int-char2 ...))
+      -> '(int64_t-char1 int64_t-char2 ...)
+  - (join-char '(int64_t-char1 int64_t-char2 ...))
       -> "string"
 
 ### http 
@@ -147,7 +147,7 @@ a lisp syntax like mini interpreter
 ### variable
   - (undef symbol) -> boolean
   - (ifdef symbol) -> boolean
-  - (var-list) -> int
+  - (var-list) -> int64_t
 
 ### map,reduce,filter
   - (map func list-1 list-2 ... list-n)
