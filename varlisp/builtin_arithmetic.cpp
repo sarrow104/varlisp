@@ -133,7 +133,7 @@ REGIST_BUILTIN("+", 0, -1, eval_add, "(+ ...) -> number");
 // DrRachet + 支持0个参数；-需要至少一个参数；
 Object eval_add(varlisp::Environment& env, const varlisp::List& args)
 {
-    arithmetic_t sum = 0;
+    arithmetic_t sum = int64_t(0);
     const List* p = &args;
     while (sum.which() && p && p->head.which()) {
         arithmetic_t to_add =
@@ -151,7 +151,7 @@ Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
 {
     int args_cnt = args.length();
     if (args_cnt == 1) {
-        arithmetic_t sum{0};
+        arithmetic_t sum{int64_t(0)};
         arithmetic_t to_sub =
             boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
         return arithmetic2object(
@@ -175,7 +175,7 @@ REGIST_BUILTIN("*", 0, -1, eval_mul, "(* ...) -> number");
 
 Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
 {
-    arithmetic_t mul{1};
+    arithmetic_t mul{int64_t(1)};
     const List* p = &args;
     while (mul.which() && p && p->head.which()) {
         arithmetic_t to_mul =
@@ -192,7 +192,7 @@ REGIST_BUILTIN("/", 1, -1, eval_div, "(/ arg ...) -> number");
 Object eval_div(varlisp::Environment& env, const varlisp::List& args)
 {
     if (args.length() == 1) {
-        arithmetic_t mul{1};
+        arithmetic_t mul{int64_t(1)};
         arithmetic_t to_div =
             boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
         return arithmetic2object(boost::apply_visitor(arithmetic_div_visitor(), mul, to_div));
