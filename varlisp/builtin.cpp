@@ -40,7 +40,7 @@ void Builtin::regist_builtin_function(Environment& env)
         env[info_vec[i].name] = varlisp::Builtin(i);
     }
 #endif
-#define CONSTANT_INT(i) (env[#i] = varlisp::Object{i})
+#define CONSTANT_INT(i) (env[#i] = varlisp::Object{int64_t(i)})
     CONSTANT_INT(O_RDONLY);
     CONSTANT_INT(O_WRONLY);
     CONSTANT_INT(O_RDWR);
