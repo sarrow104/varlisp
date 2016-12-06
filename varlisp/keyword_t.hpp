@@ -32,11 +32,11 @@ struct keywords_t
         kw_CONTEXT = varlisp::detail::keywords_hash::hash("context"),
     };
     static bool is_keyword(const std::string& name);
-    static const char * help_msg(const std::string& name);
 
     static kw_type_t gen_hash(const std::string& name);
-    static const string_t& gen_name(kw_type_t t);
-    
+
+    // static sss::string_view gen_name(kw_type_t t);
+    // static sss::string_view help_msg(kw_type_t t);
     keywords_t(kw_type_t t)
         : m_hash_value(t)
     {
@@ -74,6 +74,7 @@ struct keywords_t
     }
 
     sss::string_view name() const;
+    sss::string_view help_msg() const;
 
     void print(std::ostream& o) const;
 

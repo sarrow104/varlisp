@@ -3,206 +3,107 @@
 #include <stdexcept>
 
 #include <sss/util/PostionThrow.hpp>
+#include <sss/string_view.hpp>
+#include <sss/algorithm.hpp>
 
 #include "String.hpp"
 
 namespace varlisp {
+
+namespace detail {
+
+int index_into_keyword_info(keywords_t::kw_type_t t)
+{
+    switch (t) {
+        case keywords_t::kw_IF:
+            return 0;
+        case keywords_t::kw_ELSE:
+            return 1;
+        case keywords_t::kw_DEFINE:
+            return 2;
+        case keywords_t::kw_COND:
+            return 3;
+        case keywords_t::kw_AND:
+            return 4;
+        case keywords_t::kw_OR:
+            return 5;
+        case keywords_t::kw_LAMBDA:
+            return 6;
+        case keywords_t::kw_NIL:
+            return 7;
+        case keywords_t::kw_LIST:
+            return 8;
+        case keywords_t::kw_QUOTE:
+            return 9;
+        case keywords_t::kw_CONTEXT:
+            return 10;
+
+        case keywords_t::kw_NONE:
+            // fallthrough
+        default:
+            return -1;
+    }
+}
+
+} // namespace detail
+
+struct keywords_info_t {
+    sss::string_view name;
+    sss::string_view help_msg;
+};
+
+const keywords_info_t keywords_info[] = {
+    {"if"     , "keywords <if>\n\t(if condition consequent alternative)"},
+    {"else"   , "keywords <else>\n\t see (help cond)"},
+    {"define" , "keywords <define>\n\t(define var expr)\n\t(define (funcName args) \"help doc\" expr-list)"},
+    {"cond"   , "keywords <cond>\n\t(cond (cond1 result1)... [(else expr])"},
+    // 另外一种写法：
+    // (COND
+    // 	(condition1   result1 )
+    // 	(condition2   result2 )
+    // 	...
+    // 	(#t    resultN ) ) ; #t这里，是保证有值可以返回
+    //! http://www.cis.upenn.edu/~matuszek/LispText/lisp-cond.html
+    {"and"     , "keywords <and>\n\t(and expr-list)" },
+    {"or"      , "keywords <or>\n\t(or expr-list)"},
+    {"lambda"  , "keywords <lambda>\n\t(lambda (arg...) \"help doc\" expr-list)"},
+    {"nil"     , "keywords <nil>"},
+    {"list"    , "keywords <list>\n\t(list ...)"},
+    {"quote"   , "kwyeords <quote>\n\t(quote ...)\n\t'..."},
+    {"context" , "kwyeords <quote>\n\t(context ...)\n\t{...}"},
+};
+
 bool keywords_t::is_keyword(const std::string& name)
 {
-    return keywords_t::help_msg(name)[0] != '\0';
-}
-const char * keywords_t::help_msg(const std::string& name)
-{
-    switch (keywords_t::gen_hash(name)) {
-        case kw_NONE:
-            return "";
-            break;
-
-        case kw_IF:
-            return "keywords <if>\n"
-                "\t(if condition consequent alternative)";
-            break;
-
-        case kw_ELSE:
-            return "keywords <else>\n"
-                "\t see (help cond)";
-            break;
-
-        case kw_DEFINE:
-            return "keywords <define>;\n"
-                "\t(define var expr)\n"
-                "\t(define (funcName args) \"help doc\" expr-list)";
-            break;
-
-        case kw_COND:
-            return "keywords <cond>\n"
-                "\t(cond (cond1 result1)... [(else expr])";
-            // 另外一种写法：
-            // (COND
-            // 	(condition1   result1 )
-            // 	(condition2   result2 )
-            // 	...
-            // 	(#t    resultN ) ) ; #t这里，是保证有值可以返回
-            //! http://www.cis.upenn.edu/~matuszek/LispText/lisp-cond.html
-            break;
-
-        case kw_AND:
-            return "keywords <and>\n"
-                "\t(and expr-list)";
-            break;
-
-        case kw_OR:
-            return "keywords <or>\n"
-                "\t(or expr-list)";
-            break;
-
-        case kw_LAMBDA:
-            return "keywords <lambda>\n"
-                "\t(lambda (arg...) \"help doc\" expr-list)";
-            break;
-
-        case kw_NIL:
-            return "keywords <nil>";
-            break;
-
-        case kw_LIST:
-            return "keywords <list>\n\t(list ...)";
-            break;
-
-        case kw_QUOTE:
-            return "kwyeords <quote>\n\t(quote ...)\n\t'...";
-
-        case kw_CONTEXT:
-            return "kwyeords <quote>\n\t(context ...)\n\t{...}";
-
-        default:
-            SSS_POSITION_THROW(std::runtime_error,
-                               name);
-            return "";
-    }
+    int index = detail::index_into_keyword_info(keywords_t::gen_hash(name));
+    return index >= 0 && size_t(index) < sss::size(keywords_info);
 }
 
 keywords_t::kw_type_t keywords_t::gen_hash(const std::string& name)
 {
-    uint64_t hash =
-        varlisp::detail::keywords_hash::hash(name);
-    switch (hash) {
-        case kw_IF:
-            return kw_IF;
-
-        case kw_ELSE:
-            return kw_ELSE;
-
-        case kw_DEFINE:
-            return kw_DEFINE;
-
-        case kw_COND:
-            return kw_COND;
-            // 另外一种写法：
-            // (COND
-            // 	(condition1   result1 )
-            // 	(condition2   result2 )
-            // 	...
-            // 	(#t    resultN ) ) ; #t这里，是保证有值可以返回
-            //! http://www.cis.upenn.edu/~matuszek/LispText/lisp-cond.html
-
-        case kw_AND:
-            return kw_AND;
-
-        case kw_OR:
-            return kw_OR;
-
-        case kw_LAMBDA:
-            return kw_LAMBDA;
-
-        case kw_NIL:
-            return kw_NIL;
-
-        case kw_LIST:
-            return kw_LIST;
-
-        case kw_QUOTE:
-            return kw_QUOTE;
-
-        case kw_CONTEXT:
-            return kw_CONTEXT;
-
-        default:
-            return kw_NONE;
-    }
+    return (keywords_t::kw_type_t)varlisp::detail::keywords_hash::hash(name);
 }
 
-const string_t& keywords_t::gen_name(keywords_t::kw_type_t t)
+sss::string_view keywords_t::name() const
 {
-    static string_t name_none{""};
-#ifndef MAKE_NAME
-#define MAKE_NAME(a) static string_t name_##a{#a};
-#endif
-
-    MAKE_NAME(if);
-    MAKE_NAME(else);
-    MAKE_NAME(define);
-    MAKE_NAME(cond);
-    MAKE_NAME(and);
-    MAKE_NAME(or);
-    MAKE_NAME(lambda);
-    MAKE_NAME(nil);
-    MAKE_NAME(list);
-    MAKE_NAME(quote);
-    MAKE_NAME(context);
-
-#undef MAKE_NAME
-
-    switch (t) {
-        case kw_NONE:
-            return name_none;
-
-        case kw_IF:
-            return name_if;
-
-        case kw_ELSE:
-            return name_else;
-
-        case kw_DEFINE:
-            return name_define;
-
-        case kw_COND:
-            return name_cond;
-
-        case kw_AND:
-            return name_and;
-
-        case kw_OR:
-            return name_or;
-
-        case kw_LAMBDA:
-            return name_lambda;
-
-        case kw_NIL:
-            return name_nil;
-
-        case kw_LIST:
-            return name_list;
-
-        case kw_QUOTE:
-            return name_quote;
-
-        case kw_CONTEXT:
-            return name_context;
-
-        default:
-            SSS_POSITION_THROW(std::runtime_error,
-                               t);
+    int index = detail::index_into_keyword_info(m_hash_value);
+    if (index < 0) {
+        SSS_POSITION_THROW(std::runtime_error, m_hash_value);
     }
+    return keywords_info[index].name;
 }
 
-sss::string_view keywords_t::name() const {
-    return keywords_t::gen_name(m_hash_value).to_string_view();
+sss::string_view keywords_t::help_msg() const {
+    int index = detail::index_into_keyword_info(m_hash_value);
+    if (index < 0) {
+        SSS_POSITION_THROW(std::runtime_error, m_hash_value);
+    }
+    return keywords_info[index].help_msg;
 }
 
 void keywords_t::print(std::ostream& o) const
 {
-    o << keywords_t::gen_name(this->m_hash_value);
+    o << this->name();
 }
 
 } // namespace varlisp
