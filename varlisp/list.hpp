@@ -76,12 +76,12 @@ struct List {
     template<typename ...ArgsT>
     static List makeSQuoteList(ArgsT&&... args)
     {
-        return makeList({Object{varlisp::symbol("list")}, std::move(args)...});
+        return makeList({Object{keywords_t{keywords_t::kw_LIST}}, std::move(args)...});
     }
 
     static List makeSQuoteList()
     {
-        return makeList({Object{varlisp::symbol("list")}});
+        return makeList({Object{keywords_t{keywords_t::kw_LIST}}});
     }
 
     const Object * objAt(size_t i) const;

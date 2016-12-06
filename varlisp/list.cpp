@@ -11,6 +11,7 @@
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
 #include "detail/car.hpp"
+#include "keyword_t.hpp"
 
 namespace varlisp {
 
@@ -257,9 +258,10 @@ Object * List::objAt(size_t i)
 bool List::is_squote() const
 {
     if (this->head.which()) {
-        const varlisp::symbol* p_symbol =
-            boost::get<const varlisp::symbol>(&this->head);
-        if (p_symbol && *p_symbol == varlisp::symbol("list")) {
+        COLOG_DEBUG(this->head, this->head.which());
+        const auto * p_key =
+            boost::get<varlisp::keywords_t>(&this->head);
+        if (p_key && p_key->type() == keywords_t::kw_LIST) {
             return true;
         }
     }
@@ -285,7 +287,7 @@ Object List::car() const
 Object List::cdr() const
 {
     none_empty_squote_check();
-    return List({varlisp::symbol{"list"}, *(this->next()->next())});
+    return List({varlisp::keywords_t{keywords_t::kw_LIST}, *(this->next()->next())});
 }
 
 }  // namespace varlisp
