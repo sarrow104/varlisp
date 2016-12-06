@@ -2,12 +2,17 @@
 
 #include "String.hpp"
 #include "symbol.hpp"
+#include "keyword_t.hpp"
 
 namespace varlisp {
 
 void fmt_print_visitor::operator()(const varlisp::symbol& s) const
 {
     m_fmt.print(m_o, s.m_data);
+}
+void fmt_print_visitor::operator()(const varlisp::keywords_t&  s) const
+{
+    m_fmt.print(m_o, s.name());
 }
 void fmt_print_visitor::operator()(const string_t& v) const
 {
