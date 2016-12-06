@@ -122,8 +122,9 @@ int Parser::retrieve_symbols(std::vector<std::string>& symbols,
                              const char* prefix) const
 {
     this->m_toknizer.retrieve_symbols(symbols, prefix);
+    // TODO 应对讲这个，纳入keywords_t管理
     const char* keywords[] = {"if",     "else",   "cond", "and", "or",
-        "define", "lambda", "list", "nil"};
+        "define", "lambda", "list", "nil", "quote", "context"};
     for (const auto* item : keywords) {
         if (sss::is_begin_with(item, prefix)) {
             symbols.push_back(item);
@@ -246,12 +247,23 @@ Object Parser::parseExpression()
         boost::get<varlisp::parenthese_t>(&tok)) {
         switch (*p_v) {
             case varlisp::left_parenthese:
+                {
+                    varlisp::Token tok2 = this->m_toknizer.lookahead(1);
+                    const auto * p_k =  boost::get<varlisp::keywords_t>(&tok2);
+                    if (p_k && p_k->type() == keywords_t::kw_CONTEXT) {
+                        return this->parseEnvironment();
+                    }
+                    else {
+                        return this->parseList();
+                    }
+                }
+                break;
+
             case varlisp::left_bracket:
                 return this->parseList();
                 break;
 
             case varlisp::left_curlybracket:
-                // SSS_POSITION_THROW(std::runtime_error, "TODO {} parsing");
                 return this->parseEnvironment();
                 break;
 
@@ -277,11 +289,15 @@ Object Parser::parseExpression()
     }
     else if (const varlisp::symbol* p_v = boost::get<varlisp::symbol>(&tok)) {
         this->m_toknizer.consume();
-        if (p_v->is_nil()) {
+        return varlisp::Object(*p_v);
+    }
+    else if (const varlisp::keywords_t* p_v = boost::get<varlisp::keywords_t>(&tok)) {
+        this->m_toknizer.consume();
+        if (p_v->type() == varlisp::keywords_t::kw_NIL) {
             return varlisp::Nill{};
         }
         else {
-            return varlisp::Object(*p_v);
+            return *p_v;
         }
     }
     else if (const sss::regex::CRegex* p_v = boost::get<sss::regex::CRegex>(&tok)) {
@@ -298,8 +314,20 @@ Object Parser::parseExpression()
 // { (sym (expr))... }
 Object Parser::parseEnvironment()
 {
-    if (!this->m_toknizer.consume(varlisp::left_curlybracket)) {
-        SSS_POSITION_THROW(std::runtime_error, "expect '{'");
+    varlisp::parenthese_t end_pt = varlisp::none_parenthese;
+    if (this->m_toknizer.consume(varlisp::left_parenthese)) {
+        end_pt = varlisp::right_parenthese;
+        if (!this->m_toknizer.consume(varlisp::keywords_t::kw_CONTEXT)) {
+            SSS_POSITION_THROW(std::runtime_error, "expect 'context'; but",
+                               this->m_toknizer.top());
+        }
+    }
+    else if (this->m_toknizer.consume(varlisp::left_curlybracket)) {
+        end_pt = varlisp::right_curlybracket;
+        // SSS_POSITION_THROW(std::runtime_error, "expect '{'");
+    }
+    else {
+        SSS_POSITION_THROW(std::runtime_error, "expect '(context' or '{'");
     }
     Environment env;
     // NOTE eval时机问题；
@@ -316,17 +344,14 @@ Object Parser::parseEnvironment()
         if (!p_sym) {
             SSS_POSITION_THROW(std::runtime_error, "expected symbol; but ", tok);
         }
-        if (keywords_t::is_keyword(p_sym->m_data)) {
-            SSS_POSITION_THROW(std::runtime_error, "unexpected ", *p_sym);
-        }
         this->m_toknizer.consume();
         env[p_sym->m_data] = this->parseExpression();
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
             SSS_POSITION_THROW(std::runtime_error, "expect ')'");
         }
     }
-    if (!this->m_toknizer.consume(varlisp::right_curlybracket)) {
-        SSS_POSITION_THROW(std::runtime_error, "expect '}'");
+    if (!this->m_toknizer.consume(end_pt)) {
+        SSS_POSITION_THROW(std::runtime_error, "expect ", sss::raw_char(char(end_pt)));
     }
     // return std::move(env);
     return env;
@@ -346,33 +371,30 @@ Object Parser::parseList()
         varlisp::Token next = this->m_toknizer.lookahead(0);
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, next);
 
-#define define_builtin_symbol(a) \
-        static const varlisp::Token tok_##a(varlisp::symbol(#a));
-        define_builtin_symbol(if);
-        define_builtin_symbol(cond);
-        define_builtin_symbol(and);
-        define_builtin_symbol(or);
-        define_builtin_symbol(define);
-        define_builtin_symbol(lambda);
-#undef define_builtin_symbol
+        varlisp::keywords_t * p_k = boost::get<varlisp::keywords_t>(&next);
+        if (p_k) {
+            switch (p_k->type()) {
+                case keywords_t::kw_IF:
+                    return this->parseSpecialIf();
 
-        if (next == tok_if) {
-            return this->parseSpecialIf();
-        }
-        else if (next == tok_cond) {
-            return this->parseSpecialCond();
-        }
-        else if (next == tok_and) {
-            return parseSpecialAnd();
-        }
-        else if (next == tok_or) {
-            return parseSpecialOr();
-        }
-        else if (next == tok_define) {
-            return this->parseSpecialDefine();
-        }
-        else if (next == tok_lambda) {
-            return this->parseSpecialLambda();
+                case keywords_t::kw_COND:
+                    return this->parseSpecialCond();
+
+                case keywords_t::kw_AND:
+                    return parseSpecialAnd();
+
+                case keywords_t::kw_OR:
+                    return parseSpecialOr();
+
+                case keywords_t::kw_DEFINE:
+                    return this->parseSpecialDefine();
+
+                case keywords_t::kw_LAMBDA:
+                    return this->parseSpecialLambda();
+
+                default:
+                    COLOG_INFO(p_k->name());
+            }
         }
     }
     else if (this->m_toknizer.consume(varlisp::left_bracket)) {
@@ -389,7 +411,7 @@ Object Parser::parseList()
     List current;
     detail::list_back_inserter_t<detail::Converter<Object> > inserter(current);
     if (end_pt == varlisp::right_bracket) {
-        *inserter ++ = varlisp::symbol("list");
+        *inserter ++ = keywords_t{keywords_t::kw_LIST};
     }
     varlisp::Token tok;
 
@@ -437,12 +459,7 @@ Object Parser::parseList()
                 {
                     COLOG_DEBUG(SSS_VALUE_MSG(tok));
                     const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&tok);
-                    if (p_sym->is_nil()) {
-                        *inserter++ = varlisp::Nill{};
-                    }
-                    else {
-                        *inserter++ = *p_sym;
-                    }
+                    *inserter++ = *p_sym;
                 }
                 m_toknizer.consume();
                 break;
@@ -450,6 +467,19 @@ Object Parser::parseList()
             case 7:
                 {
                     *inserter++ = boost::get<sss::regex::CRegex>(tok);
+                    m_toknizer.consume();
+                }
+                break;
+
+            case 8:
+                {
+                    auto key = boost::get<varlisp::keywords_t>(tok);
+                    if (key.type() == keywords_t::kw_NIL) {
+                        *inserter++ = varlisp::Nill{};
+                    }
+                    else {
+                        *inserter++ = key;
+                    }
                     m_toknizer.consume();
                 }
                 break;
@@ -461,7 +491,7 @@ Object Parser::parseList()
 
 Object Parser::parseSpecialIf()
 {
-    if (!this->m_toknizer.consume(varlisp::symbol("if"))) {
+    if (!this->m_toknizer.consume(keywords_t::kw_IF)) {
         SSS_POSITION_THROW(std::runtime_error, "expect 'if'");
     }
     Object condition = parseExpression();
@@ -479,7 +509,7 @@ Object Parser::parseSpecialIf()
 
 Object Parser::parseSpecialCond()
 {
-    if (!this->m_toknizer.consume(varlisp::symbol("cond"))) {
+    if (!this->m_toknizer.consume(keywords_t::kw_COND)) {
         SSS_POSITION_THROW(std::runtime_error, "expect 'cond'; but",
                            this->m_toknizer.lookahead(0));
     }
@@ -497,8 +527,8 @@ Object Parser::parseSpecialCond()
                                this->m_toknizer.lookahead(0));
         }
         conditions.emplace_back(predict, expr);
-        if (const varlisp::symbol* pv = boost::get<varlisp::symbol>(&predict)) {
-            if (*pv == varlisp::symbol("else")) {
+        if (const auto* pv = boost::get<varlisp::keywords_t>(&predict)) {
+            if (pv->type() == keywords_t::kw_ELSE) {
                 has_else_clause = true;
             }
         }
@@ -513,7 +543,7 @@ Object Parser::parseSpecialCond()
 
 Object Parser::parseSpecialAnd()
 {
-    if (!this->m_toknizer.consume(varlisp::symbol("and"))) {
+    if (!this->m_toknizer.consume(keywords_t::kw_AND)) {
         SSS_POSITION_THROW(std::runtime_error, "expect 'and'; but ",
                            this->m_toknizer.lookahead(0));
     }
@@ -536,7 +566,7 @@ Object Parser::parseSpecialAnd()
 
 Object Parser::parseSpecialOr()
 {
-    if (!this->m_toknizer.consume(varlisp::symbol("or"))) {
+    if (!this->m_toknizer.consume(keywords_t::kw_OR)) {
         SSS_POSITION_THROW(std::runtime_error, "expect 'or'");
     }
     std::vector<Object> conditions;
@@ -577,8 +607,8 @@ int parseParamVector(varlisp::Tokenizer& toknizer,
 Object Parser::parseSpecialDefine()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-    if (!this->m_toknizer.consume(varlisp::symbol("define"))) {
-        SSS_POSITION_THROW(std::runtime_error, "expect 'define'");
+    if (!this->m_toknizer.consume(keywords_t::kw_DEFINE)) {
+        SSS_POSITION_THROW(std::runtime_error, "expect 'define'; but ", this->m_toknizer.top());
     }
 
     varlisp::Token tok = this->m_toknizer.lookahead();
@@ -646,7 +676,7 @@ Object Parser::parseSpecialDefine()
 // (labmda (arg-list) "" expr-list)
 Object Parser::parseSpecialLambda()
 {
-    if (!this->m_toknizer.consume(varlisp::symbol("lambda"))) {
+    if (!this->m_toknizer.consume(keywords_t::kw_LAMBDA)) {
         SSS_POSITION_THROW(std::runtime_error, "expect 'lambda'");
     }
     std::vector<std::string> args;
