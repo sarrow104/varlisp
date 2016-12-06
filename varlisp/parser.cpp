@@ -9,6 +9,7 @@
 #include <sss/colorlog.hpp>
 
 #include <ss1x/parser/oparser.hpp>
+#include <ss1x/parser/exception.hpp>
 
 #include "environment.hpp"
 #include "builtin_helper.hpp"
@@ -65,49 +66,56 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, scripts);
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, is_silent);
 
-    // std::cout << "Parser::" << __func__ << "(\"" << scripts << "\")" <<
-    // std::endl;
+    try {
+        // std::cout << "Parser::" << __func__ << "(\"" << scripts << "\")" <<
+        // std::endl;
 
-    bool is_balance = true;
+        bool is_balance = true;
 
-    Tokenizer_stat_wrapper(m_toknizer, is_silent);
-    // std::string scripts = "(list 12.5 abc 1.2 #f #t xy-z \"123\" )";
-    m_toknizer.append(scripts);
+        Tokenizer_stat_wrapper(m_toknizer, is_silent);
+        // std::string scripts = "(list 12.5 abc 1.2 #f #t xy-z \"123\" )";
+        m_toknizer.append(scripts);
 
-    while (is_balance && (m_toknizer.top().which())) {
-        try {
-            if (!this->balance_preread()) {
-                is_balance = false;
-                break;
+        while (is_balance && (m_toknizer.top().which())) {
+            try {
+                if (!this->balance_preread()) {
+                    is_balance = false;
+                    break;
+                }
+                auto expr = this->parseExpression();
+                // NOTE 这里返回的是一个"表"，也就是lisp中的一个完整的语句。
+                // 比如，输入(define x (list + 1 2))，那么得到的expr，也就是这个"表"
+                // 此时，我需要对这个"表达式"进行求值。
+                // 如果是字面值，则原样。
+                // 如果是符号，则会持续求值，直到不是符号。
+                // 如果是s-list，则原样；
+                // 如果是其他的list或者是可执行的可eval()的类型，则求值。
+                // 也就是说，对于 (eval (list 1 2))
+                // 这个需求来说，我只需要特化eval_eval函数即可，不用特意修改。
+                COLOG_DEBUG(expr);
+
+                Object result;
+                const Object& res = getAtomicValue(env, expr, result);
+                if (!is_silent) {
+                    boost::apply_visitor(print_visitor(std::cout), res);
+                    std::cout << std::endl;
+                }
             }
-            auto expr = this->parseExpression();
-            // NOTE 这里返回的是一个"表"，也就是lisp中的一个完整的语句。
-            // 比如，输入(define x (list + 1 2))，那么得到的expr，也就是这个"表"
-            // 此时，我需要对这个"表达式"进行求值。
-            // 如果是字面值，则原样。
-            // 如果是符号，则会持续求值，直到不是符号。
-            // 如果是s-list，则原样；
-            // 如果是其他的list或者是可执行的可eval()的类型，则求值。
-            // 也就是说，对于 (eval (list 1 2))
-            // 这个需求来说，我只需要特化eval_eval函数即可，不用特意修改。
-            COLOG_DEBUG(expr);
-
-            Object result;
-            const Object& res = getAtomicValue(env, expr, result);
-            if (!is_silent) {
-                boost::apply_visitor(print_visitor(std::cout), res);
-                std::cout << std::endl;
+            catch (std::runtime_error& e) {
+                std::cout << e.what() << std::endl;
+                this->m_toknizer.clear();
+                return -1;
+                // NOTE
+                // should return error code
             }
         }
-        catch (std::runtime_error& e) {
-            std::cout << e.what() << std::endl;
-            this->m_toknizer.clear();
-            return -1;
-            // NOTE
-            // should return error code
-        }
+        return is_balance;
     }
-    return is_balance;
+    catch (const ss1x::parser::ErrorPosition& e) {
+        std::cout << e.what() << std::endl;
+        this->m_toknizer.clear();
+        return -1;
+    }
 }
 
 int Parser::retrieve_symbols(std::vector<std::string>& symbols,
@@ -145,81 +153,81 @@ inline int parenthese_type(parenthese_t pt)
 
 bool Parser::balance_preread()
 {
-    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-    size_t token_cnt = 0;
-    std::vector<std::tuple<int,int,int>> pt_stack;
-    const static std::tuple<int, int,int > pt_zero;
-    std::vector<int> pt_types;
-    pt_types.push_back(-1);
-    COLOG_DEBUG(SSS_VALUE_MSG(pt_zero));
-    // int parenthese_balance = 0;
-    // int bracket_balance = 0;
-    // int curly_balance = 0;
-    for (varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
-         tok = this->m_toknizer.lookahead_nothrow(token_cnt), tok.which(); token_cnt++)
-    {
-        COLOG_DEBUG(tok);
-        const varlisp::parenthese_t * p_parenthese = boost::get<varlisp::parenthese_t>(&tok);
-        if (!p_parenthese) {
-            continue;
-        }
-
-        // 如何判断括号匹配失衡？
-        // 1. 左括号随时可以出现——只要当前括号是平衡的，那么三种左括号，都可以出现。
-        // 2. 右括号出现的时候，必须在左侧找到"空闲"的左括号；
-        // 3. 解析完成(eof)的失衡，必须没有孤立的括号。
-        //
-        // 简单优化了一下。让同类型的括号可以累加；
-        // 一旦有不同类型的括号，就使用栈。
-        // 这样，就可以保证括号的配对使用了。
-
-        if (pt_types.back() != detail::parenthese_type(*p_parenthese)) {
-            pt_stack.push_back(std::make_tuple(0, 0, 0));
-            pt_types.push_back(detail::parenthese_type(*p_parenthese));
-        }
-        COLOG_DEBUG(SSS_VALUE_MSG(pt_stack.size()), pt_stack);
-        switch (*p_parenthese) {
-            case varlisp::left_parenthese:
-                std::get<0>(pt_stack.back()) ++;
-                break;
-            case varlisp::right_parenthese:
-                std::get<0>(pt_stack.back()) --;
-                break;
-            case varlisp::left_bracket:
-                std::get<1>(pt_stack.back()) ++;
-                break;
-            case varlisp::right_bracket:
-                std::get<1>(pt_stack.back()) --;
-                break;
-            case varlisp::left_curlybracket:
-                std::get<2>(pt_stack.back()) ++;
-                break;
-            case varlisp::right_curlybracket:
-                std::get<2>(pt_stack.back()) --;
-                break;
-            default:
-                SSS_POSITION_THROW(std::runtime_error, "parenthese_t == 0");
-        }
-
-        if (pt_stack.back() == pt_zero) {
-            pt_stack.pop_back();
-            pt_types.pop_back();
-        }
-        else if (std::get<0>(pt_stack.back()) < 0 ||
-                 std::get<1>(pt_stack.back()) < 0 ||
-                 std::get<2>(pt_stack.back()) < 0)
+        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+        size_t token_cnt = 0;
+        std::vector<std::tuple<int,int,int>> pt_stack;
+        const static std::tuple<int, int,int > pt_zero;
+        std::vector<int> pt_types;
+        pt_types.push_back(-1);
+        COLOG_DEBUG(SSS_VALUE_MSG(pt_zero));
+        // int parenthese_balance = 0;
+        // int bracket_balance = 0;
+        // int curly_balance = 0;
+        for (varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
+             tok = this->m_toknizer.lookahead_nothrow(token_cnt), tok.which(); token_cnt++)
         {
-            this->m_toknizer.print_token_stack(std::cout);
-            this->m_toknizer.clear();
-            SSS_POSITION_THROW(std::runtime_error, "parenthese not balance!");
+            COLOG_DEBUG(tok);
+            const varlisp::parenthese_t * p_parenthese = boost::get<varlisp::parenthese_t>(&tok);
+            if (!p_parenthese) {
+                continue;
+            }
+
+            // 如何判断括号匹配失衡？
+            // 1. 左括号随时可以出现——只要当前括号是平衡的，那么三种左括号，都可以出现。
+            // 2. 右括号出现的时候，必须在左侧找到"空闲"的左括号；
+            // 3. 解析完成(eof)的失衡，必须没有孤立的括号。
+            //
+            // 简单优化了一下。让同类型的括号可以累加；
+            // 一旦有不同类型的括号，就使用栈。
+            // 这样，就可以保证括号的配对使用了。
+
+            if (pt_types.back() != detail::parenthese_type(*p_parenthese)) {
+                pt_stack.push_back(std::make_tuple(0, 0, 0));
+                pt_types.push_back(detail::parenthese_type(*p_parenthese));
+            }
+            COLOG_DEBUG(SSS_VALUE_MSG(pt_stack.size()), pt_stack);
+            switch (*p_parenthese) {
+                case varlisp::left_parenthese:
+                    std::get<0>(pt_stack.back()) ++;
+                    break;
+                case varlisp::right_parenthese:
+                    std::get<0>(pt_stack.back()) --;
+                    break;
+                case varlisp::left_bracket:
+                    std::get<1>(pt_stack.back()) ++;
+                    break;
+                case varlisp::right_bracket:
+                    std::get<1>(pt_stack.back()) --;
+                    break;
+                case varlisp::left_curlybracket:
+                    std::get<2>(pt_stack.back()) ++;
+                    break;
+                case varlisp::right_curlybracket:
+                    std::get<2>(pt_stack.back()) --;
+                    break;
+                default:
+                    SSS_POSITION_THROW(std::runtime_error, "parenthese_t == 0");
+            }
+
+            if (pt_stack.back() == pt_zero) {
+                pt_stack.pop_back();
+                pt_types.pop_back();
+            }
+            else if (std::get<0>(pt_stack.back()) < 0 ||
+                     std::get<1>(pt_stack.back()) < 0 ||
+                     std::get<2>(pt_stack.back()) < 0)
+            {
+                this->m_toknizer.print_token_stack(std::cout);
+                this->m_toknizer.clear();
+                SSS_POSITION_THROW(std::runtime_error, "parenthese not balance!");
+            }
+            if (pt_stack.empty()) {
+                break;
+            }
         }
-        if (pt_stack.empty()) {
-            break;
-        }
-    }
-    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, pt_stack.size());
-    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, token_cnt);
-    return pt_stack.empty();
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, pt_stack.size());
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, token_cnt);
+        return pt_stack.empty();
 }
 
 // Expression:
