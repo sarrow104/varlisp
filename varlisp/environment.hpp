@@ -32,6 +32,8 @@ struct Environment : private std::map<std::string, Object> {
     using BaseT::end;
     using BaseT::cbegin;
     using BaseT::cend;
+    using BaseT::size;
+    using BaseT::empty;
     // using BaseT::operator[];
     Object& operator [](const std::string& name);
 
