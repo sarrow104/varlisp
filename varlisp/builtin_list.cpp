@@ -178,12 +178,22 @@ Object eval_length(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "length";
     Object obj;
-    const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj);
-    if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": need s-List as the 1st argument)");
+    if (const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj)) {
+        if (!p_list->is_squote()) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": need s-List as the 1st argument)");
+        }
+        return int64_t(p_list->length() - 1);
     }
-    return int64_t(p_list->length() - 1);
+    else if (const varlisp::Environment* p_env =
+                 varlisp::getTypedValue<varlisp::Environment>(env, args.head,
+                                                              obj)) {
+        return int64_t(p_env->size());
+    }
+    else {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": not support on this object ", args.head, ")");
+    }
 }
 
 REGIST_BUILTIN("empty?", 1, 1, eval_empty_q,
@@ -202,12 +212,22 @@ Object eval_empty_q(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "empty?";
     Object obj;
-    const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj);
-    if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": need s-List as the 1st argument)");
+    if (const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj)) {
+        if (!p_list->is_squote()) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": need s-List as the 1st argument)");
+        }
+        return p_list->length() == 1;
     }
-    return p_list->length() == 1;
+    else if (const varlisp::Environment* p_env =
+                 varlisp::getTypedValue<varlisp::Environment>(env, args.head,
+                                                              obj)) {
+        return int64_t(p_env->empty());
+    }
+    else {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": not support on this object ", args.head, ")");
+    }
 }
 
 REGIST_BUILTIN("append", 2, 2, eval_append,
