@@ -15,6 +15,7 @@ struct Nill;
 struct String;
 typedef String string_t;
 struct symbol;
+struct keywords_t;
 struct List;
 struct Environment;
 struct fmt_print_visitor : public boost::static_visitor<void> {
@@ -43,6 +44,7 @@ struct fmt_print_visitor : public boost::static_visitor<void> {
     void operator()(int64_t v) const { m_fmt.print(m_o, v); }
     void operator()(double  v) const { m_fmt.print(m_o, v); }
     void operator()(const string_t&             v) const;
+    void operator()(const varlisp::keywords_t&  s) const;
     void operator()(const varlisp::symbol&      s) const;
     void operator()(const varlisp::List&        l) const;
     void operator()(const varlisp::Environment& e) const;
