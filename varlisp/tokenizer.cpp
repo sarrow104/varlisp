@@ -89,7 +89,13 @@ void Tokenizer::init(const std::string& data)
               &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
                                StrIterator beg, StrIterator end,
                                ss1x::parser::rule::matched_value_t v) {
-             tok = symbol(ss1x::parser::rule::toString(v));
+                  std::string name = ss1x::parser::rule::toString(v);
+                  if (varlisp::keywords_t::is_keyword(name)) {
+                    tok = varlisp::keywords_t(name);
+                  }
+                  else {
+                      tok = varlisp::symbol(name);
+                  }
          })].result(ss1x::parser::util::slice2string))
             .name("Symbol_p");
 
@@ -348,6 +354,18 @@ bool Tokenizer::consume(const symbol& symbol)
     if (current_top == target) {
         this->consume();
         return true;
+    }
+    return false;
+}
+
+bool Tokenizer::consume(keywords_t::kw_type_t t)
+{
+    Token current_top = this->top();
+    if (const auto * p_k = boost::get<varlisp::keywords_t>(&current_top)) {
+        if (p_k->type() == t) {
+            this->consume();
+            return true;
+        }
     }
     return false;
 }

@@ -14,6 +14,7 @@
 #include <sss/raw_print.hpp>
 
 #include "symbol.hpp"
+#include "keyword_t.hpp"
 
 namespace varlisp {
 
@@ -39,15 +40,16 @@ typedef boost::variant<empty,   // 0
         int64_t,                // 3 integer 字符量
         double,                 // 4
         std::string,            // 5 保存去掉括号后的字符串
-        symbol,                 // 6 符号(包括关键字、运算符)
-        sss::regex::CRegex>     // 7 正则表达式
+        varlisp::symbol,        // 6 符号(包括运算符)
+        sss::regex::CRegex,     // 7 正则表达式
+        varlisp::keywords_t>    // 8 关键字（包括关键字）
         Token;
 
-class token_visitor : public boost::static_visitor<void> {
+class token_print_visitor : public boost::static_visitor<void> {
 private:
     std::ostream& m_o;
 public:
-    token_visitor(std::ostream& o)
+    token_print_visitor(std::ostream& o)
         : m_o(o)
     {
     }
@@ -89,11 +91,15 @@ public:
         // escaper()
         m_o << '/' << r.regstr() << '/';
     }
+    void operator() (const varlisp::keywords_t& k) const
+    {
+        m_o << k;
+    }
 };
 
 inline std::ostream& operator << (std::ostream& o, const Token& tok)
 {
-    token_visitor tv(o);
+    token_print_visitor tv(o);
     boost::apply_visitor(tv, tok);
     return o;
 }
@@ -126,6 +132,7 @@ public:
     bool    consume();
 
     bool    consume(parenthese_t paren);
+    bool    consume(varlisp::keywords_t::kw_type_t type);
 
     bool    consume(const symbol& symbol);
 
