@@ -12,6 +12,7 @@
 #include "symbol.hpp"
 #include "gumboNode.hpp"
 #include "String.hpp"
+#include "keyword_t.hpp"
 
 namespace varlisp {
 
@@ -57,18 +58,19 @@ typedef boost::variant<
     string_t,                               // 5
     sss::regex::CRegex,                     // 6
     symbol,                                 // 7
-    gumboNode,                              // 8
-    boost::recursive_wrapper<Builtin>,      // 9
-    boost::recursive_wrapper<Define>,       // 10
-    boost::recursive_wrapper<IfExpr>,       // 11
-    boost::recursive_wrapper<Cond>,         // 12
-    boost::recursive_wrapper<LogicAnd>,     // 13
-    boost::recursive_wrapper<LogicOr>,      // 14
-    boost::recursive_wrapper<List>,         // 15
+    keywords_t,                             // 8
+    gumboNode,                              // 9
+    boost::recursive_wrapper<Builtin>,      // 10
+    boost::recursive_wrapper<Define>,       // 11
+    boost::recursive_wrapper<IfExpr>,       // 12
+    boost::recursive_wrapper<Cond>,         // 13
+    boost::recursive_wrapper<LogicAnd>,     // 14
+    boost::recursive_wrapper<LogicOr>,      // 15
+    boost::recursive_wrapper<List>,         // 16
     // NOTE
     // quote-list只是作为一种函数存在！
-    boost::recursive_wrapper<Lambda>,       // 16
-    boost::recursive_wrapper<Environment>   // 17
+    boost::recursive_wrapper<Lambda>,       // 17
+    boost::recursive_wrapper<Environment>   // 18
     >
     Object;
 }  // namespace varlisp
