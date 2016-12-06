@@ -23,6 +23,12 @@ Tokenizer::Tokenizer(const std::string& data) { this->init(data); }
 void Tokenizer::init(const std::string& data)
 {
     using namespace ss1x::parser;
+    this->CommentMulty_p =
+        (sequence(";#") >> *(char_ - sequence("#;")) > sequence("#;"))
+            .name("CommentMulty_p")[ss1x::parser::rule::ActionT([&](
+                StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
+                tok = varlisp::empty();
+            })];
     this->Comment_p =
         (ss1x::parser::char_p(';') >>
          *(ss1x::parser::char_ - ss1x::parser::char_p('\n') -
@@ -240,7 +246,7 @@ void Tokenizer::init(const std::string& data)
         })]).name("FallthrowError_p");
 
     this->Token_p =
-        (refer(Spaces_p) | refer(Comment_p) |
+        (refer(Spaces_p) | refer(CommentMulty_p) | refer(Comment_p) |
          refer(Hex_p) |
          refer(Decimal_p) |
          // 将double放在int后面，只是为了验证解析器不会丢失匹配；我的Integer_p不会

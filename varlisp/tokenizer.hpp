@@ -166,6 +166,7 @@ private:
 
     //public:
     ss1x::parser::rule  Comment_p;
+    ss1x::parser::rule  CommentMulty_p;
     ss1x::parser::rule  Spaces_p;
     ss1x::parser::rule  TokenEnd_p;
     ss1x::parser::rule  Decimal_p;
