@@ -271,6 +271,9 @@ Object Parser::parseExpression()
                 SSS_POSITION_THROW(std::runtime_error, "unexpect ", char(*p_v));
         }
     }
+    else if (boost::get<varlisp::quote_sign_t>(&tok)) {
+        return this->parseQuote();
+    }
     else if (const bool* p_v = boost::get<bool>(&tok)) {
         this->m_toknizer.consume();
         return varlisp::Object(*p_v);
@@ -355,6 +358,17 @@ Object Parser::parseEnvironment()
     }
     // return std::move(env);
     return env;
+}
+
+Object Parser::parseQuote()
+{
+    if (!this->m_toknizer.consume(varlisp::quote_sign_t{})) {
+        SSS_POSITION_THROW(std::runtime_error, "expect ', but ", this->m_toknizer.top());
+    }
+    Object value = this->parseExpression();
+    return varlisp::List::makeList(
+        {std::move(varlisp::keywords_t{keywords_t::kw_QUOTE}),
+        std::move(value)});
 }
 
 // FIXME

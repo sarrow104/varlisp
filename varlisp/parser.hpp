@@ -53,6 +53,7 @@ protected:
     Object parseExpression();
     Object parseList();
     Object parseEnvironment();
+    Object parseQuote();
 
     Object parseSpecialIf();
     Object parseSpecialCond();
