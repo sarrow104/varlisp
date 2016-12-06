@@ -40,6 +40,13 @@ void Tokenizer::init(const std::string& data)
                 tok = varlisp::empty();
             })];
 
+    this->Quote_p =
+        (ss1x::parser::char_p('\''))
+        .name("Quote_p")[ss1x::parser::rule::ActionT([&](
+                StrIterator, StrIterator, ss1x::parser::rule::matched_value_t) {
+                tok = varlisp::quote_sign_t{};
+            })];
+
     this->Spaces_p =
         (+ss1x::parser::space_p)
             .name("Spaces_p")[ss1x::parser::rule::ActionT([&](
@@ -253,6 +260,7 @@ void Tokenizer::init(const std::string& data)
 
     this->Token_p =
         (refer(Spaces_p) | refer(CommentMulty_p) | refer(Comment_p) |
+         refer(Quote_p) |
          refer(Hex_p) |
          refer(Decimal_p) |
          // 将double放在int后面，只是为了验证解析器不会丢失匹配；我的Integer_p不会
@@ -366,6 +374,17 @@ bool Tokenizer::consume(keywords_t::kw_type_t t)
             this->consume();
             return true;
         }
+    }
+    return false;
+}
+
+
+bool Tokenizer::consume(quote_sign_t )
+{
+    Token current_top = this->top();
+    if (boost::get<varlisp::quote_sign_t>(&current_top)) {
+        this->consume();
+        return true;
     }
     return false;
 }

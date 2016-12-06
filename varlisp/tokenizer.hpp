@@ -24,6 +24,12 @@ struct empty{
     }
 };
 
+struct quote_sign_t {
+    bool operator == (const quote_sign_t& ) const {
+        return true;
+    }
+};
+
 enum parenthese_t {
     none_parenthese    = '\0',
     left_parenthese    = '(',
@@ -42,7 +48,9 @@ typedef boost::variant<empty,   // 0
         std::string,            // 5 保存去掉括号后的字符串
         varlisp::symbol,        // 6 符号(包括运算符)
         sss::regex::CRegex,     // 7 正则表达式
-        varlisp::keywords_t>    // 8 关键字（包括关键字）
+        varlisp::keywords_t,    // 8 关键字（包括关键字）
+        quote_sign_t            // 9 单引号
+        >
         Token;
 
 class token_print_visitor : public boost::static_visitor<void> {
@@ -58,6 +66,11 @@ public:
     void operator()(const empty& ) const
     {
         m_o << "<empty>";
+    }
+
+    void operator()(const quote_sign_t& ) const
+    {
+        m_o << "'";
     }
 
     void operator() (bool b) const
@@ -133,6 +146,7 @@ public:
 
     bool    consume(parenthese_t paren);
     bool    consume(varlisp::keywords_t::kw_type_t type);
+    bool    consume(quote_sign_t );
 
     bool    consume(const symbol& symbol);
 
@@ -175,6 +189,7 @@ private:
     ss1x::parser::rule  Comment_p;
     ss1x::parser::rule  CommentMulty_p;
     ss1x::parser::rule  Spaces_p;
+    ss1x::parser::rule  Quote_p; // '注意，它可以紧贴其他符号使用！
     ss1x::parser::rule  TokenEnd_p;
     ss1x::parser::rule  Decimal_p;
     ss1x::parser::rule  Hex_p;
