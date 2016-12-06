@@ -32,6 +32,19 @@ public:
     String& operator=(const std::string&);
     String& operator=(std::string&&);
 
+    String(sss::string_view s, bool )
+        : sss::string_view(s)
+    {
+    }
+
+    String& assign(sss::string_view s, bool )
+    {
+        this->clear();
+        this->sss::string_view::operator=(s);
+        return *this;
+    }
+
+protected:
     String(sss::string_view s, std::shared_ptr<std::string> ref)
         : sss::string_view(s), m_refer(ref)
     {
