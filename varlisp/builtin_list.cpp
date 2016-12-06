@@ -131,7 +131,7 @@ Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
         for (int i = 0; p_list && i < *p_nth; ++i) {
             p_list = p_list->next();
         }
-        return varlisp::List({varlisp::symbol{"list"}, *p_list->next()});
+        return varlisp::List({varlisp::keywords_t{keywords_t::kw_LIST}, *p_list->next()});
     }
     else {
         return varlisp::List::makeSQuoteList();
