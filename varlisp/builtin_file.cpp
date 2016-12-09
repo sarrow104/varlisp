@@ -17,6 +17,7 @@
 #include "detail/io.hpp"
 #include "detail/buitin_info_t.hpp"
 #include "detail/car.hpp"
+#include "detail/list_iterator.hpp"
 
 namespace varlisp {
 
@@ -95,23 +96,18 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
 
     std::ofstream::pos_type pos = ofs.tellp();
 
-    Object obj;
+    Object obj, objList;
     const Object& firstArg = getAtomicValue(env, detail::car(args), obj);
 
-    if (const varlisp::List* p_list = boost::get<varlisp::List>(&firstArg)) {
+    if (auto p_list = getQuotedList(env, firstArg, objList)) {
         // NOTE this p_list must be an s-list!
-        if (!p_list->is_squote()) {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                              ": 1st argument is not a s-list)");
-        }
-        p_list = p_list->next();
-        while (p_list && p_list->head.which()) {
-            boost::apply_visitor(raw_stream_visitor(ofs, env), p_list->head);
-            p_list = p_list->next();
+        for (auto it = p_list->begin(); it != p_list->end(); ++it) {
+            COLOG_DEBUG(*it);
+            boost::apply_visitor(raw_stream_visitor(ofs, env), *it);
         }
     }
     else {
-        boost::apply_visitor(raw_stream_visitor(ofs, env), detail::car(args));
+        boost::apply_visitor(raw_stream_visitor(ofs, env), firstArg);
     }
 
     std::ofstream::pos_type write_cnt = ofs.tellp() - pos;
