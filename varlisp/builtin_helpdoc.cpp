@@ -3,6 +3,7 @@
 #include "helpmsg_visitor.hpp"
 
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -19,7 +20,7 @@ REGIST_BUILTIN("help", 1, 1, eval_help, "(help symbol) -> nil");
  */
 Object eval_help(varlisp::Environment& env, const varlisp::List& args)
 {
-    std::cout << boost::apply_visitor(helpmsg_visitor(env), args.head) << std::endl;
+    std::cout << boost::apply_visitor(helpmsg_visitor(env), detail::car(args)) << std::endl;
     return varlisp::Nill{};
 }
 
@@ -35,7 +36,7 @@ REGIST_BUILTIN("get-help", 1, 1, eval_get_help, "(get-help symbol) -> string");
  */
 Object eval_get_help(varlisp::Environment& env, const varlisp::List& args)
 {
-    return boost::apply_visitor(helpmsg_visitor(env), args.head);
+    return boost::apply_visitor(helpmsg_visitor(env), detail::car(args));
 }
 
 } // namespace varlisp
