@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <set>
 
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
@@ -70,6 +71,45 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     parser.parse(env, content, true);
     COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
     return Object{Nill{}};
+}
+
+REGIST_BUILTIN("save", 1, 1, eval_save,
+               "(sav \"path/to/lisp\") -> nil");
+
+Object eval_save(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char* funcName = "load";
+
+    Object path;
+    const string_t* p_path =
+        getTypedValue<string_t>(env, detail::car(args), path);
+    if (!p_path) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": requies a path)");
+    }
+    std::string full_path = sss::path::full_of_copy(p_path->to_string());
+    if (sss::path::file_exists(full_path) == sss::PATH_TO_DIRECTORY) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
+                          "` is a dir! cannot write context into a dir!)");
+    }
+
+    sss::path::mkpath(sss::path::dirname(full_path));
+    std::ofstream ofs(full_path.c_str(), std::ios_base::out | std::ios_base::out);
+    std::set<std::string> dumped_obj_set;
+    for (const varlisp::Environment * p_env = &env; p_env; p_env = p_env->parent()) {
+        for (auto it = p_env->begin(); it != p_env->end(); ++it) {
+            if (dumped_obj_set.find(it->first) == dumped_obj_set.end()) {
+                dumped_obj_set.insert(it->first);
+                if (boost::get<varlisp::Builtin>(&it->second)) {
+                    continue;
+                }
+                ofs << "(define " << it->first << " ";
+                boost::apply_visitor(print_visitor(ofs), it->second);
+                ofs << ")" << std::endl;
+            }
+        }
+    }
+    return Nill{};
 }
 
 }  // namespace varlisp
