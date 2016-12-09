@@ -14,32 +14,17 @@ namespace varlisp {
 
 typedef Object (*eval_func_t)(varlisp::Environment& env, const varlisp::List& args);
 
-// 参数格式；
-// 闭区间；-1表示无穷
-// struct builtin_info_t {
-//     const char *    name;
-//     int             min;
-//     int             max;
-//     eval_func_t     eval_fun;
-// };
-
-// 既然有常亮的存在，那么我干脆……
+// 既然有常量的存在，那么我干脆……
 // 将常亮孤立到额外的全局的map、vector变量中；
 // 然后，让Environment，在按名字取Object对象的时候，
 // 先询问这些全局对象。
 void Builtin::regist_builtin_function(Environment& env)
 {
-#if 0
-    for (size_t i = 0; i < sss::size(builtin_infos); ++i) {
-        env[builtin_infos[i].name] = varlisp::Builtin(i);
-    }
-#else
     const std::vector<varlisp::detail::builtin_info_t>& info_vec
         = varlisp::detail::get_builtin_infos();
     for (size_t i = 0; i != info_vec.size() ; ++i) {
         env[info_vec[i].name] = varlisp::Builtin(i);
     }
-#endif
 #define CONSTANT_INT(i) (env[#i] = varlisp::Object{int64_t(i)})
     CONSTANT_INT(O_RDONLY);
     CONSTANT_INT(O_WRONLY);
@@ -59,6 +44,11 @@ void Builtin::print(std::ostream& o) const
 Builtin::Builtin(int type)
     : m_type(type)
 {
+}
+
+varlisp::string_t Builtin::help_msg() const
+{
+    return varlisp::detail::get_builtin_infos()[this->type()].help_msg;
 }
 
 Object Builtin::eval(varlisp::Environment& env, const varlisp::List& args) const

@@ -46,6 +46,7 @@ public:
     {
         return this != &rhs && this->m_type < rhs.m_type;
     }
+    varlisp::string_t help_msg() const;
 
 public:
     Object eval(varlisp::Environment& env, const varlisp::List& args) const;
