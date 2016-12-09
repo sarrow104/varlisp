@@ -170,34 +170,30 @@ REGIST_BUILTIN("equal", 2, 2, eval_equal,
 Object eval_equal(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const varlisp::List * p_list1 = varlisp::getFirstListPtrFromArg(env, args, obj1);
+    const varlisp::List * p_list1 = varlisp::getQuotedList(env, detail::car(args), obj1);
     if (!p_list1) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(equal: 1st argument must be an s-list)");
     }
     Object obj2;
-    const varlisp::List * p_list2 = varlisp::getFirstListPtrFromArg(env, args.tail[0], obj2);
+    const varlisp::List * p_list2 = varlisp::getQuotedList(env, detail::cadr(args), obj2);
     if (!p_list2) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(equal: 1st argument must be an s-list)");
     }
-    p_list1 = p_list1->next();
-    p_list2 = p_list2->next();
-    bool is_equal = true;
-    if (p_list1->length() == p_list2->length()) {
-        while (p_list2 && p_list2) {
+    bool is_equal = (p_list1->length() == p_list2->length());
+    if (is_equal) {
+        auto it1 = p_list1->begin();
+        auto it2 = p_list2->begin();
+        while (it1 != p_list1->end() && it2 != p_list2->end()) {
             if (!boost::apply_visitor(strict_equal_visitor(env),
-                                    p_list1->head,
-                                    p_list2->head)) {
+                                    *it1, *it2)) {
                 is_equal = false;
                 break;
             }
-            p_list1 = p_list1->next();
-            p_list2 = p_list2->next();
+            ++it1;
+            ++it2;
         }
-    }
-    else {
-        is_equal = false;
     }
     return is_equal;
 }
