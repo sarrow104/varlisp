@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sss/colorlog.hpp>
+
 #include "object.hpp"
 
 #include "eval_visitor.hpp"
@@ -29,6 +31,7 @@ struct Environment;
 inline const Object& getAtomicValue(varlisp::Environment& env,
                                     const varlisp::Object& value, Object& tmp)
 {
+    COLOG_DEBUG(value);
     if (boost::apply_visitor(is_instant_visitor(env), value)) {
         return value;
     }
@@ -86,7 +89,11 @@ inline bool is_true(varlisp::Environment& env, const varlisp::Object& obj)
     return p_bool && *p_bool;
 }
 
-const varlisp::List* getFirstListPtrFromArg(varlisp::Environment& env,
-                                            const varlisp::List& args,
-                                            Object& tmp);
+// NOTE 注意，第二个参数是 Object的const&；这意味着，这个boost::variant的子类的参数，可以
+// 自动接受其任何子类作为参数。
+// 而我本来的目的是，这里必须是一个Object左值——因为我可能会原样返回这个值的引用；
+// 自动类型转换，有时候，真是一个麻烦事情
+const varlisp::List* getQuotedList(varlisp::Environment& env,
+                                   const varlisp::Object& obj,
+                                   varlisp::Object& tmp);
 }  // namespace varlisp

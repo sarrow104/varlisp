@@ -1,25 +1,27 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 
+#include "detail/car.hpp"
+
 namespace varlisp {
 
 /**
- * @brief getFirstListPtrFromArg 
+ * @brief getQuotedList 
  *
  * 讲args的第一个参数，获取为一个squot-list；如果是可执行的序列，则求值后再判断
  * 如果无法获得一个squot-list，则返回0；
  *
  * @param[in] env
- * @param[in] args
  * @param[in] obj
+ * @param[in] tmp
  *
  * @return
  */
-const varlisp::List* getFirstListPtrFromArg(varlisp::Environment& env,
-                                            const varlisp::List& args,
-                                            Object& obj)
+const varlisp::List* getQuotedList(varlisp::Environment& env,
+                                   const varlisp::Object& obj,
+                                   varlisp::Object& tmp)
 {
-    const varlisp::List* p_list = varlisp::getTypedValue<varlisp::List>(env, args.head, obj);
+    const varlisp::List* p_list = varlisp::getTypedValue<varlisp::List>(env, obj, tmp);
     // NOTE 不会出现 非 s-list!，即，还需要eval的list！
     // 因为getTypedValue<>已经保证获取到的是"值"了！
     // 当然，需要注意的是各种函数，也是值！
@@ -27,9 +29,8 @@ const varlisp::List* getFirstListPtrFromArg(varlisp::Environment& env,
     // 已经通过了parser，构建的ifExpr结构，是一个可以被执行的语句块！
     // 至于函数，为什么是"值"，而不能执行呢？是因为，"它"需要用括号括起来，
     // 如果需要参数的话，还需要添加参数。
-    if (p_list && !p_list->is_squote()) {
-        SSS_POSITION_THROW(std::runtime_error, "need eval list error!");
-        // p_list = 0;
+    if (p_list) {
+        p_list = p_list->get_slist();
     }
     return p_list;
 }
