@@ -28,28 +28,24 @@ Object min_max_impl(varlisp::Environment& env, const varlisp::List& args,
 {
     Object objLeft;
     Object objRight;
-    auto it = detail::list_object_const_iterator_t();
+    const varlisp::List * p_list = nullptr;
     if (args.length() == 1) {
-        const varlisp::List *p_list = varlisp::getFirstListPtrFromArg(env, args, objLeft);
-        if (!p_list || !p_list->is_squote()) {
+        p_list = varlisp::getQuotedList(env, detail::car(args), objLeft);
+        if (!p_list || p_list->empty()) {
             SSS_POSITION_THROW(
                 std::runtime_error, "(", funcName,
                 ": the only one argument, must be none-empty s-list!; but ",
                 *p_list, ")");
         }
-        p_list = p_list->next();
-        if (!detail::is_car_valid(p_list)) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": the only one argument, is a empty s-list!)");
-        }
-        it = detail::list_object_const_iterator_t(p_list);
     }
     else {
-        it = detail::list_object_const_iterator_t(&args);
+        p_list = &args;
     }
 
+    auto it = p_list->begin();
+
     Object minRes = varlisp::getAtomicValue(env, *it, objLeft);
-    for ( ++it; it; ++it)
+    for ( ++it; it != p_list->end(); ++it)
     {
         const Object& rightRef = varlisp::getAtomicValue(env, *it, objRight);
         if (func(env, rightRef, minRes)) {
