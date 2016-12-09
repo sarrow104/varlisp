@@ -239,9 +239,9 @@ void Tokenizer::init(const std::string& data)
             .name("BoolFalse_p");
 
     this->Regex_p =
-        ((ss1x::parser::char_p('/') >> *(sequence("\\ ") | sequence("\\/") |
+        (((sequence("//") | (ss1x::parser::char_p('/') >> +(sequence("\\ ") | sequence("\\/") |
                                          (char_ - char_p(' ') - char_p('/'))) >
-          ss1x::parser::char_p('/') >
+          ss1x::parser::char_p('/'))) >
           &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator beg, StrIterator end, ss1x::parser::rule::matched_value_t v) {
             tok = sss::regex::CRegex(std::string(beg + 1, end - 1));
@@ -332,7 +332,7 @@ bool Tokenizer::consume()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     if (!this->empty()) {
-        COLOG_DEBUG('(', this->m_tokens.back().front(), "); left = ",
+        COLOG_DEBUG('`', this->m_tokens.back().front(), "`; left = ",
                     sss::raw_string(
                         std::string(this->m_beg.back(), this->m_end.back())));
         this->m_tokens.back().erase(this->m_tokens.back().begin());
@@ -425,7 +425,7 @@ bool Tokenizer::is_eof() const
 
 void Tokenizer::push(const std::string& data)
 {
-    COLOG_DEBUG('(', data, ')');
+    COLOG_DEBUG(sss::raw_string(data));
     if (!this->m_consumed.empty()) {
         COLOG_DEBUG("left = ", sss::raw_string(std::string(
                                    this->m_beg.back(), this->m_end.back())));
