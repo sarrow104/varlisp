@@ -8,6 +8,7 @@
 #include "builtin_helper.hpp"
 
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -48,7 +49,7 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "it-debug";
     Object status;
-    const bool* p_status = getTypedValue<bool>(env, args.head, status);
+    const bool* p_status = getTypedValue<bool>(env, detail::car(args), status);
     if (!p_status) {
         SSS_POSITION_THROW(::std::runtime_error, "(", funcName,
                           ": requires bool status at 1st argument)");
