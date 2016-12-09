@@ -2,6 +2,7 @@
 
 #include "builtin_helper.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -19,14 +20,21 @@ REGIST_BUILTIN("eval", 1, 2, eval_eval, "(eval '(...)) -> ...");
  */
 Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char * funcName = "eval";
+    // const char * funcName = "eval";
     Object obj;
-    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
-    if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need squote-List as 1st argument)");
+    const Object& refObj = varlisp::getAtomicValue(env, detail::car(args), obj);
+    if (const varlisp::List* p_list = boost::get<varlisp::List>(&refObj)) {
+        List expr = p_list->tail();
+        Object inner;
+        return varlisp::getAtomicValue(env, detail::car(expr), inner);
     }
-    return p_list->next()->eval(env);
+    else {
+        return refObj;
+    }
+    // NOTE 对于(eval (quote atomic))，返回atomic
+
+    // SSS_POSITION_THROW(std::runtime_error,
+    //                    "(", funcName, ": need squote-List as 1st argument)");
 }
 
 }  // namespace varlisp
