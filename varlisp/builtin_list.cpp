@@ -147,14 +147,7 @@ Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
         // NOTE FIXME
         // 第二个参数，如果是list，需要拆开，重组！
         // 如果是单值，则是 dot 并列结构——
-        auto ret = varlisp::List::makeCons(headRef, *p_list);
-        COLOG_DEBUG(ret);
-        // COLOG_DEBUG(ret);
-        // ret.append(headRef);
-        // COLOG_DEBUG(ret);
-        // ret.append_list(*p_list);
-        // COLOG_DEBUG(ret);
-        return ret;
+        return varlisp::List::makeCons(headRef, *p_list);
     }
 }
 
