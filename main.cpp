@@ -77,6 +77,17 @@ int test_construct()
     return EXIT_SUCCESS;
 }
 
+const char * gen_prompt_continue(varlisp::Interpreter& i)
+{
+    auto pt = i.get_parser().get_parenthese_stack();
+    static char buf[64] = "";
+
+    std::sprintf(buf, "%s(%d[%d{%d: %s", sss::Terminal::dark.data(),
+                 std::get<0>(pt), std::get<1>(pt), std::get<2>(pt),
+                 sss::Terminal::end.data());
+    return buf;
+}
+
 int Interpret(bool echo_in_load, bool quit_on_load_complete,
               bool load_init_script, int argc, char* argv[])
 {
@@ -154,7 +165,7 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete,
     int indent = 0;
 
     std::string prompt_start = sss::Terminal::dark.data() + std::string("> ") + sss::Terminal::end.data();
-    std::string prompt_continue = sss::Terminal::dark.data() + std::string(": ") + sss::Terminal::end.data();
+    // std::string prompt_continue = sss::Terminal::dark.data() + std::string(": ") + sss::Terminal::end.data();
     while (st != varlisp::Interpreter::status_ERROR &&
            st != varlisp::Interpreter::status_QUIT) {
         // NOTE 缩进保持功能丢失了。
@@ -164,8 +175,8 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete,
         // upstream，对linenoise的更新之后，忘记我对哪里，做过修改……
         // 不过，好消息是，新的linenoise，对于tab补全遗留问题，做了修改。
         auto line = linenoise::Readline(
-            st == varlisp::Interpreter::status_UNFINISHED ? prompt_continue.c_str() : prompt_start.c_str(),
-            indent);
+            st == varlisp::Interpreter::status_UNFINISHED
+                ? gen_prompt_continue(interpreter) : prompt_start.c_str(), indent);
         indent = get_indent(line);
 
         switch (st) {
