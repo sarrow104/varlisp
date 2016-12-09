@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <vector>
 
 #include <sss/string_view.hpp>
 
@@ -34,6 +35,8 @@ struct keywords_t
     static bool is_keyword(const std::string& name);
 
     static kw_type_t gen_hash(const std::string& name);
+
+    static const std::vector<sss::string_view>& get_keywords_vector();
 
     // static sss::string_view gen_name(kw_type_t t);
     // static sss::string_view help_msg(kw_type_t t);

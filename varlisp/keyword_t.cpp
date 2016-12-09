@@ -84,6 +84,18 @@ keywords_t::kw_type_t keywords_t::gen_hash(const std::string& name)
     return (keywords_t::kw_type_t)varlisp::detail::keywords_hash::hash(name);
 }
 
+const std::vector<sss::string_view>& keywords_t::get_keywords_vector()
+{
+    static std::vector<sss::string_view> l_keywords_vector;
+    static bool init_kw = [&](std::vector<sss::string_view>& v)->bool {
+        for (auto& item : keywords_info ) {
+            l_keywords_vector.push_back(item.name);
+        }
+        return true;
+    }(l_keywords_vector);
+    return l_keywords_vector;
+}
+
 sss::string_view keywords_t::name() const
 {
     int index = detail::index_into_keyword_info(m_hash_value);
