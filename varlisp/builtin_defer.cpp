@@ -3,6 +3,7 @@
 
 #include "environment.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -33,7 +34,7 @@ REGIST_BUILTIN("defer", 1, 1, eval_defer, "(defer (expr)) -> result-ignored");
  */
 Object eval_defer(varlisp::Environment& env, const varlisp::List& args)
 {
-    env.defer_task_push(args.head);
+    env.defer_task_push(detail::car(args));
     return varlisp::Nill{};
 }
 
