@@ -106,7 +106,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     auto ret_it = detail::list_back_inserter<Object>(ret);
     
     sss::path::file_descriptor fd;
-    sss::path::glob_path gp(".", fd, f.get());
+    sss::path::glob_path gp(p_path->to_string(), fd, f.get());
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
             std::string name = fd.get_name();
