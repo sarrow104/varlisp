@@ -59,10 +59,16 @@ void Tokenizer::init(const std::string& data)
                            .name("TokenEnd_p");
 
     this->Decimal_p =
-        ((+digit_p >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+        ((-char_p('-') >> +digit_p >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator it_beg, StrIterator it_end,
              ss1x::parser::rule::matched_value_t) {
-            tok = int64_t(ss1x::parser::util::parseUint64_t(it_beg, it_end));
+            if (*it_beg == '-') {
+                ++it_beg;
+                tok = -int64_t(ss1x::parser::util::parseUint64_t(it_beg, it_end));
+            }
+            else {
+                tok = int64_t(ss1x::parser::util::parseUint64_t(it_beg, it_end));
+            }
         })]).name("Decimal_p");
 
     this->Hex_p =
