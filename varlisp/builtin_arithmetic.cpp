@@ -7,6 +7,7 @@
 #include "arithmetic_cast_visitor.hpp"
 #include "is_instant_visitor.hpp"
 #include "object.hpp"
+#include "detail/car.hpp"
 
 #include "detail/buitin_info_t.hpp"
 
@@ -134,12 +135,11 @@ REGIST_BUILTIN("+", 0, -1, eval_add, "(+ ...) -> number");
 Object eval_add(varlisp::Environment& env, const varlisp::List& args)
 {
     arithmetic_t sum = int64_t(0);
-    const List* p = &args;
-    while (sum.which() && p && p->head.which()) {
+    
+    for (List::const_iterator it = args.begin(); sum.which() && it != args.end(); ++it) {
         arithmetic_t to_add =
-            boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
+            boost::apply_visitor(arithmetic_cast_visitor(env), *it);
         sum = boost::apply_visitor(arithmetic_add_visitor(), sum, to_add);
-        p = p->next();
     }
 
     return arithmetic2object(sum);
@@ -153,19 +153,20 @@ Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
     if (args_cnt == 1) {
         arithmetic_t sum{int64_t(0)};
         arithmetic_t to_sub =
-            boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
+            boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
         return arithmetic2object(
             boost::apply_visitor(arithmetic_sub_visitor(), sum, to_sub));
     }
     else {
         arithmetic_t sum =
-            boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
-        const List* p = &args.tail[0];
-        while (sum.which() && p && p->head.which()) {
+            boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
+
+        const List tail = args.tail();
+
+        for (List::const_iterator it = tail.begin(); sum.which() && it != tail.end(); ++it) {
             arithmetic_t to_sub =
-                boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
+                boost::apply_visitor(arithmetic_cast_visitor(env), *it);
             sum = boost::apply_visitor(arithmetic_sub_visitor(), sum, to_sub);
-            p = p->next();
         }
         return Object(sum);
     }
@@ -176,12 +177,11 @@ REGIST_BUILTIN("*", 0, -1, eval_mul, "(* ...) -> number");
 Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
 {
     arithmetic_t mul{int64_t(1)};
-    const List* p = &args;
-    while (mul.which() && p && p->head.which()) {
+
+    for (List::const_iterator it = args.begin(); mul.which() && it != args.end(); ++it) {
         arithmetic_t to_mul =
-            boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
+            boost::apply_visitor(arithmetic_cast_visitor(env), *it);
         mul = boost::apply_visitor(arithmetic_mul_visitor(), mul, to_mul);
-        p = p->next();
     }
 
     return arithmetic2object(mul);
@@ -194,17 +194,18 @@ Object eval_div(varlisp::Environment& env, const varlisp::List& args)
     if (args.length() == 1) {
         arithmetic_t mul{int64_t(1)};
         arithmetic_t to_div =
-            boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
+            boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
         return arithmetic2object(boost::apply_visitor(arithmetic_div_visitor(), mul, to_div));
     }
     else {
-        arithmetic_t mul = boost::apply_visitor(arithmetic_cast_visitor(env), args.head);
-        const List* p = &args.tail[0];
-        while (mul.which() && p && p->head.which()) {
-            arithmetic_t to_div = boost::apply_visitor(arithmetic_cast_visitor(env), p->head);
+        arithmetic_t mul = boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
+
+        const List tail = args.tail();
+        for (List::const_iterator it = tail.begin(); mul.which() && it != tail.end(); ++it) {
+            arithmetic_t to_div = boost::apply_visitor(arithmetic_cast_visitor(env), *it);
             mul = boost::apply_visitor(arithmetic_div_visitor(), mul, to_div);
-            p = p->next();
         }
+
         return arithmetic2object(mul);
     }
 }
@@ -214,9 +215,9 @@ REGIST_BUILTIN("power", 2, 2, eval_pow, "(power arg1 arg2) -> number");
 Object eval_pow(varlisp::Environment& env, const varlisp::List& args)
 {
     double lhs = arithmetic2double(
-        boost::apply_visitor(arithmetic_cast_visitor(env), args.head));
+        boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args)));
     double rhs = arithmetic2double(
-        boost::apply_visitor(arithmetic_cast_visitor(env), args.tail[0].head));
+        boost::apply_visitor(arithmetic_cast_visitor(env), detail::cadr(args)));
 
     return Object(std::pow(lhs, rhs));
 }
