@@ -129,7 +129,7 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
     return var_count;
 }
 
-REGIST_BUILTIN("let", 1, -1, eval_let,
+REGIST_BUILTIN("let", 2, -1, eval_let,
                "(let ((symbol expr)...) (expr)...) -> result-of-last-expr");
 
 /**
@@ -154,43 +154,39 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
                            detail::car(args), ")");
     }
     varlisp::Environment inner(&env);
-    for (; p_sym_pairs && p_sym_pairs->head.which();
-         p_sym_pairs = p_sym_pairs->next()) {
-        COLOG_DEBUG(p_sym_pairs->head);
+    for (auto it_pair = p_sym_pairs->begin(); it_pair != p_sym_pairs->end(); ++it_pair) {
+        COLOG_DEBUG(*it_pair);
         const varlisp::List* p_sym_pair =
-            boost::get<varlisp::List>(&p_sym_pairs->head);
+            boost::get<varlisp::List>(&(*it_pair));
         if (!p_sym_pair) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": must be name-value  list; but",
-                               p_sym_pairs->head, ")");
+                               p_sym_pair->nth(0), ")");
         }
         if (p_sym_pair->length() != 2) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": must be name-value  list; but",
-                               p_sym_pairs->head, ")");
+                               p_sym_pair->nth(0), ")");
         }
         const varlisp::symbol* p_sym =
-            boost::get<varlisp::symbol>(&p_sym_pair->head);
-        // FIXME no keywords here!
+            boost::get<varlisp::symbol>(&p_sym_pair->nth(0));
 
         if (!p_sym) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": must be name-value  list; but",
-                               p_sym_pairs->head, ")");
+                               *it_pair, ")");
         }
         Object value;
         // NOTE let 貌似可以达到swap两个变量值的效果；
         // 在于 getAtomicValue()的第一个参数是env，而不是inner
         // (let ((a b) (b a)) ...)
         inner[p_sym->m_data] = varlisp::getAtomicValue(env,
-                                                       p_sym_pair->tail[0].head,
+                                                       p_sym_pair->nth(1),
                                                        value);
     }
     Object result;
-    for (const varlisp::List * p_exprs = args.next();
-         p_exprs && p_exprs->head.which();
-         p_exprs = p_exprs->next()) {
-        result = boost::apply_visitor(eval_visitor(inner), p_exprs->head);
+    for (auto it_expr = args.begin() + 1; it_expr != args.end(); ++it_expr) {
+        result = boost::apply_visitor(eval_visitor(inner), *it_expr);
     }
     
     return result;
@@ -212,18 +208,20 @@ REGIST_BUILTIN("setq", 2, -1, eval_setq,
 Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "setq";
-    const varlisp::List * p_1st = &args;
-    const varlisp::List * p_2nd = p_1st->next();
+    if (args.size() % 2 != 0) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": num of args not correct!", args.size(), ")");
+    }
     Object * p_value = 0;
-    while (detail::is_car_valid(p_1st)) {
+    for (size_t i = 0; i < args.size(); i += 2) {
         // NOTE 这里需要的是一个将 Object cast 为 symbol的函数
         Object tmpObj;
         const varlisp::symbol * p_sym = varlisp::getSymbol(env,
-                                                           p_1st->head,
+                                                           args.nth(i),
                                                            tmpObj);
         if (!p_sym) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": 1st must be a symbol; but ", p_1st->head,
+                               ": 1st must be a symbol; but ", args.nth(i),
                                ")");
         }
         p_value = env.find(p_sym->m_data);
@@ -231,16 +229,8 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
             SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
                                *p_sym, " not exist!)");
         }
-        if (!detail::is_car_valid(p_2nd)) {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": 2nd value for ", *p_sym, " is empty! '())");
-        }
         Object res;
-        *p_value = varlisp::getAtomicValue(env, p_2nd->head, res);
-        p_1st = p_2nd->next();
-        if (p_1st) {
-            p_2nd = p_1st->next();
-        }
+        *p_value = varlisp::getAtomicValue(env, args.nth(i + 1), res);
     }
     if (!p_value) {
         SSS_POSITION_THROW(std::runtime_error,
