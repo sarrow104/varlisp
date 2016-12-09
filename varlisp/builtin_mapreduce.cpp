@@ -52,7 +52,7 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     // 1. builtin
     // 2. lambda
 
-    int arg_length = args.next()->length();
+    int arg_length = args.size() - 1;
     COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
     std::vector<Object>      tmp_obj_vec;
     tmp_obj_vec.resize(arg_length);
@@ -60,32 +60,31 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     p_arg_list_vec.resize(arg_length);
 
     int min_items_count = std::numeric_limits<int>::max();
-    const List * p_arg_list = args.next();
-    for (int i = 0; i < arg_length; ++i, p_arg_list = p_arg_list->next())
+    const List arg_list = args.tail();
+    auto arg_list_it = arg_list.begin();
+    for (int i = 0; i < arg_length; ++i, ++arg_list_it)
     {
-        p_arg_list_vec[i] = varlisp::getFirstListPtrFromArg(env, *p_arg_list, tmp_obj_vec[i]);
+        p_arg_list_vec[i] = varlisp::getQuotedList(env, *arg_list_it, tmp_obj_vec[i]);
         if (!p_arg_list_vec[i]) {
             SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": the other arguments must be s-list; "
-                              " but", p_arg_list->head, ")");
+                              " but", *arg_list_it, ")");
         }
-        p_arg_list_vec[i] = p_arg_list_vec[i]->next(); // descard "list"
         min_items_count = std::min(int(p_arg_list_vec[i]->length()), min_items_count);
     }
 
     COLOG_DEBUG(SSS_VALUE_MSG(min_items_count));
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto ret_it = detail::list_back_inserter<Object>(ret);
-    const Object& callable = args.head;
+    const Object& callable = detail::car(args);
     for (int i = 0; i < min_items_count; ++i) {
         COLOG_DEBUG("loop ", i, "begin");
         varlisp::List expr {callable};
         auto back_it = detail::list_back_inserter<Object>(expr);
 
         for (int j = 0; j < arg_length; ++j) {
-            COLOG_DEBUG(SSS_VALUE_MSG(i), ',', SSS_VALUE_MSG(j), ',', p_arg_list_vec[j]->head);
-            *back_it++ = p_arg_list_vec[j]->head;
-            p_arg_list_vec[j] = p_arg_list_vec[j]->next();
+            COLOG_DEBUG(SSS_VALUE_MSG(i), ',', SSS_VALUE_MSG(j), ',', p_arg_list_vec[j]->nth(i));
+            *back_it++ = p_arg_list_vec[j]->nth(i);
         }
         COLOG_DEBUG(expr);
         *ret_it++ = expr.eval(env);
@@ -119,26 +118,24 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "reduce";
     // NOTE 第一个参数是call-able；并且需要两个参数
     // 第二个参数，是不少于2个元素的s-list
-    const Object& callable = args.head;
+    const Object& callable = detail::car(args);
     Object tmp;
-    const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
+    const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
     if (!p_arg_list) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a s-list at 2nd arguments)");
     }
-    if (p_arg_list->length() < 3) {
+    if (p_arg_list->length() < 2) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": the s-list must have at least two items)");
     }
 
-    p_arg_list = p_arg_list->next();
-    Object first_arg = p_arg_list->head;
-    p_arg_list = p_arg_list->next();
-    while (p_arg_list && p_arg_list->head.which()) {
-        Object second_arg = p_arg_list->head;
-        varlisp::List expr = varlisp::List::makeList( {callable, first_arg, second_arg});
+    Object first_arg = p_arg_list->head();
+    auto args_list = p_arg_list->tail();
+    for (auto arg_it = args_list.begin(); arg_it != args_list.end(); ++arg_it) {
+        Object second_arg = *arg_it;
+        varlisp::List expr = varlisp::List( {callable, first_arg, second_arg});
         first_arg = expr.eval(env);
-        p_arg_list = p_arg_list->next();
     }
 
     return first_arg;
@@ -165,25 +162,22 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "filter";
     // NOTE 第一个参数是只接受一个参数的call-able；
     // 第二个参数，是一个s-list，元素个数不定；
-    const Object& callable = args.head;
+    const Object& callable = detail::car(args);
     Object tmp;
-    const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
+    const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
     if (!p_arg_list) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a s-list at 2nd arguments)");
     }
 
-    p_arg_list = p_arg_list->next();
-
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto ret_it = detail::list_back_inserter<Object>(ret);
-    int arg_cnt = p_arg_list->length();
-    for (int i = 0; i < arg_cnt; ++i, p_arg_list = p_arg_list->next()) {
-        varlisp::List expr = varlisp::List::makeList({callable, p_arg_list->head});
+    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
+        varlisp::List expr = varlisp::List({callable, *it});
         Object value = expr.eval(env);
 
         if (varlisp::is_true(env, value)) {
-            *ret_it++ = p_arg_list->head;
+            *ret_it++ = *it;
         }
     }
     return ret;
@@ -199,16 +193,16 @@ REGIST_BUILTIN("pipe-run", 2, -1, eval_pipe_run,
 
 Object eval_pipe_run(varlisp::Environment &env, const varlisp::List &args)
 {
-    const char * funcName = "pipe-run";
+    // const char * funcName = "pipe-run";
     // NOTE 第一个参数是call-able；并且需要两个参数
     // 第二个参数，是不少于2个元素的s-list
     Object tmp;
     Object argument = varlisp::getAtomicValue(env, detail::car(args), tmp);
 
-    const varlisp::List * p_func_list = args.next();
+    const varlisp::List func_list = args.tail();
 
-    for (;detail::is_car_valid(p_func_list); p_func_list = p_func_list->next()) {
-        varlisp::List expr = varlisp::List::makeList({p_func_list->head, argument});
+    for (auto func_it = func_list.begin(); func_it != func_list.end(); ++func_it) {
+        varlisp::List expr = varlisp::List({*func_it, argument});
         argument = expr.eval(env);
     }
 
@@ -225,9 +219,9 @@ Object eval_is_all(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "is-all";
     // NOTE 第一个参数是call-able；并且需要两个参数
     // 第二个参数，是不少于1个元素的s-list
-    const Object& callable = args.head;
+    const Object& callable = detail::car(args);
     Object tmp;
-    const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
+    const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
     if (!p_arg_list || !p_arg_list->is_squote() || p_arg_list->length() < 2) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
@@ -235,8 +229,8 @@ Object eval_is_all(varlisp::Environment &env, const varlisp::List &args)
     }
 
     bool is_all = true;
-    for (auto it = detail::list_object_const_iterator_t(p_arg_list->next()); it; ++it) {
-        varlisp::List expr = varlisp::List::makeList( {callable, *it});
+    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
+        varlisp::List expr = varlisp::List( {callable, *it});
 
         Object res = expr.eval(env);
         if (!boost::apply_visitor(cast2bool_visitor(env), res)) {
@@ -258,9 +252,9 @@ Object eval_is_any(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "is-all";
     // NOTE 第一个参数是call-able；并且需要两个参数
     // 第二个参数，是不少于1个元素的s-list
-    const Object& callable = args.head;
+    const Object& callable = detail::car(args);
     Object tmp;
-    const List * p_arg_list = varlisp::getFirstListPtrFromArg(env, *args.next(), tmp);
+    const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
     if (!p_arg_list || !p_arg_list->is_squote() || p_arg_list->length() < 2) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
@@ -268,8 +262,8 @@ Object eval_is_any(varlisp::Environment &env, const varlisp::List &args)
     }
 
     bool is_any = false;
-    for (auto it = detail::list_object_const_iterator_t(p_arg_list->next()); it; ++it) {
-        varlisp::List expr = varlisp::List::makeList( {callable, *it});
+    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
+        varlisp::List expr = varlisp::List( {callable, *it});
 
         Object res = expr.eval(env);
         if (boost::apply_visitor(cast2bool_visitor(env), res)) {
