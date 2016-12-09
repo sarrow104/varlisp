@@ -15,10 +15,12 @@ namespace varlisp {
 // 数，都会绑定给它，作为列表？
 // (define (arg-list) ["help-doc"] (body-expr-list))
 struct Lambda {
-    std::vector<std::string> args;  // 形式参数
-    std::vector<Object> body;       // 函数体
-    varlisp::string_t   help_doc;   // 帮助信息
+private:
+    std::vector<std::string>    args;       // 形式参数
+    std::vector<Object>         body;       // 函数体
+    varlisp::string_t           help_doc;   // 帮助信息
 
+public:
     Lambda() = default;
     Lambda(const std::vector<std::string>& a, varlisp::string_t msg, const std::vector<Object>& b)
         : args(a), body(b), help_doc(msg)
@@ -39,6 +41,10 @@ struct Lambda {
     Object eval(Environment& env, const varlisp::List& args) const;
 
     void print(std::ostream& o) const;
+    varlisp::string_t help_msg() const
+    {
+        return this->help_doc;
+    }
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Lambda& l)
