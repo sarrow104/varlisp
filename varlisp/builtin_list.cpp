@@ -28,13 +28,13 @@ Object eval_car(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "car";
     Object obj;
-    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
+    const varlisp::List* p_list = getQuotedList(env, detail::car(args), obj);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need squote-List)");
     }
 
-    return p_list->car();
+    return p_list->nth(0);
 }
 
 REGIST_BUILTIN("cdr", 1, 1, eval_cdr,
@@ -52,7 +52,8 @@ Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "cdr";
     Object obj;
-    const varlisp::List* p_list = getFirstListPtrFromArg(env, args, obj);
+    const varlisp::List* p_list =
+        varlisp::getTypedValue<varlisp::List>(env, detail::car(args), obj);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need squote-List)");
@@ -82,21 +83,12 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
                           "(car-nth: 1st argument must be an Integar)");
     }
     Object obj2;
-    const varlisp::List* p_list = getFirstListPtrFromArg(env, args.tail[0], obj2);
+    const varlisp::List* p_list = varlisp::getQuotedList(env, detail::cadr(args), obj2);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(car-nth: 2nd argument must be an S-list");
     }
-    p_list = p_list->next();
-    if (*p_nth >= 0 && *p_nth < int(p_list->length())) {
-        for (int i = 0; p_list && i < *p_nth; ++i) {
-            p_list = p_list->next();
-        }
-        return p_list->head;
-    }
-    else {
-        return Object{};
-    }
+    return p_list->nth(*p_nth);
 }
 
 REGIST_BUILTIN("cdr-nth", 2, 2, eval_cdr_nth,
@@ -121,21 +113,9 @@ Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
                           "(car-nth: 1st argument must be an Integar)");
     }
     Object obj2;
-    const varlisp::List* p_list = getFirstListPtrFromArg(env, args.tail[0], obj2);
-    if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(car-nth: 2nd argument must be an S-list");
-    }
-    p_list = p_list->next();
-    if (*p_nth >= 0 && *p_nth < int(p_list->length())) {
-        for (int i = 0; p_list && i < *p_nth; ++i) {
-            p_list = p_list->next();
-        }
-        return varlisp::List({varlisp::keywords_t{keywords_t::kw_LIST}, *p_list->next()});
-    }
-    else {
-        return varlisp::List::makeSQuoteList();
-    }
+    const varlisp::List* p_list =
+        varlisp::getTypedValue<varlisp::List>(env, detail::cadr(args), obj2);
+    return p_list->cdr(*p_nth);
 }
 
 REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
@@ -151,15 +131,31 @@ REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
  */
 Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
 {
+    // NOTE TODO FIXME cons会取消一级quote——如果是quote的话。反之不会
+    // 像什么？eval后的行为！
     Object obj;
-    const varlisp::List * p_list = getFirstListPtrFromArg(env, args.tail[0], obj);
+    const varlisp::List * p_list = varlisp::getQuotedList(env, detail::cadr(args), obj);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error, "(cons: need squote-List as the 2nd argument)");
     }
-    varlisp::List ret = varlisp::List::makeSQuoteList();
-    ret.append(boost::apply_visitor(eval_visitor(env), detail::car(args)));
-    ret.tail[0].tail.push_back(p_list->tail[0]);
-    return ret;
+    Object tmp;
+    const Object& headRef = varlisp::getAtomicValue(env, detail::car(args), tmp);
+    if (p_list->empty()) {
+        return varlisp::List::makeSQuoteList(headRef);
+    }
+    else {
+        // NOTE FIXME
+        // 第二个参数，如果是list，需要拆开，重组！
+        // 如果是单值，则是 dot 并列结构——
+        auto ret = varlisp::List::makeCons(headRef, *p_list);
+        COLOG_DEBUG(ret);
+        // COLOG_DEBUG(ret);
+        // ret.append(headRef);
+        // COLOG_DEBUG(ret);
+        // ret.append_list(*p_list);
+        // COLOG_DEBUG(ret);
+        return ret;
+    }
 }
 
 REGIST_BUILTIN("length", 1, 1, eval_length,
@@ -178,21 +174,17 @@ Object eval_length(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "length";
     Object obj;
-    if (const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj)) {
-        if (!p_list->is_squote()) {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": need s-List as the 1st argument)");
-        }
-        return int64_t(p_list->length() - 1);
+    if (const varlisp::List * p_list = varlisp::getQuotedList(env, detail::car(args), obj)) {
+        return int64_t(p_list->length());
     }
     else if (const varlisp::Environment* p_env =
-                 varlisp::getTypedValue<varlisp::Environment>(env, args.head,
+                 varlisp::getTypedValue<varlisp::Environment>(env, detail::car(args),
                                                               obj)) {
         return int64_t(p_env->size());
     }
     else {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": not support on this object ", args.head, ")");
+                           ": not support on this object ", detail::car(args), ")");
     }
 }
 
@@ -212,21 +204,17 @@ Object eval_empty_q(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "empty?";
     Object obj;
-    if (const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj)) {
-        if (!p_list->is_squote()) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": need s-List as the 1st argument)");
-        }
-        return p_list->length() == 1;
+    if (const varlisp::List * p_list = getQuotedList(env, detail::car(args), obj)) {
+        return p_list->empty();
     }
     else if (const varlisp::Environment* p_env =
-                 varlisp::getTypedValue<varlisp::Environment>(env, args.head,
+                 varlisp::getTypedValue<varlisp::Environment>(env, detail::car(args),
                                                               obj)) {
-        return int64_t(p_env->empty());
+        return p_env->empty();
     }
     else {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": not support on this object ", args.head, ")");
+                           ": not support on this object ", detail::car(args), ")");
     }
 }
 
@@ -245,23 +233,23 @@ REGIST_BUILTIN("append", 2, 2, eval_append,
 Object eval_append(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
-    const varlisp::List * p_list1 = getFirstListPtrFromArg(env, args, obj1);
+    const varlisp::List * p_list1 = getQuotedList(env, detail::car(args), obj1);
     if (!p_list1) {
         SSS_POSITION_THROW(std::runtime_error, "(append: need s-List as the 1st argument)");
     }
     Object obj2;
-    const varlisp::List * p_list2 = getFirstListPtrFromArg(env, args.tail[0], obj2);
+    const varlisp::List * p_list2 = getQuotedList(env, detail::cadr(args), obj2);
     if (!p_list2) {
         SSS_POSITION_THROW(std::runtime_error, "(append: need s-List as the 2nd argument)");
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
 
     auto back_it = detail::list_back_inserter<Object>(ret);
-
-    for (auto read_it = detail::list_object_const_iterator_t(p_list1->next()); read_it;) {
+    // FIXME delete！ list_object_const_iterator_t
+    for (auto read_it = p_list1->begin(); read_it != p_list1->end();) {
         *back_it++ = *read_it++;
     }
-    for (auto read_it = detail::list_object_const_iterator_t(p_list2->next()); read_it;) {
+    for (auto read_it = p_list2->begin(); read_it != p_list2->end();) {
         *back_it++ = *read_it++;
     }
     // std::copy(detail::list_object_const_iterator_t(p_list1->next()), detail::list_object_const_iterator_t(), back_it);
