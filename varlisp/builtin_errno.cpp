@@ -3,6 +3,7 @@
 #include "object.hpp"
 #include "builtin_helper.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -36,7 +37,7 @@ Object eval_strerr(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "strerr";
     Object obj;
     const int64_t* p_err =
-        getTypedValue<int64_t>(env, args.head, obj);
+        getTypedValue<int64_t>(env, detail::car(args), obj);
     if (!p_err) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": requies int64_t errnor as 1st argument)");
