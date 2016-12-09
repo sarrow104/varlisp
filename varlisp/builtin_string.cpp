@@ -13,6 +13,7 @@
 
 #include "detail/buitin_info_t.hpp"
 #include "detail/list_iterator.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -39,7 +40,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     const char *funcName = "split";
     Object content;
     const string_t *p_content =
-        getTypedValue<string_t>(env, args.head, content);
+        getTypedValue<string_t>(env, detail::car(args), content);
 
     if (!p_content) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
@@ -50,7 +51,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     if (args.length() == 2) {
         Object sep_obj;
         const string_t *p_sep =
-            getTypedValue<string_t>(env, args.next()->head, sep_obj);
+            getTypedValue<string_t>(env, detail::cadr(args), sep_obj);
         if (!p_sep) {
             SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": requires seq string as 2nd argument)");
@@ -91,7 +92,7 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "join";
     Object obj;
-    const List *p_list = getFirstListPtrFromArg(env, args, obj);
+    const List *p_list = getQuotedList(env, detail::car(args), obj);
 
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error,
@@ -101,7 +102,7 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     std::string sep;
     if (args.length() == 2) {
         Object sep_obj;
-        const string_t *p_sep = getTypedValue<string_t>(env, args.tail[0].head, sep_obj);
+        const string_t *p_sep = getTypedValue<string_t>(env, detail::cadr(args), sep_obj);
         if (!p_sep) {
             SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": 2nd sep must be a string)");
@@ -112,10 +113,9 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     std::ostringstream oss;
 
     bool is_first = true;
-    p_list = p_list->next();
-    while (p_list) {
+    for (auto it = p_list->begin(); it != p_list->end(); ++it) {
         Object obj;
-        const string_t *p_stem = getTypedValue<string_t>(env, p_list->head, obj);
+        const string_t *p_stem = getTypedValue<string_t>(env, *it, obj);
         if (!p_stem) {
             break;
         }
@@ -126,7 +126,6 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
             oss << sep;
         }
         oss << *p_stem;
-        p_list = p_list->next();
     }
 
     return Object(string_t(std::move(oss.str())));
@@ -150,18 +149,16 @@ REGIST_BUILTIN("substr", 2, 3, eval_substr,
 Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "substr";
-    const List *p_arg = &args;
     Object content;
     const string_t *p_content =
-        getTypedValue<string_t>(env, p_arg->head, content);
+        getTypedValue<string_t>(env, detail::car(args), content);
     if (!p_content) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need string as 1st argument)");
     }
-    p_arg = p_arg->next();
 
     Object offset;
-    const Object &offset_ref = getAtomicValue(env, p_arg->head, offset);
+    const Object &offset_ref = getAtomicValue(env, detail::cadr(args), offset);
 
     arithmetic_t offset_number =
         boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
@@ -180,10 +177,9 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 
     int64_t length = -1;
     if (args.length() == 3) {
-        p_arg = p_arg->next();
         Object length_obj;
         const Object &length_obj_ref =
-            getAtomicValue(env, p_arg->head, length_obj);
+            getAtomicValue(env, detail::caddr(args), length_obj);
         arithmetic_t arithmetic_length = boost::apply_visitor(
             arithmetic_cast_visitor(env), (length_obj_ref));
         if (!arithmetic_length.which()) {
@@ -218,7 +214,7 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "strlen";
     Object obj;
-    const string_t *p_str = getTypedValue<string_t>(env, args.head, obj);
+    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
     if (!p_str) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need an string as the 1st argument)");
@@ -250,7 +246,7 @@ Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "split-char";
     Object obj;
     const varlisp::string_t *p_str =
-        varlisp::getTypedValue<varlisp::string_t>(env, args.head, obj);
+        varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), obj);
     if (!p_str) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need an string as the 1st argument)");
@@ -279,12 +275,11 @@ Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "join-char";
     Object obj;
-    const varlisp::List * p_list = varlisp::getFirstListPtrFromArg(env, args, obj);
+    const varlisp::List * p_list = varlisp::getQuotedList(env, detail::car(args), obj);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need quote list as the 1st argument)");
     }
-    p_list = p_list->next();
     std::string ret;
     sss::util::utf8::dumpout2utf8(detail::list_const_iterator_t<int64_t>(p_list),
                                   detail::list_const_iterator_t<int64_t>(nullptr),
@@ -300,7 +295,7 @@ Object eval_split_byte(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "split-byte";
     Object obj;
     const varlisp::string_t *p_str =
-        varlisp::getTypedValue<varlisp::string_t>(env, args.head, obj);
+        varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), obj);
     if (!p_str) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need an string as the 1st argument)");
@@ -322,12 +317,11 @@ Object eval_join_byte(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "join-byte";
     Object obj;
-    const varlisp::List * p_list = varlisp::getFirstListPtrFromArg(env, args, obj);
+    const varlisp::List * p_list = varlisp::getQuotedList(env, detail::car(args), obj);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need quote list as the 1st argument)");
     }
-    p_list = p_list->next();
     std::string ret;
     // FIXME 谨防 0x80 0xFF 字符可能引起问题
     for (auto it = detail::list_const_iterator_t<int64_t>(p_list); it; ++it) {
