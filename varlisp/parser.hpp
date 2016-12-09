@@ -28,6 +28,11 @@ public:
     Parser& operator=(const Parser&) = default;
 
 public:
+    typedef std::tuple<int, int, int> parenthese_stack_t;
+    parenthese_stack_t get_parenthese_stack() const
+    {
+        return m_parenthese_stack;
+    }
     int parse(varlisp::Environment& env, const std::string& scripts,
               bool is_silent = false);
 
@@ -64,6 +69,7 @@ protected:
 
 private:
     varlisp::Tokenizer m_toknizer;
+    parenthese_stack_t m_parenthese_stack;
 };
 }  // namespace varlisp
 

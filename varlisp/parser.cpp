@@ -122,12 +122,9 @@ int Parser::retrieve_symbols(std::vector<std::string>& symbols,
                              const char* prefix) const
 {
     this->m_toknizer.retrieve_symbols(symbols, prefix);
-    // TODO 应对讲这个，纳入keywords_t管理
-    const char* keywords[] = {"if",     "else",   "cond", "and", "or",
-        "define", "lambda", "list", "nil", "quote", "context"};
-    for (const auto* item : keywords) {
-        if (sss::is_begin_with(item, prefix)) {
-            symbols.push_back(item);
+    for (const auto item : keywords_t::get_keywords_vector()) {
+        if (sss::is_begin_with(item.to_string(), prefix)) {
+            symbols.push_back(item.to_string());
         }
     }
 }
@@ -154,81 +151,87 @@ inline int parenthese_type(parenthese_t pt)
 
 bool Parser::balance_preread()
 {
-        SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
-        size_t token_cnt = 0;
-        std::vector<std::tuple<int,int,int>> pt_stack;
-        const static std::tuple<int, int,int > pt_zero;
-        std::vector<int> pt_types;
-        pt_types.push_back(-1);
-        COLOG_DEBUG(SSS_VALUE_MSG(pt_zero));
-        // int parenthese_balance = 0;
-        // int bracket_balance = 0;
-        // int curly_balance = 0;
-        for (varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
-             tok = this->m_toknizer.lookahead_nothrow(token_cnt), tok.which(); token_cnt++)
-        {
-            COLOG_DEBUG(tok);
-            const varlisp::parenthese_t * p_parenthese = boost::get<varlisp::parenthese_t>(&tok);
-            if (!p_parenthese) {
-                continue;
-            }
-
-            // 如何判断括号匹配失衡？
-            // 1. 左括号随时可以出现——只要当前括号是平衡的，那么三种左括号，都可以出现。
-            // 2. 右括号出现的时候，必须在左侧找到"空闲"的左括号；
-            // 3. 解析完成(eof)的失衡，必须没有孤立的括号。
-            //
-            // 简单优化了一下。让同类型的括号可以累加；
-            // 一旦有不同类型的括号，就使用栈。
-            // 这样，就可以保证括号的配对使用了。
-
-            if (pt_types.back() != detail::parenthese_type(*p_parenthese)) {
-                pt_stack.push_back(std::make_tuple(0, 0, 0));
-                pt_types.push_back(detail::parenthese_type(*p_parenthese));
-            }
-            COLOG_DEBUG(SSS_VALUE_MSG(pt_stack.size()), pt_stack);
-            switch (*p_parenthese) {
-                case varlisp::left_parenthese:
-                    std::get<0>(pt_stack.back()) ++;
-                    break;
-                case varlisp::right_parenthese:
-                    std::get<0>(pt_stack.back()) --;
-                    break;
-                case varlisp::left_bracket:
-                    std::get<1>(pt_stack.back()) ++;
-                    break;
-                case varlisp::right_bracket:
-                    std::get<1>(pt_stack.back()) --;
-                    break;
-                case varlisp::left_curlybracket:
-                    std::get<2>(pt_stack.back()) ++;
-                    break;
-                case varlisp::right_curlybracket:
-                    std::get<2>(pt_stack.back()) --;
-                    break;
-                default:
-                    SSS_POSITION_THROW(std::runtime_error, "parenthese_t == 0");
-            }
-
-            if (pt_stack.back() == pt_zero) {
-                pt_stack.pop_back();
-                pt_types.pop_back();
-            }
-            else if (std::get<0>(pt_stack.back()) < 0 ||
-                     std::get<1>(pt_stack.back()) < 0 ||
-                     std::get<2>(pt_stack.back()) < 0)
-            {
-                this->m_toknizer.print_token_stack(std::cout);
-                this->m_toknizer.clear();
-                SSS_POSITION_THROW(std::runtime_error, "parenthese not balance!");
-            }
-            if (pt_stack.empty()) {
-                break;
-            }
+    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+    size_t token_cnt = 0;
+    std::vector<std::tuple<int,int,int>> pt_stack;
+    const static std::tuple<int, int,int > pt_zero;
+    std::vector<int> pt_types;
+    pt_types.push_back(-1);
+    COLOG_DEBUG(SSS_VALUE_MSG(pt_zero));
+    // int parenthese_balance = 0;
+    // int bracket_balance = 0;
+    // int curly_balance = 0;
+    for (varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
+         tok = this->m_toknizer.lookahead_nothrow(token_cnt), tok.which(); token_cnt++)
+    {
+        COLOG_DEBUG(tok);
+        const varlisp::parenthese_t * p_parenthese = boost::get<varlisp::parenthese_t>(&tok);
+        if (!p_parenthese) {
+            continue;
         }
-        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, pt_stack.size());
-        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, token_cnt);
-        return pt_stack.empty();
+
+        // 如何判断括号匹配失衡？
+        // 1. 左括号随时可以出现——只要当前括号是平衡的，那么三种左括号，都可以出现。
+        // 2. 右括号出现的时候，必须在左侧找到"空闲"的左括号；
+        // 3. 解析完成(eof)的失衡，必须没有孤立的括号。
+        //
+        // 简单优化了一下。让同类型的括号可以累加；
+        // 一旦有不同类型的括号，就使用栈。
+        // 这样，就可以保证括号的配对使用了。
+
+        if (pt_types.back() != detail::parenthese_type(*p_parenthese)) {
+            pt_stack.push_back(std::make_tuple(0, 0, 0));
+            pt_types.push_back(detail::parenthese_type(*p_parenthese));
+        }
+        COLOG_DEBUG(SSS_VALUE_MSG(pt_stack.size()), pt_stack);
+        switch (*p_parenthese) {
+            case varlisp::left_parenthese:
+                std::get<0>(pt_stack.back()) ++;
+                break;
+            case varlisp::right_parenthese:
+                std::get<0>(pt_stack.back()) --;
+                break;
+            case varlisp::left_bracket:
+                std::get<1>(pt_stack.back()) ++;
+                break;
+            case varlisp::right_bracket:
+                std::get<1>(pt_stack.back()) --;
+                break;
+            case varlisp::left_curlybracket:
+                std::get<2>(pt_stack.back()) ++;
+                break;
+            case varlisp::right_curlybracket:
+                std::get<2>(pt_stack.back()) --;
+                break;
+            default:
+                SSS_POSITION_THROW(std::runtime_error, "parenthese_t == 0");
+        }
+
+        if (pt_stack.back() == pt_zero) {
+            pt_stack.pop_back();
+            pt_types.pop_back();
+        }
+        else if (std::get<0>(pt_stack.back()) < 0 ||
+                 std::get<1>(pt_stack.back()) < 0 ||
+                 std::get<2>(pt_stack.back()) < 0)
+        {
+            this->m_toknizer.print_token_stack(std::cout);
+            this->m_toknizer.clear();
+            SSS_POSITION_THROW(std::runtime_error, "parenthese not balance!");
+        }
+        if (pt_stack.empty()) {
+            break;
+        }
+    }
+    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, pt_stack.size());
+    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, token_cnt);
+    m_parenthese_stack = pt_zero;
+    for (auto item : pt_stack) {
+        std::get<0>(m_parenthese_stack) += std::get<0>(item);
+        std::get<1>(m_parenthese_stack) += std::get<1>(item);
+        std::get<2>(m_parenthese_stack) += std::get<2>(item);
+    }
+    return pt_stack.empty();
 }
 
 // Expression:
