@@ -4,6 +4,7 @@
 #include "cast_visitor.hpp"
 #include "detail/buitin_info_t.hpp"
 #include "detail/is_symbol.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -22,7 +23,7 @@ Object eval_typeid(varlisp::Environment &env, const varlisp::List &args)
 {
     // const char * funcName = "typeid";
     Object obj;
-    const Object& obj_ref = getAtomicValue(env, args.head, obj);
+    const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
     return varlisp::typedid(env, obj_ref);
 }
 
@@ -53,7 +54,7 @@ Object eval_number_q(varlisp::Environment &env, const varlisp::List &args)
 {
     // const char * funcName = "number?";
     Object obj;
-    const Object& obj_ref = getAtomicValue(env, args.head, obj);
+    const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
     return between_cc_range<int>(varlisp::typedid(env, obj_ref),
                                  varlisp::typedid(env, varlisp::Object{int64_t(1)}),
                                  varlisp::typedid(env, varlisp::Object{1.0}));
@@ -74,7 +75,7 @@ Object eval_boolean_q(varlisp::Environment &env, const varlisp::List &args)
 {
     // const char * funcName = "boolean?";
     Object obj;
-    const Object& obj_ref = getAtomicValue(env, args.head, obj);
+    const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
     return varlisp::typedid(env, obj_ref) ==
            varlisp::typedid(env, Object{true});
 }
@@ -94,7 +95,7 @@ Object eval_string_q(varlisp::Environment &env, const varlisp::List &args)
 {
     // const char * funcName = "string?";
     Object obj;
-    const Object& obj_ref = getAtomicValue(env, args.head, obj);
+    const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
     return varlisp::typedid(env, obj_ref) ==
            varlisp::typedid(env, Object{varlisp::string_t{}});
 }
@@ -114,7 +115,7 @@ Object eval_slist_q(varlisp::Environment &env, const varlisp::List &args)
 {
     // const char * funcName = "slist?";
     Object obj;
-    const varlisp::List * p_list = getFirstListPtrFromArg(env, args, obj);
+    const varlisp::List * p_list = getQuotedList(env, args, obj);
     return p_list != 0;
 }
 
@@ -133,7 +134,7 @@ REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");
 Object eval_null_q(varlisp::Environment& env, const varlisp::List& args)
 {
     Object tmp;
-    const Object& obj = getAtomicValue(env, args.head, tmp);
+    const Object& obj = getAtomicValue(env, detail::car(args), tmp);
     return obj.which() == 1;
 }
 
@@ -151,13 +152,11 @@ REGIST_BUILTIN("cast", 2, 2, eval_cast,
  */
 Object eval_cast(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char * funcName = "cast";
-    Object tmp;
-    const varlisp::List * p_1st = &args;
-    const varlisp::List * p_2nd = p_1st->next();
+    // const char * funcName = "cast";
 
-    return boost::apply_visitor(cast_visitor(env, p_1st->head, p_2nd->head),
-                                p_1st->head, p_2nd->head);
+    return boost::apply_visitor(
+        cast_visitor(env, detail::car(args), detail::cadr(args)),
+        detail::car(args), detail::cadr(args));
 }
 
 } // namespace varlisp
