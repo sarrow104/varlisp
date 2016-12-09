@@ -274,6 +274,7 @@ int main(int argc, char* argv[])
                                  sss::colog::ls_LINE);
 
     sss::colog::set_log_levels(sss::colog::ll_INFO |
+                               // sss::colog::ll_DEBUG |
                                sss::colog::ll_ERROR |
                                sss::colog::ll_WARN |
                                sss::colog::ll_FATAL);
