@@ -47,15 +47,14 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
     // 我还是先实现字面值吧！
 
     const char * funcName = "sort";
-    const Object& callable = args.head;
+    const Object& callable = detail::car(args);
 
     Object listObj;
-    const varlisp::List * p_list = varlisp::getFirstListPtrFromArg(env, args.tail[0], listObj);
+    const varlisp::List * p_list = varlisp::getQuotedList(env, detail::cadr(args), listObj);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": second must be list)");
     }
-    p_list = p_list->next();
 
     int arg_length = p_list->length();
     COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
@@ -64,18 +63,16 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
     std::vector<const Object*> p_arg_list_vec;
     p_arg_list_vec.resize(arg_length);
 
-    for (int i = 0; i < arg_length; ++i, p_list = p_list->next()) {
-        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, p_list->head, tmp_obj_vec[i]);
+    int i = 0;
+    for (auto it = p_list->begin(); it != p_list->end(); ++it, ++i) {
+        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, *it, tmp_obj_vec[i]);
     }
 
     // NOTE >< 等比较函数，对于字符串无效……
     std::sort(p_arg_list_vec.begin(), p_arg_list_vec.end(),
               [&env,&callable](const Object* v1, const Object* v2)->bool{
-                  varlisp::List expr {callable};
-                  auto back_it = detail::list_back_inserter<Object>(expr);
+                  varlisp::List expr {callable, *v1, *v2};
                   COLOG_DEBUG(callable, *v1, *v2);
-                  *back_it++ = *v1;
-                  *back_it++ = *v2;
                   Object ret = expr.eval(env);
                   return boost::apply_visitor(cast2bool_visitor(env), ret);
               });
@@ -106,7 +103,7 @@ REGIST_BUILTIN("sort!", 2, 2, eval_sort_bar,
 Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "sort!";
-    const Object& callable = args.head;
+    const Object& callable = detail::car(args);
 
     Object symObj;
     auto p_sym = varlisp::getSymbol(env, detail::cadr(args), symObj);
@@ -126,7 +123,6 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
                            *p_sym, " is not reference to a s-list!);"
                            " but: ", boost::apply_visitor(eval_visitor(env), detail::cadr(args)));
     }
-    p_list = p_list->next();
 
     int arg_length = p_list->length();
     COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
@@ -134,19 +130,16 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
     tmp_obj_vec.resize(arg_length);
     std::vector<const Object*> p_arg_list_vec;
     p_arg_list_vec.resize(arg_length);
-
-    for (int i = 0; i < arg_length; ++i, p_list = p_list->next()) {
-        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, p_list->head, tmp_obj_vec[i]);
+    int i = 0;
+    for (auto it = p_list->begin(); it != p_list->end(); ++it, ++i) {
+        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, *it, tmp_obj_vec[i]);
     }
 
     // NOTE >< 等比较函数，对于字符串无效……
     std::sort(p_arg_list_vec.begin(), p_arg_list_vec.end(),
               [&env,&callable](const Object* v1, const Object* v2)->bool{
-                  varlisp::List expr {callable};
-                  auto back_it = detail::list_back_inserter<Object>(expr);
+                  varlisp::List expr {callable, *v1, *v2};
                   COLOG_DEBUG(callable, *v1, *v2);
-                  *back_it++ = *v1;
-                  *back_it++ = *v2;
                   Object ret = expr.eval(env);
                   return boost::apply_visitor(cast2bool_visitor(env), ret);
               });
