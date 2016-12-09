@@ -29,15 +29,14 @@ Object eval_bit_and(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": int64_t as parameter needed)");
     }
     int64_t ret = *p_var;
-    const varlisp::List * p_list = args.next();
-    while (p_list && p_list->head.which()) {
-        p_var = varlisp::getTypedValue<int64_t>(env, p_list->head, res);
+    const varlisp::List tail = args.tail();
+    for (auto it = tail.begin(); it != tail.end(); ++it) {
+        p_var = varlisp::getTypedValue<int64_t>(env, *it, res);
         if (!p_var) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": int64_t as parameter needed)");
         }
         ret &= *p_var;
-        p_list = p_list->next();
     }
     return ret;
 }
@@ -62,15 +61,14 @@ Object eval_bit_or(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": int64_t as parameter needed)");
     }
     int64_t ret = *p_var;
-    const varlisp::List * p_list = args.next();
-    while (p_list && p_list->head.which()) {
-        p_var = varlisp::getTypedValue<int64_t>(env, p_list->head, res);
+    const varlisp::List tail = args.tail();
+    for (auto it = tail.begin(); it != tail.end(); ++it) {
+        p_var = varlisp::getTypedValue<int64_t>(env, *it, res);
         if (!p_var) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": int64_t as parameter needed)");
         }
         ret |= *p_var;
-        p_list = p_list->next();
     }
     return ret;
 }
@@ -117,15 +115,14 @@ Object eval_bit_xor(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": int64_t as parameter needed)");
     }
     int64_t ret = *p_var;
-    const varlisp::List * p_list = args.next();
-    while (p_list && p_list->head.which()) {
-        p_var = varlisp::getTypedValue<int64_t>(env, p_list->head, res);
+    const varlisp::List tail = args.tail();
+    for (auto it = tail.begin(); it != tail.end(); ++it) {
+        p_var = varlisp::getTypedValue<int64_t>(env, *it, res);
         if (!p_var) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": int64_t as parameter needed)");
         }
         ret ^= *p_var;
-        p_list = p_list->next();
     }
     return ret;
 }
