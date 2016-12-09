@@ -9,6 +9,7 @@
 #include "interpreter.hpp"
 
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -46,7 +47,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 
     Object path;
     const string_t* p_path =
-        getTypedValue<string_t>(env, args.head, path);
+        getTypedValue<string_t>(env, detail::car(args), path);
     if (!p_path) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies a path)");
