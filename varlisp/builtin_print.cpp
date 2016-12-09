@@ -9,6 +9,7 @@
 #include "fmt_print_visitor.hpp"
 #include "detail/io.hpp"
 #include "detail/buitin_info_t.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 
@@ -16,7 +17,7 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env,
               const varlisp::List& args, const char* funcName)
 {
     Object obj1;
-    const string_t* p_fmt = getTypedValue<string_t>(env, args.head, obj1);
+    const string_t* p_fmt = getTypedValue<string_t>(env, detail::car(args), obj1);
     if (!p_fmt) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires string to escape at 1st)");
@@ -32,10 +33,9 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env,
     vecTmpArgs.resize(arg_len, Object{});
     vecObjPtr.resize(arg_len, nullptr);
 
-    const varlisp::List* p_arg = args.next();
-    while (p_arg && p_arg->head.which()) {
-        vecArgPtr.push_back(&p_arg->head);
-        p_arg = p_arg->next();
+    const varlisp::List arg = args.tail();
+    for (auto it = arg.begin(); it != arg.end(); ++it) {
+        vecArgPtr.push_back(&(*it));
     }
 
     COLOG_DEBUG(SSS_VALUE_MSG(arg_len));
@@ -135,7 +135,7 @@ Object eval_format(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "format";
     Object objFd;
-    const Object& fdRef = varlisp::getAtomicValue(env, args.head, objFd);
+    const Object& fdRef = varlisp::getAtomicValue(env, detail::car(args), objFd);
     int64_t fd = -1;
     if (nullptr != boost::get<varlisp::Nill>(&fdRef)) {
         fd = 0;
@@ -153,7 +153,7 @@ Object eval_format(varlisp::Environment& env, const varlisp::List& args)
     }
 
     std::ostringstream oss;
-    fmt_impl(oss, env, args.tail[0], funcName);
+    fmt_impl(oss, env, args.tail(), funcName);
     std::string out = oss.str();
 
     if (fd == 0) {
@@ -182,7 +182,7 @@ Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "fmt-escape";
     Object obj1;
-    const string_t* p_fmt = getTypedValue<string_t>(env, args.head, obj1);
+    const string_t* p_fmt = getTypedValue<string_t>(env, detail::car(args), obj1);
     if (!p_fmt) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requires string to escape at 1st)");
