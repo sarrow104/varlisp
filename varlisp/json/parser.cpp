@@ -18,6 +18,17 @@ struct JParser
         sss::string_view s_bak = s;
         try {
             parse(s, ret);
+            this->skip_white_space(s);
+            if (!s.empty()) {
+                if (ret.which()) {
+                    SSS_POSITION_THROW(std::runtime_error, "extra char:",
+                                       sss::raw_char(s.front()));
+                }
+                else {
+                    SSS_POSITION_THROW(std::runtime_error, "error bytes:",
+                                       sss::raw_char(s.front()));
+                }
+            }
         }
         catch (...)
         {
@@ -86,7 +97,7 @@ struct JParser
 
                 default:
                     SSS_POSITION_THROW(std::runtime_error,
-                                       "unexpect string ", s);
+                                       "unexpect string ", sss::raw_string(s));
                     break;
             }
         }
