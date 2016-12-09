@@ -95,7 +95,7 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
                 COLOG_DEBUG(expr);
 
                 Object result;
-                const Object& res = getAtomicValue(env, expr, result);
+                const Object& res = varlisp::getAtomicValue(env, expr, result);
                 if (!is_silent) {
                     boost::apply_visitor(print_visitor(std::cout), res);
                     std::cout << std::endl;
@@ -253,6 +253,12 @@ Object Parser::parseExpression()
                     if (p_k && p_k->type() == keywords_t::kw_CONTEXT) {
                         return this->parseEnvironment();
                     }
+                    else if (p_k && p_k->type() == keywords_t::kw_QUOTE) {
+                        // (quote ...)形式，只接受一个参数！
+                        // > (quote 1 2)
+                        // 1
+                        return this->parseQuote();
+                    }
                     else {
                         return this->parseList();
                     }
@@ -327,7 +333,6 @@ Object Parser::parseEnvironment()
     }
     else if (this->m_toknizer.consume(varlisp::left_curlybracket)) {
         end_pt = varlisp::right_curlybracket;
-        // SSS_POSITION_THROW(std::runtime_error, "expect '{'");
     }
     else {
         SSS_POSITION_THROW(std::runtime_error, "expect '(context' or '{'");
@@ -356,28 +361,45 @@ Object Parser::parseEnvironment()
     if (!this->m_toknizer.consume(end_pt)) {
         SSS_POSITION_THROW(std::runtime_error, "expect ", sss::raw_char(char(end_pt)));
     }
-    // return std::move(env);
-    return env;
+    return std::move(env);
+    // return env;
 }
 
 Object Parser::parseQuote()
 {
-    if (!this->m_toknizer.consume(varlisp::quote_sign_t{})) {
-        SSS_POSITION_THROW(std::runtime_error, "expect ', but ", this->m_toknizer.top());
+    if (this->m_toknizer.consume(varlisp::quote_sign_t{})) {
+        Object value = this->parseExpression();
+        COLOG_DEBUG(value);
+        return varlisp::List::makeSQuoteObj(std::move(value));
     }
-    Object value = this->parseExpression();
-    return varlisp::List::makeList(
-        {std::move(varlisp::keywords_t{keywords_t::kw_QUOTE}),
-        std::move(value)});
+    else if (this->m_toknizer.consume(varlisp::left_parenthese)) {
+        if (!this->m_toknizer.consume(varlisp::keywords_t::kw_QUOTE)) {
+            SSS_POSITION_THROW(std::runtime_error, "expect (quote ..., but only ", this->m_toknizer.top(), " after (");
+        }
+        Object value = this->parseExpression();
+        COLOG_DEBUG(value);
+        if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            SSS_POSITION_THROW(std::runtime_error, "expect ) but ", this->m_toknizer.top());
+        }
+        return varlisp::List::makeSQuoteObj(std::move(value));
+    }
+    else {
+        SSS_POSITION_THROW(std::runtime_error, "expect ' or (quote ..., but ", this->m_toknizer.top());
+    }
 }
 
 // FIXME
 //
 // '(' 应该由各自的函数自己进行consume!
 //
+// > (quote (1 2))
+// (1 2)
+// > (list 1 2)
+// (1 2)
+// NOTE quote 和list等效；区别只是……
 Object Parser::parseList()
 {
-    SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
+    COLOG_DEBUG(this->m_toknizer.top());
     varlisp::parenthese_t end_pt = varlisp::none_parenthese;
     if (this->m_toknizer.consume(varlisp::left_parenthese)) {
         end_pt = varlisp::right_parenthese;
@@ -395,10 +417,10 @@ Object Parser::parseList()
                     return this->parseSpecialCond();
 
                 case keywords_t::kw_AND:
-                    return parseSpecialAnd();
+                    return this->parseSpecialAnd();
 
                 case keywords_t::kw_OR:
-                    return parseSpecialOr();
+                    return this->parseSpecialOr();
 
                 case keywords_t::kw_DEFINE:
                     return this->parseSpecialDefine();
@@ -422,14 +444,18 @@ Object Parser::parseList()
     // 后者的第一个元素，相当于一个函数；其作用，就是将当前列表之后的部分整体返回！
     // 可以看做：(cdr (list list 1 2 3))
 
-    List current;
+    varlisp::List current;
+
     detail::list_back_inserter_t<detail::Converter<Object> > inserter(current);
-    if (end_pt == varlisp::right_bracket) {
-        *inserter ++ = keywords_t{keywords_t::kw_LIST};
-    }
+
     varlisp::Token tok;
 
+    bool is_quote_list = this->m_toknizer.consume(varlisp::keywords_t::kw_LIST);
+
+    COLOG_DEBUG(SSS_VALUE_MSG(is_quote_list));
+
     while (tok = m_toknizer.top(), tok.which()) {
+        COLOG_DEBUG(current);
         switch (tok.which()) {
             case 0:
                 break;
@@ -445,6 +471,13 @@ Object Parser::parseList()
                     if (!this->m_toknizer.consume(end_pt)) {
                         SSS_POSITION_THROW(std::runtime_error, "expect ", char(end_pt));
                     }
+                    if (end_pt == varlisp::right_bracket) {
+                        return varlisp::List::makeSQuoteObj(std::move(current));
+                    }
+                    else if (is_quote_list) {
+                        return varlisp::List::makeSQuoteObj(std::move(current));
+                    }
+
                     return current;
                 }
                 break;
@@ -495,6 +528,16 @@ Object Parser::parseList()
                         *inserter++ = key;
                     }
                     m_toknizer.consume();
+                }
+                break;
+
+            case 9:
+                *inserter++ = this->parseQuote();
+                break;
+
+            default:
+                {
+                    SSS_POSITION_THROW(std::runtime_error, "unexpect token:", tok);
                 }
                 break;
         }
