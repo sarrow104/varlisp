@@ -44,25 +44,23 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, *this);
     Environment inner(&env);
     if (this->args.size() != true_args.length()) {
-        std::cout << *this << std::endl;
-        std::cout << true_args << std::endl;
-        SSS_POSITION_THROW(std::runtime_error, "expect ", this->args.size(),
-                          ", but given ", true_args.length());
+        SSS_POSITION_THROW(std::runtime_error, *this, " expect ",
+                           this->args.size(), " argument, but given ",
+                           true_args.length(), " argument: ", true_args);
     }
-    const varlisp::List* p = &true_args;
-    for (size_t i = 0; i != this->args.size();
-         ++i, p = p->tail.empty() ? 0 : &p->tail[0]) {
-        if (!p) {
+    auto p = true_args.begin();
+    for (size_t i = 0; i != this->args.size(); ++i, ++p) {
+        if (p == true_args.end()) {
             SSS_POSITION_THROW(std::runtime_error, "Not enough argument at ", i,
                               "; name ", args[i]);
         }
-        if (!p->head.which()) {
+        if (!(*p).which()) {
             SSS_POSITION_THROW(std::runtime_error, "Empty argument at ", i,
                               "; name ", args[i]);
         }
 
         // SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args[i]);
-        inner[args[i]] = boost::apply_visitor(eval_visitor(env), p->head);
+        inner[args[i]] = boost::apply_visitor(eval_visitor(env), *p);
     }
 
     size_t i = 0;
