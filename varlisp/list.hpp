@@ -4,6 +4,10 @@
 #include <initializer_list>
 #include <stdexcept>
 #include <vector>
+#include <memory>
+
+#include <sss/util/PostionThrow.hpp>
+#include <sss/colorlog.hpp>
 
 #include "object.hpp"
 
@@ -23,80 +27,162 @@ struct Environment;
 // 加一个nil的！
 struct List {
     List() {}
-    List(const Object& h, const List& t) : head(h) { tail.push_back(t); }
-    List(const List& l);
-    explicit List(const Object& o) : head(o) {}
+    List(std::initializer_list<Object> l);
+    // List(const Object& h, const List& t);
+    List(const List& l) = default;
+    // explicit List(const Object& o);
     ~List() = default;
 
-    List& operator= (const List& l);
+    List& operator= (const List& l) = default;
 
     List(List&& m) = default;
     List& operator= (List&& l) = default;
 
-    Object head;
-    // NOTE 这本质上是 optional，而不是一个vector；我只会用到第一个元素；
-    std::vector<List> tail;
+public:
+    typedef std::vector<Object> shared_t;
 
+    typedef shared_t::iterator       iterator;
+    typedef shared_t::const_iterator const_iterator;
+
+    typedef shared_t::size_type      size_type;
+
+protected:
+    List(std::shared_ptr<shared_t> shared, size_t start, size_t len)
+        : m_refer(shared), m_start(start), m_length(len)
+    {}
+
+public:
     void print(std::ostream& o) const;
     void print_impl(std::ostream& o, const List* p = 0) const;
 
-    List* next_slot()
+    Object& head()
     {
-        if (this->tail.empty()) {
-            this->tail.push_back(varlisp::List());
-        }
-        return &tail[0];
+        return m_refer->operator[](m_start);
+    }
+    const Object& head() const
+    {
+        return m_refer->operator[](m_start);
     }
 
-    void clean();
+    List tail(size_t offset = 0) const;
 
-    const List* next() const { return this->tail.empty() ? 0 : &this->tail[0]; }
-    void assign(const Object& value) { this->head = value; }
+    iterator begin() {
+        return m_refer ? m_refer->begin() + m_start : shared_t::iterator();
+    }
+
+    iterator end() {
+        return m_refer ? m_refer->begin() + m_start + m_length : shared_t::iterator();
+    }
+
+    const_iterator begin() const {
+        return m_refer ? m_refer->begin() + m_start : shared_t::const_iterator();
+    }
+
+    const_iterator end() const {
+        return m_refer ? m_refer->begin() + m_start + m_length : shared_t::const_iterator();
+    }
+
+    size_type size() const {
+        return m_length;
+    }
+
+    void clear();
+
+    // // not used
+    // void assign(const Object& value) { this->head = value; }
     // void assign(Object&& value)
     // {
     //     std::swap(this->head, std::move(value));
     // }
 
-    bool is_empty() const
+    // NOTE 对于quote-list(s-list)，empty?是针对第二个节点的；
+    // 而对于一般的()——也就是lisp中的"程序"，empty?这个函数，有意义吗？
+    // head-tail模式下，本函数，直接判断的head.which以及tail.empty();
+    bool empty() const
     {
-        return this->head.which() == 0 && this->tail.empty();
+        return !m_length;
     }
 
-    static List makeList(std::initializer_list<Object> l)
+    static List makeSQuoteList()
     {
-        varlisp::List ret;
-        varlisp::List *p_list = &ret;
-        for (auto& item : l) {
-            p_list->head = item;
-            p_list = p_list->next_slot();
-        }
-        return ret;
+        return {keywords_t{keywords_t::kw_QUOTE} ,varlisp::List{}};
     }
 
     template<typename ...ArgsT>
     static List makeSQuoteList(ArgsT&&... args)
     {
-        return makeList({Object{keywords_t{keywords_t::kw_LIST}}, std::move(args)...});
+        return List( {keywords_t{keywords_t::kw_QUOTE}, varlisp::List{std::move(args)...}});
     }
 
-    static List makeSQuoteList()
+    template<typename ...ArgsT>
+    static List makeSQuoteList(const ArgsT&... args)
     {
-        return makeList({Object{keywords_t{keywords_t::kw_LIST}}});
+        return List( {keywords_t{keywords_t::kw_QUOTE}, varlisp::List{args...}});
     }
 
+    template<typename T>
+    static List makeSQuoteObj(const T& o)
+    {
+        return List( {keywords_t{keywords_t::kw_QUOTE}, o});
+    }
+
+    template<typename T>
+    static List makeSQuoteObj(const T&& o)
+    {
+        return List( {keywords_t{keywords_t::kw_QUOTE}, std::move(o)});
+    }
+
+    static List makeCons(const Object& o, const List& l)
+    {
+        List ret;
+        ret.append(o);
+        ret.append_list(l);
+        return List( {keywords_t{keywords_t::kw_QUOTE}, std::move(ret)});
+    }
+
+    // lisp语义
     const Object * objAt(size_t i) const;
     Object * objAt(size_t i);
 
+    // NOTE FIXME 为了语义明确，下面这个函数名，最好修改
+    // 为is_quote();
     bool is_squote() const;
 
-    void none_empty_squote_check() const;
+    const List * get_slist() const;
+    List * get_slist();
 
-    Object car() const;
-    Object cdr() const;
+    const List * none_empty_squote_check() const;
+
+    const Object& nth(size_t i) const;
+
+    // 内部语义
+    Object& nth(size_t i);
+
+    Object& front()
+    {
+        return nth(0);
+    }
+    const Object& front() const
+    {
+        return nth(0);
+    }
+
+    Object& back()
+    {
+        return nth(m_length - 1);
+    }
+    const Object& back() const
+    {
+        return nth(m_length - 1);
+    }
+
+    // List语义
+    Object car(size_t n = 0) const;
+    Object cdr(size_t n = 0) const;
 
     Object eval(Environment& env) const;
 
-    size_t length() const;
+    size_type length() const;
 
     // NOTE
     // 尾节点，貌似有两种状态！
@@ -106,8 +192,19 @@ struct List {
     void append(const Object& o);
     void append(Object&& o);
 
+    void append_list(const List& l);
+    void append_list(List&& l);
+
     void push_front(const Object& o);
     void swap(List& ref);
+
+protected:
+    void make_unique();
+
+private:
+    std::shared_ptr<shared_t>   m_refer;
+    size_t                      m_start = 0;
+    size_t                      m_length = 0;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const List& d)
