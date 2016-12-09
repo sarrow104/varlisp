@@ -12,6 +12,7 @@
 
 #include "detail/buitin_info_t.hpp"
 #include "detail/list_iterator.hpp"
+#include "detail/car.hpp"
 
 namespace varlisp {
 // 应该如何处理shell-eval时候的参数？
@@ -51,7 +52,7 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     Object program;
 
     const string_t* p_program =
-        getTypedValue<string_t>(env, args.head, program);
+        getTypedValue<string_t>(env, detail::car(args), program);
     if (!p_program || p_program->empty()) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": 1st arg must be an none-empty string)");
@@ -60,10 +61,11 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     oss << p_program->to_string();
 
     static sss::util::Escaper esp("\\ \"'[](){}?*$&");
-    for (const varlisp::List* p_list = args.next();
-        p_list && p_list->head.which(); p_list = p_list->next()) {
+    for (auto it = args.begin() + 1;
+        it != args.end(); ++it)
+    {
         Object tmp;
-        const Object& current = getAtomicValue(env, p_list->head, tmp);
+        const Object& current = getAtomicValue(env, *it, tmp);
         std::ostringstream inner_oss;
         boost::apply_visitor(raw_stream_visitor(inner_oss, env), current);
         std::string param = inner_oss.str();
@@ -104,7 +106,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "shell-cd";
     Object path;
     const string_t* p_path =
-        getTypedValue<string_t>(env, args.head, path);
+        getTypedValue<string_t>(env, detail::car(args), path);
     if (!p_path) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requie one path string!)");
@@ -131,12 +133,12 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "shell-ls";
     varlisp::List ret = varlisp::List::makeSQuoteList();
-    const List* p = &args;
     auto ret_it = detail::list_back_inserter<Object>(ret);
-    if (args.length() && args.head.which()) {
-        while (p && p->head.which()) {
+    if (args.length() && detail::car(args).which()) {
+        
+        for (auto it = args.begin(); it != args.end(); ++it) {
             Object ls_arg;
-            const string_t* p_ls_arg = getTypedValue<string_t>(env, p->head, ls_arg);
+            const string_t* p_ls_arg = getTypedValue<string_t>(env, *it, ls_arg);
             if (!p_ls_arg) {
                 SSS_POSITION_THROW(std::runtime_error,
                                   "(", funcName, ": require string-type args)");
@@ -166,7 +168,6 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
                                 "not exists)");
                     break;
             }
-            p = p->next();
         }
     }
     else {
