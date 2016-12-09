@@ -20,20 +20,26 @@ void json_print_visitor::operator()(const varlisp::symbol& s) const { m_o << s.m
 void json_print_visitor::operator()(const varlisp::List& s) const
 {
     if (s.is_squote()) {
-        m_o << '[';
-        bool is_first = true;
-        for (auto it = detail::list_object_const_iterator_t(s.next());
-             it; ++it)
-        {
-            if (is_first) {
-                is_first = false;
+        const List * p_tail = nullptr;
+        p_tail = boost::get<varlisp::List>(&s.nth(1));
+        if (p_tail) {
+            m_o << '[';
+            bool is_first = true;
+            for (auto it = p_tail->begin(); it != p_tail->end(); ++it) {
+                if (is_first) {
+                    is_first = false;
+                }
+                else {
+                    m_o << ", ";
+                }
+                boost::apply_visitor(json_print_visitor(m_o), *it);
             }
-            else {
-                m_o << ", ";
-            }
-            boost::apply_visitor(json_print_visitor(m_o), *it);
+            m_o << ']';
         }
-        m_o << ']';
+        else {
+            // (quote 字面值)
+            boost::apply_visitor(json_print_visitor(m_o), s.nth(1));
+        }
     }
     else {
         std::ostringstream oss;
