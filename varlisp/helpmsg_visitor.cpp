@@ -8,8 +8,6 @@
 #include "environment.hpp"
 #include "keyword_t.hpp"
 
-#include "detail/buitin_info_t.hpp"
-
 namespace varlisp {
 
 varlisp::string_t helpmsg_visitor::operator()(const varlisp::symbol& s) const
@@ -23,10 +21,10 @@ varlisp::string_t helpmsg_visitor::operator()(const varlisp::symbol& s) const
     Object obj;
     const Object& objref = varlisp::getAtomicValue(m_env, *it, obj);
     if (const varlisp::Builtin * p_f = boost::get<varlisp::Builtin>(&objref)) {
-        help_msg = varlisp::detail::get_builtin_infos()[p_f->type()].help_msg;
+        help_msg = p_f->help_msg();
     }
     else if (const varlisp::Lambda * p_tmp = boost::get<varlisp::Lambda>(&objref)) {
-        help_msg = p_tmp->help_doc;
+        help_msg = p_tmp->help_msg();
     }
     else {
         help_msg = boost::apply_visitor(helpmsg_visitor(m_env), objref);
