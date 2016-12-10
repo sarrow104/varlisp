@@ -82,6 +82,17 @@ inline const T* getTypedValue(varlisp::Environment& env,
     return boost::get<const T>(&getAtomicValue(env, value, obj));
 }
 
+template <typename T>
+inline const T* getQuotedType(varlisp::Environment& env,
+                              const varlisp::Object& obj, Object& tmp)
+{
+    const varlisp::List* p_list = varlisp::getTypedValue<varlisp::List>(env, obj, tmp);
+    if (p_list && p_list->is_quoted()) {
+        return boost::get<T>(&p_list->nth(1));
+    }
+    return nullptr;
+}
+
 inline bool is_true(varlisp::Environment& env, const varlisp::Object& obj)
 {
     Object res;
