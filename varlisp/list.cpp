@@ -154,7 +154,7 @@ Object eval_impl(Environment& env, const Object& funcObj, const List& args)
 Object List::eval(Environment& env) const
 {
     COLOG_DEBUG(*this);
-    if (this->is_squote()) {
+    if (this->is_quoted()) {
         return *this;
     }
     // NOTE list.eval，需要非空，不然，都会抛出异常！
@@ -181,7 +181,7 @@ Object List::eval(Environment& env) const
 
 void List::print(std::ostream& o) const
 {
-    if (this->is_squote()) {
+    if (this->is_quoted()) {
         const List * p_tail = nullptr;
         p_tail = boost::get<varlisp::List>(&this->nth(1));
         if (p_tail) {
@@ -269,31 +269,41 @@ Object * List::objAt(size_t i)
     return nullptr;
 }
 
-bool List::is_squote() const
+const Object * List::unquote() const
 {
     if (this->m_length >= 1) {
         const auto * p_key =
             boost::get<varlisp::keywords_t>(&(*this->begin()));
         if (!p_key || p_key->type() != keywords_t::kw_QUOTE) {
-            return false;
+            return nullptr;
         }
         if (this->m_length != 2) {
             SSS_POSITION_THROW(std::runtime_error,
                                SSS_VALUE_MSG(this->m_length));
         }
-        return true;
+        return &this->nth(1);
     }
-    return false;
+    return nullptr;
 }
 
-// NOTE FIXME is_squote() 函数语义变化。
-// 之前，我不支持'操作符，因此，is_squote()，就能区分是'()还是()；
+Object * List::unquote()
+{
+    return const_cast<Object*>(const_cast<const List*>(this)->unquote());
+}
+
+bool List::is_quoted() const
+{
+    return bool(this->unquote());
+}
+
+// NOTE FIXME is_quoted() 函数语义变化。
+// 之前，我不支持'操作符，因此，is_quoted()，就能区分是'()还是()；
 // 而现在，支持'操作符的话，而我是利用vector来模拟这个嵌套关系。
 // 于是，我需要更明确的判断函数，is_slist()，甚至
 const List * List::get_slist() const
 {
     const List * p_slist = nullptr;
-    if (this->is_squote()) {
+    if (this->is_quoted()) {
         p_slist = boost::get<varlisp::List>(&this->nth(1));
     }
     // if (p_slist) {
@@ -312,7 +322,7 @@ List * List::get_slist()
 
 const List * List::none_empty_squote_check() const
 {
-    if (!this->is_squote()) {
+    if (!this->is_quoted()) {
         SSS_POSITION_THROW(std::runtime_error, "need squote-list; but", *this);
     }
     else {

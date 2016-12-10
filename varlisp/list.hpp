@@ -144,9 +144,12 @@ public:
     const Object * objAt(size_t i) const;
     Object * objAt(size_t i);
 
+    Object * unquote();
+    const Object * unquote() const;
+
     // NOTE FIXME 为了语义明确，下面这个函数名，最好修改
     // 为is_quote();
-    bool is_squote() const;
+    bool is_quoted() const;
 
     const List * get_slist() const;
     List * get_slist();
