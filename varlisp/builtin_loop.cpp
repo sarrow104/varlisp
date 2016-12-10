@@ -68,17 +68,16 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": 1st must be a list; but",
                            detail::car(args), ")");
     }
-    if (p_loop_ctrl->is_squote()) {
+    if (p_loop_ctrl->is_quoted()) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must not be a s-list; but",
                            detail::car(args), ")");
     }
-    COLOG_DEBUG(SSS_VALUE_MSG(p_loop_ctrl->is_squote()));
+    COLOG_DEBUG(SSS_VALUE_MSG(p_loop_ctrl->is_quoted()));
     COLOG_DEBUG(SSS_VALUE_MSG(detail::car(*p_loop_ctrl)));
     int ctrl_block_len = p_loop_ctrl->length();
     COLOG_DEBUG(SSS_VALUE_MSG(ctrl_block_len));
     Object tmpSym;
-    // const varlisp::symbol * p_sym = varlisp::getSymbol(env, detail::car(*p_loop_ctrl), tmpSym);
     const varlisp::symbol* p_sym =
         boost::get<varlisp::symbol>(&detail::car(*p_loop_ctrl));
 
@@ -272,18 +271,6 @@ Object eval_loop_step(varlisp::Environment& env,
     loop_ctrl_t loop_ctrl(env, sym.m_data, start, conditionObj, nextObj);
 
     return loop_ctrl.loop(env, exprs);
-
-    // Object result = Nill{};
-
-    // varlisp::Environment inner(&env);
-    // for (loop_ctrl.start(); loop_ctrl.condition(); loop_ctrl.next()) {
-    //     for (auto expr_it = exprs.begin();
-    //          expr_it != exprs.end(); ++expr_it) {
-    //         COLOG_DEBUG(*expr_it);
-    //         result = boost::apply_visitor(eval_visitor(inner), *expr_it);
-    //     }
-    // }
-    // return result;
 }
 
 
@@ -309,19 +296,6 @@ Object eval_loop_condition(varlisp::Environment& env,
     loop_ctrl_t loop_ctrl(env, p_ctrl_block);
 
     return loop_ctrl.loop(env, exprs);
-
-    // Object result = Nill{};
-
-    // varlisp::Environment inner(&env);
-    // for (loop_ctrl.start(); loop_ctrl.condition(); loop_ctrl.next()) {
-    //     for (auto expr_it = exprs.begin();
-    //          expr_it != exprs.end(); ++expr_it) {
-    //         COLOG_DEBUG(*expr_it);
-    //         result = boost::apply_visitor(eval_visitor(inner), *expr_it);
-    //     }
-    // }
-    // 
-    // return result;
 }
 
 REGIST_BUILTIN("begin", 1, -1, eval_begin,

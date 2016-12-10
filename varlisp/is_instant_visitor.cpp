@@ -3,5 +3,6 @@
 #include "list.hpp"
 
 namespace varlisp {
-bool is_instant_visitor::operator()(const varlisp::List& v) const { return v.is_squote(); }
+bool is_instant_visitor::operator()(const varlisp::List& v) const { return v.is_quoted(); }
 } // namespace varlisp
+

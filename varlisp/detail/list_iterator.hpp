@@ -65,7 +65,7 @@ struct list_object_const_iterator_t : std::iterator<std::forward_iterator_tag, O
             //  则枚举内部的list
             // 如果是'atom
             //  则定位到atom，即，可以取一次值
-            if (m_list_ptr->is_squote()) {
+            if (m_list_ptr->is_quoted()) {
                 const varlisp::List * p_slist = m_list_ptr->get_slist();
                 if (p_slist) {
                     m_list_ptr = p_slist;
@@ -147,7 +147,7 @@ struct list_const_iterator_t {
             //  则枚举内部的list
             // 如果是'atom
             //  则定位到atom，即，可以取一次值
-            if (m_list_ptr->is_squote()) {
+            if (m_list_ptr->is_quoted()) {
                 auto p_slist = m_list_ptr->get_slist();
                 if (p_slist) {
                     m_list_ptr = p_slist;

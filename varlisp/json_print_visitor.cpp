@@ -19,7 +19,7 @@ void json_print_visitor::operator()(const string_t& v) const { m_o << sss::raw_s
 void json_print_visitor::operator()(const varlisp::symbol& s) const { m_o << s.m_data; }
 void json_print_visitor::operator()(const varlisp::List& s) const
 {
-    if (s.is_squote()) {
+    if (s.is_quoted()) {
         const List * p_tail = nullptr;
         p_tail = boost::get<varlisp::List>(&s.nth(1));
         if (p_tail) {

@@ -49,7 +49,7 @@ varlisp::arithmetic_t arithmetic_cast_visitor::operator()(const varlisp::symbol&
 
 varlisp::arithmetic_t arithmetic_cast_visitor::operator()(const List& l) const
 {
-    if (l.is_squote()) {
+    if (l.is_quoted()) {
         SSS_POSITION_THROW(std::runtime_error,
                           "object: cannot convert from s-list to arithmetic_t!");
     }
