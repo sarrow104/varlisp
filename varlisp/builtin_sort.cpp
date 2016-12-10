@@ -12,6 +12,41 @@
 
 namespace varlisp {
 
+namespace detail {
+varlisp::List sort_impl(varlisp::Environment& env, const varlisp::Object& callable,
+                        const varlisp::List * p_list)
+{
+    int arg_length = p_list->length();
+    COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
+    std::vector<Object>      tmp_obj_vec;
+    tmp_obj_vec.resize(arg_length);
+    std::vector<const Object*> p_arg_list_vec;
+    p_arg_list_vec.resize(arg_length);
+
+    int i = 0;
+    for (auto it = p_list->begin(); it != p_list->end(); ++it, ++i) {
+        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, *it, tmp_obj_vec[i]);
+    }
+
+    // NOTE >< 等比较函数，对于字符串无效……
+    std::sort(p_arg_list_vec.begin(), p_arg_list_vec.end(),
+              [&env,&callable](const Object* v1, const Object* v2)->bool{
+                  varlisp::List expr {callable, *v1, *v2};
+                  COLOG_DEBUG(callable, *v1, *v2);
+                  Object ret = expr.eval(env);
+                  return boost::apply_visitor(cast2bool_visitor(env), ret);
+              });
+
+    varlisp::List ret = varlisp::List::makeSQuoteList();
+    auto back_it = detail::list_back_inserter<Object>(ret);
+
+    for (int i = 0; i < arg_length; ++i) {
+        *back_it++ = *p_arg_list_vec[i];
+    }
+    return ret;
+}
+} // namespace detail
+
 REGIST_BUILTIN("sort", 2, 2, eval_sort,
                "(sort func '(list)) -> '(sorted-list)");
 
@@ -53,37 +88,11 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
     const varlisp::List * p_list = varlisp::getQuotedList(env, detail::cadr(args), listObj);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": second must be list)");
+                           "(", funcName, ": second must be list; but",
+                           detail::cadr(args), ")");
     }
 
-    int arg_length = p_list->length();
-    COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
-    std::vector<Object>      tmp_obj_vec;
-    tmp_obj_vec.resize(arg_length);
-    std::vector<const Object*> p_arg_list_vec;
-    p_arg_list_vec.resize(arg_length);
-
-    int i = 0;
-    for (auto it = p_list->begin(); it != p_list->end(); ++it, ++i) {
-        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, *it, tmp_obj_vec[i]);
-    }
-
-    // NOTE >< 等比较函数，对于字符串无效……
-    std::sort(p_arg_list_vec.begin(), p_arg_list_vec.end(),
-              [&env,&callable](const Object* v1, const Object* v2)->bool{
-                  varlisp::List expr {callable, *v1, *v2};
-                  COLOG_DEBUG(callable, *v1, *v2);
-                  Object ret = expr.eval(env);
-                  return boost::apply_visitor(cast2bool_visitor(env), ret);
-              });
-
-    varlisp::List ret = varlisp::List::makeSQuoteList();
-    auto back_it = detail::list_back_inserter<Object>(ret);
-
-    for (int i = 0; i < arg_length; ++i) {
-        *back_it++ = *p_arg_list_vec[i];
-    }
-    return ret;
+    return detail::sort_impl(env, callable, p_list);
 }
 
 REGIST_BUILTIN("sort!", 2, 2, eval_sort_bar,
@@ -117,39 +126,15 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
                            *p_sym, " not exist!)");
     }
 
-    const varlisp::List * p_list = boost::get<varlisp::List>(p_value);
-    if (!p_list || !p_list->is_squote()) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
-                           *p_sym, " is not reference to a s-list!);"
-                           " but: ", boost::apply_visitor(eval_visitor(env), detail::cadr(args)));
+    Object listObj;
+    const varlisp::List * p_list = varlisp::getQuotedList(env, *p_value, listObj);
+    if (!p_list) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": second must be list); but ",
+                           *p_value, ")");
     }
 
-    int arg_length = p_list->length();
-    COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
-    std::vector<Object>      tmp_obj_vec;
-    tmp_obj_vec.resize(arg_length);
-    std::vector<const Object*> p_arg_list_vec;
-    p_arg_list_vec.resize(arg_length);
-    int i = 0;
-    for (auto it = p_list->begin(); it != p_list->end(); ++it, ++i) {
-        p_arg_list_vec[i] = &varlisp::getAtomicValue(env, *it, tmp_obj_vec[i]);
-    }
-
-    // NOTE >< 等比较函数，对于字符串无效……
-    std::sort(p_arg_list_vec.begin(), p_arg_list_vec.end(),
-              [&env,&callable](const Object* v1, const Object* v2)->bool{
-                  varlisp::List expr {callable, *v1, *v2};
-                  COLOG_DEBUG(callable, *v1, *v2);
-                  Object ret = expr.eval(env);
-                  return boost::apply_visitor(cast2bool_visitor(env), ret);
-              });
-
-    varlisp::List ret = varlisp::List::makeSQuoteList();
-    auto back_it = detail::list_back_inserter<Object>(ret);
-
-    for (int i = 0; i < arg_length; ++i) {
-        *back_it++ = *p_arg_list_vec[i];
-    }
+    varlisp::List ret = detail::sort_impl(env, callable, p_list);
     std::swap(*boost::get<varlisp::List>(p_value), ret);
     return varlisp::Nill{};
 }
