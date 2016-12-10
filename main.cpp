@@ -50,7 +50,7 @@ int get_indent(const std::string& line)
 
 int test_construct()
 {
-    varlisp::Interpreter interpreter;
+    varlisp::Interpreter& interpreter = varlisp::Interpreter::get_instance();
     // interpreter.eval("(define i 0)");
     interpreter.eval(
         "(define (sqrt-iter guess x) (if (good-enough guess x) guess "
@@ -91,7 +91,7 @@ const char * gen_prompt_continue(varlisp::Interpreter& i)
 int Interpret(bool echo_in_load, bool quit_on_load_complete,
               bool load_init_script, int argc, char* argv[])
 {
-    varlisp::Interpreter interpreter;
+    varlisp::Interpreter& interpreter = varlisp::Interpreter::get_instance();
 
     if (load_init_script) {
         std::string preload_script = sss::path::dirname(sss::path::getbin());

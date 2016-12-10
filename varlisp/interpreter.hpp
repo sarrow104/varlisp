@@ -16,15 +16,15 @@ public:
         status_ERROR,
     };
 
-public:
+protected:
     Interpreter();
     ~Interpreter() = default;
 
-public:
+protected:
     Interpreter(Interpreter&&) = default;
     Interpreter& operator=(Interpreter&&) = default;
 
-public:
+protected:
     Interpreter(const Interpreter&) = default;
     Interpreter& operator=(const Interpreter&) = default;
 
@@ -49,6 +49,7 @@ public:
      */
     status_t eval(const std::string& line, bool silent = false);
 
+    static Interpreter& get_instance();
 private:
     status_t m_status;
     varlisp::Environment m_env;

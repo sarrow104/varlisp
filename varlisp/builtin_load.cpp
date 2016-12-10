@@ -62,12 +62,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     std::string content;
     sss::path::file2string(full_path, content);
 
-    varlisp::Interpreter* p_inter = env.getInterpreter();
-    if (!p_inter) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "env.getInterpreter return 0 ptr");
-    }
-    varlisp::Parser& parser = p_inter->get_parser();
+    varlisp::Parser& parser = varlisp::Interpreter::get_instance().get_parser();
     parser.parse(env, content, true);
     COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
     return Object{Nill{}};

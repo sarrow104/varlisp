@@ -14,7 +14,6 @@ namespace varlisp {
 Interpreter::Interpreter() : m_status(status_OK)
 {
     Builtin::regist_builtin_function(this->m_env);
-    this->m_env.setInterpreter(*this);
 }
 
 Interpreter::status_t Interpreter::eval(const std::string& line, bool silent)
@@ -37,6 +36,12 @@ Interpreter::status_t Interpreter::eval(const std::string& line, bool silent)
     return m_status;
 }
 
+Interpreter& Interpreter::get_instance()
+{
+    static Interpreter g_interpreter;
+    return g_interpreter;
+}
+
 void Interpreter::load(const std::string& path, bool echo)
 {
     std::string full_path = sss::path::full_of_copy(path);
@@ -55,8 +60,7 @@ void Interpreter::load(const std::string& path, bool echo)
 
 int Interpreter::retrieve_symbols(std::vector<std::string>& symbols) const
 {
-    for (Environment::const_iterator it = m_env.begin(); it != m_env.end();
-         ++it) {
+    for (auto it = m_env.begin(); it != m_env.end(); ++it) {
         symbols.push_back(it->first);
     }
 }

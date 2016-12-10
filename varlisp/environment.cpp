@@ -13,7 +13,7 @@
 namespace varlisp {
 
 Environment::Environment(Environment* parent)
-    : m_parent(parent), m_interpreter(0)
+    : m_parent(parent)
 {
     COLOG_DEBUG(this, "from", parent);
 }
@@ -51,10 +51,10 @@ size_t Environment::defer_task_size() const
     return m_defer_task.size();
 }
 
-
 void   Environment::print(std::ostream& o) const
 {
     o << '{';
+
     for (auto it = this->BaseT::begin(); it != this->BaseT::end(); ++it) {
         o << '(' << it->first << ' ';
         boost::apply_visitor(print_visitor(o), it->second);
@@ -103,24 +103,6 @@ Object* Environment::find(const std::string& name)
     else {
         return jc.access(*this);
     }
-}
-
-Interpreter* Environment::getInterpreter() const
-{
-    const Environment* pe = this;
-    Interpreter* ret = 0;
-    do {
-        if (pe->m_parent == 0) {
-            return pe->m_interpreter;
-        }
-        pe = pe->m_parent;
-    } while (pe);
-    return ret;
-}
-
-Interpreter* Environment::setInterpreter(Interpreter& interpreter)
-{
-    this->m_interpreter = &interpreter;
 }
 
 bool Environment::erase(const std::string& name)

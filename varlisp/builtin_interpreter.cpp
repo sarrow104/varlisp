@@ -26,12 +26,7 @@ Object eval_quit(varlisp::Environment& env, const varlisp::List& args)
 {
     (void)env;
     (void)args;
-    Interpreter* it = env.getInterpreter();
-    if (!it) {
-        SSS_POSITION_THROW(std::runtime_error, "env&", &env,
-                          " with nullptr Interpreter");
-    }
-    it->set_status(Interpreter::status_QUIT);
+    Interpreter::get_instance().set_status(Interpreter::status_QUIT);
     return true;
 }
 
