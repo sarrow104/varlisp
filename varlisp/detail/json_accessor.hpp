@@ -20,6 +20,7 @@ public:
     json_accessor(const std::string& jstyle_name);
     ~json_accessor() = default;
     
+public:
     bool has_sub() const {
         return m_colon_pos != std::string::npos;
     }
@@ -39,14 +40,14 @@ public:
             return "";
         }
     }
-    const Object * access(const Environment& env);
-    Object *       access(Environment& env);
+    const Object * access(const Environment& env) const;
+    Object *       access(Environment& env) const;
 
 private:
-    const Object * find_name(const Object* obj, size_t id);
-    const Object * find_index(const Object* list, size_t id);
-    Object * find_name(Object* obj, size_t id);
-    Object * find_index(Object* list, size_t id);
+    const Object * find_name(const Object* obj, size_t id) const;
+    const Object * find_index(const Object* list, size_t id) const;
+    Object * find_name(Object* obj, size_t id) const;
+    Object * find_index(Object* list, size_t id) const;
 };
 } // namespace detail
 } // namespace varlisp
