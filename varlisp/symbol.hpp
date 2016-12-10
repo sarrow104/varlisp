@@ -7,13 +7,11 @@
 
 namespace varlisp {
 struct symbol {
+public:
     symbol() = default;
     explicit symbol(const std::string& data) : m_data(data) {}
-    std::string m_data;
 
-    bool is_nil() const {
-        return this->m_data == "nil";
-    }
+public:
     void print(std::ostream& o) const { o << this->m_data; }
     bool operator==(const symbol& ref) const
     {
@@ -24,6 +22,11 @@ struct symbol {
     {
         return this != &ref && this->m_data < ref.m_data;
     }
+    const std::string& name() const {
+        return this->m_data;
+    }
+private:
+    std::string m_data;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const varlisp::symbol& s)
