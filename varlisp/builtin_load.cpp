@@ -74,7 +74,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("save", 1, 1, eval_save,
-               "(sav \"path/to/lisp\") -> nil");
+               "(save \"path/to/lisp\") -> item-count");
 
 Object eval_save(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -96,6 +96,7 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
     sss::path::mkpath(sss::path::dirname(full_path));
     std::ofstream ofs(full_path.c_str(), std::ios_base::out | std::ios_base::out);
     std::set<std::string> dumped_obj_set;
+    int64_t item_cnt = 0;
     for (const varlisp::Environment * p_env = &env; p_env; p_env = p_env->parent()) {
         for (auto it = p_env->begin(); it != p_env->end(); ++it) {
             if (dumped_obj_set.find(it->first) == dumped_obj_set.end()) {
@@ -106,10 +107,22 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
                 ofs << "(define " << it->first << " ";
                 boost::apply_visitor(print_visitor(ofs), it->second);
                 ofs << ")" << std::endl;
+                ++item_cnt;
             }
         }
     }
-    return Nill{};
+    return item_cnt;
+}
+
+REGIST_BUILTIN("clear", 1, 1, eval_clear,
+               "(clear) -> item-count");
+
+Object eval_clear(varlisp::Environment& env, const varlisp::List& args)
+{
+    int64_t item_cnt = 0;
+    // TODO FIXME
+    // NOTE 內建部分，不能删除！
+    return item_cnt;
 }
 
 }  // namespace varlisp
