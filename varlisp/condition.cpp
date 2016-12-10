@@ -12,12 +12,12 @@ namespace varlisp {
 Object Cond::eval(Environment& env) const
 {
     size_t idx = 0;
-    static const varlisp::symbol sym_else = varlisp::symbol("else");
+    static const varlisp::keywords_t kw_else = varlisp::keywords_t(varlisp::keywords_t::kw_ELSE);
     for (const auto item : conditions) {
         if (idx == conditions.size() - 1) {
-            if (const varlisp::symbol* p_v =
-                    boost::get<varlisp::symbol>(&item.first)) {
-                if (*p_v == sym_else) {
+            if (auto * p_v =
+                    boost::get<varlisp::keywords_t>(&item.first)) {
+                if (*p_v == kw_else) {
                     return boost::apply_visitor(eval_visitor(env), item.second);
                 }
             }
