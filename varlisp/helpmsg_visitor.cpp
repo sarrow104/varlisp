@@ -13,9 +13,9 @@ namespace varlisp {
 varlisp::string_t helpmsg_visitor::operator()(const varlisp::symbol& s) const
 {
     varlisp::string_t help_msg;
-    Object* it = m_env.find(s.m_data);
+    Object* it = m_env.find(s.name());
     if (!it) {
-        SSS_POSITION_THROW(std::runtime_error, "symbol ", s.m_data,
+        SSS_POSITION_THROW(std::runtime_error, "symbol ", s.name(),
                            " not exsist");
     }
     Object obj;

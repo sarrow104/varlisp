@@ -91,7 +91,7 @@ public:
     }
     void operator()(const symbol& s ) const
     {
-        m_o << s.m_data;
+        m_o << s.name();
     }
     void operator() (parenthese_t p) const
     {

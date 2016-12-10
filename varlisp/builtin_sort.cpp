@@ -120,7 +120,7 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": second must be symbol)");
     }
-    Object * p_value = env.find(p_sym->m_data);
+    Object * p_value = env.find(p_sym->name());
     if (!p_value) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
                            *p_sym, " not exist!)");

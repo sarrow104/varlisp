@@ -21,14 +21,14 @@ Object Define::eval(Environment& env) const
 {
     Object tmp;
     Environment * top_env = env.ceiling();
-    if (top_env->find(this->name.m_data)) {
+    if (top_env->find(this->name.name())) {
         return Nill{};
     }
     const Object& resRef = getAtomicValue(env, this->value, tmp);
 
-    COLOG_DEBUG(this->name.m_data, resRef);
+    COLOG_DEBUG(this->name.name(), resRef);
 
-    top_env->operator[](this->name.m_data)
+    top_env->operator[](this->name.name())
         = resRef;
     // 为什么不再返回value呢？
     // 为例减少显示；

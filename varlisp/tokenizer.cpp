@@ -488,8 +488,8 @@ int Tokenizer::retrieve_symbols(std::vector<std::string>& symbols,
 {
     for (const auto& item : this->m_tokens.back()) {
         if (const varlisp::symbol* ps = boost::get<varlisp::symbol>(&item)) {
-            if (sss::is_begin_with(ps->m_data, prefix)) {
-                symbols.push_back(ps->m_data);
+            if (sss::is_begin_with(ps->name(), prefix)) {
+                symbols.push_back(ps->name());
             }
         }
     }

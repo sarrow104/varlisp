@@ -356,7 +356,7 @@ Object Parser::parseEnvironment()
             SSS_POSITION_THROW(std::runtime_error, "expected symbol; but ", tok);
         }
         this->m_toknizer.consume();
-        env[p_sym->m_data] = this->parseExpression();
+        env[p_sym->name()] = this->parseExpression();
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
             SSS_POSITION_THROW(std::runtime_error, "expect ')'");
         }
@@ -655,7 +655,7 @@ int parseParamVector(varlisp::Tokenizer& toknizer,
         if (!boost::get<varlisp::symbol>(&tok)) {
             break;
         }
-        const std::string& name = boost::get<varlisp::symbol>(tok).m_data;
+        const std::string& name = boost::get<varlisp::symbol>(tok).name();
         args.push_back(name);
         toknizer.consume();
     }

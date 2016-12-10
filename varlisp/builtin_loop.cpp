@@ -134,7 +134,7 @@ Object eval_loop_list(varlisp::Environment& env,
     varlisp::Environment inner(&env);
     Object result;
     for (auto it = slist.begin(); it != slist.end(); ++it) {
-        inner[sym.m_data] = *it;
+        inner[sym.name()] = *it;
         // FIXME keywords check!
         for (auto expr_it = exprs.begin();
              expr_it != exprs.end();
@@ -200,7 +200,7 @@ public:
                                    ": 1st must be a symbol; but ", p_kv_pair_list->nth(i),
                                    ")");
             }
-            m_sym_vec.push_back(p_sym->m_data);
+            m_sym_vec.push_back(p_sym->name());
             Object res;
             m_init_value_vec.push_back(getAtomicValue(env, p_kv_pair_list->nth(i + 1), res));
             COLOG_ERROR(m_sym_vec.back(), m_init_value_vec.back());
@@ -268,7 +268,7 @@ Object eval_loop_step(varlisp::Environment& env,
     Object nextObj(varlisp::List(
         {symbol("setq"), sym,
          varlisp::List({symbol("+"), sym, step})}));
-    loop_ctrl_t loop_ctrl(env, sym.m_data, start, conditionObj, nextObj);
+    loop_ctrl_t loop_ctrl(env, sym.name(), start, conditionObj, nextObj);
 
     return loop_ctrl.loop(env, exprs);
 }

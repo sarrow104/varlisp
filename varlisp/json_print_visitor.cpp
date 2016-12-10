@@ -16,7 +16,7 @@ void json_print_visitor::operator()(const sss::regex::CRegex& reg) const
 }
 
 void json_print_visitor::operator()(const string_t& v) const { m_o << sss::raw_string(v); }
-void json_print_visitor::operator()(const varlisp::symbol& s) const { m_o << s.m_data; }
+void json_print_visitor::operator()(const varlisp::symbol& s) const { m_o << s.name(); }
 void json_print_visitor::operator()(const varlisp::List& s) const
 {
     if (s.is_quoted()) {

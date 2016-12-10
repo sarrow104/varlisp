@@ -39,19 +39,19 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
     }
-    if (varlisp::keywords_t::is_keyword(p_sym->m_data)) {
+    if (varlisp::keywords_t::is_keyword(p_sym->name())) {
         SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": cannot undef keywords", p_sym->m_data, ")");
+                           "(", funcName, ": cannot undef keywords", p_sym->name(), ")");
     }
     bool ret = false;
-    Object* it = env.find(p_sym->m_data);
+    Object* it = env.find(p_sym->name());
     if (it) {
         const varlisp::Builtin * p_b = boost::get<varlisp::Builtin>(&(*it));
         if (p_b) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": cannot undef builtin function)");
         }
-        env.erase(p_sym->m_data);
+        env.erase(p_sym->name());
         ret = true;
     }
     return ret;
@@ -77,10 +77,10 @@ Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
     }
-    if (varlisp::keywords_t::is_keyword(p_sym->m_data)) {
+    if (varlisp::keywords_t::is_keyword(p_sym->name())) {
         return true;
     }
-    Object* it = env.find(p_sym->m_data);
+    Object* it = env.find(p_sym->name());
     return bool(it);
 }
 
@@ -180,7 +180,7 @@ Object eval_let(varlisp::Environment& env, const varlisp::List& args)
         // NOTE let 貌似可以达到swap两个变量值的效果；
         // 在于 getAtomicValue()的第一个参数是env，而不是inner
         // (let ((a b) (b a)) ...)
-        inner[p_sym->m_data] = varlisp::getAtomicValue(env,
+        inner[p_sym->name()] = varlisp::getAtomicValue(env,
                                                        p_sym_pair->nth(1),
                                                        value);
     }
@@ -224,7 +224,7 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
                                ": 1st must be a symbol; but ", args.nth(i),
                                ")");
         }
-        p_value = env.find(p_sym->m_data);
+        p_value = env.find(p_sym->name());
         if (!p_value) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
                                *p_sym, " not exist!)");
@@ -295,12 +295,12 @@ Object eval_swap(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": 2nd must be a symbol)");
     }
 
-    Object * p_val1 = env.find(p_sym1->m_data);
+    Object * p_val1 = env.find(p_sym1->name());
     if (!p_val1) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st symbol, ", *p_sym1, " not exist)");
     }
-    Object * p_val2 = env.find(p_sym2->m_data);
+    Object * p_val2 = env.find(p_sym2->name());
     if (!p_val2) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 2nd symbol, ", *p_sym2, " not exist)");

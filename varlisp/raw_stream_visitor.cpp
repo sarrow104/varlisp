@@ -10,9 +10,9 @@
 namespace varlisp {
 void raw_stream_visitor::operator()(const varlisp::symbol& s) const
 {
-    Object* it = m_env.find(s.m_data);
+    Object* it = m_env.find(s.name());
     if (!it) {
-        SSS_POSITION_THROW(std::runtime_error, "symbol ", s.m_data,
+        SSS_POSITION_THROW(std::runtime_error, "symbol ", s.name(),
                           " not exsist");
     }
     boost::apply_visitor(raw_stream_visitor(m_o, m_env), *it);

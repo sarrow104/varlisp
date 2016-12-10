@@ -16,10 +16,10 @@ bool is_symbol(const std::string& name)
     if (!p_sym) {
         return false;
     }
-    if (p_sym->m_data != name) {
+    if (p_sym->name() != name) {
         return false;
     }
-    if (varlisp::keywords_t::is_keyword(p_sym->m_data)) {
+    if (varlisp::keywords_t::is_keyword(p_sym->name())) {
         return false;
     }
     return true;
