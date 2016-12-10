@@ -222,7 +222,7 @@ Object eval_is_all(varlisp::Environment &env, const varlisp::List &args)
     const Object& callable = detail::car(args);
     Object tmp;
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
-    if (!p_arg_list || !p_arg_list->is_squote() || p_arg_list->length() < 2) {
+    if (!p_arg_list || p_arg_list->empty()) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
                           detail::cadr(args), ")");
@@ -255,7 +255,7 @@ Object eval_is_any(varlisp::Environment &env, const varlisp::List &args)
     const Object& callable = detail::car(args);
     Object tmp;
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
-    if (!p_arg_list || !p_arg_list->is_squote() || p_arg_list->length() < 2) {
+    if (!p_arg_list || p_arg_list->empty()) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
                           detail::cadr(args), ")");
