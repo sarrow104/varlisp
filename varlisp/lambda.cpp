@@ -14,18 +14,18 @@ namespace varlisp {
 void Lambda::print(std::ostream& o) const
 {
     o << "(lambda (";
-    if (!this->args.empty()) {
-        std::copy(this->args.begin(), this->args.end() - 1,
+    if (!this->m_args.empty()) {
+        std::copy(this->m_args.begin(), this->m_args.end() - 1,
                   std::ostream_iterator<std::string>(o, " "));
-        o << this->args.back();
+        o << this->m_args.back();
     }
     o << ") ";
-    if (!this->help_doc.empty()) {
-        o << sss::raw_string(this->help_doc) << " ";
+    if (!this->m_help_doc.empty()) {
+        o << sss::raw_string(this->m_help_doc) << " ";
     }
-    if (!this->body.empty()) {
+    if (!this->m_body.empty()) {
         bool is_first = true;
-        for (const auto& obj : this->body) {
+        for (const auto& obj : this->m_body) {
             if (is_first) {
                 is_first = false;
             }
@@ -43,29 +43,29 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, true_args);
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, *this);
     Environment inner(&env);
-    if (this->args.size() != true_args.length()) {
+    if (this->m_args.size() != true_args.length()) {
         SSS_POSITION_THROW(std::runtime_error, *this, " expect ",
-                           this->args.size(), " argument, but given ",
+                           this->m_args.size(), " argument, but given ",
                            true_args.length(), " argument: ", true_args);
     }
     auto p = true_args.begin();
-    for (size_t i = 0; i != this->args.size(); ++i, ++p) {
+    for (size_t i = 0; i != this->m_args.size(); ++i, ++p) {
         if (p == true_args.end()) {
             SSS_POSITION_THROW(std::runtime_error, "Not enough argument at ", i,
-                              "; name ", args[i]);
+                              "; name ", m_args[i]);
         }
         if (!(*p).which()) {
             SSS_POSITION_THROW(std::runtime_error, "Empty argument at ", i,
-                              "; name ", args[i]);
+                              "; name ", m_args[i]);
         }
 
-        // SSS_LOG_EXPRESSION(sss::log::log_DEBUG, args[i]);
-        inner[args[i]] = boost::apply_visitor(eval_visitor(env), *p);
+        // SSS_LOG_EXPRESSION(sss::log::log_DEBUG, m_args[i]);
+        inner[m_args[i]] = boost::apply_visitor(eval_visitor(env), *p);
     }
 
     size_t i = 0;
-    for (const auto& obj : this->body) {
-        if (i == this->body.size() - 1) {
+    for (const auto& obj : this->m_body) {
+        if (i == this->m_body.size() - 1) {
             return boost::apply_visitor(eval_visitor(inner), obj);
         }
         else {
@@ -73,7 +73,6 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
         }
         ++i;
     }
-    // return boost::apply_visitor(eval_visitor(inner), this->body);
 }
 
 // 比较通过递归完成；分别比较各个部分元素

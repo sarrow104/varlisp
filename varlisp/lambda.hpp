@@ -16,19 +16,22 @@ namespace varlisp {
 // (define (arg-list) ["help-doc"] (body-expr-list))
 struct Lambda {
 private:
-    std::vector<std::string>    args;       // 形式参数
-    std::vector<Object>         body;       // 函数体
-    varlisp::string_t           help_doc;   // 帮助信息
+    std::vector<std::string>    m_args;       // 形式参数
+    std::vector<Object>         m_body;       // 函数体
+    varlisp::string_t           m_help_doc;   // 帮助信息
+    varlisp::Environment *      m_penv;     // 方法所述环境
+    // NOTE 如果要实现闭包的话，那么闭包所引用到的变量，以及其定义，应该如何序列
+    // 化到外部文件？
 
 public:
     Lambda() = default;
     Lambda(const std::vector<std::string>& a, varlisp::string_t msg, const std::vector<Object>& b)
-        : args(a), body(b), help_doc(msg)
+        : m_args(a), m_body(b), m_help_doc(msg)
     {
     }
 
     Lambda(std::vector<std::string>&& a, varlisp::string_t&& m, std::vector<Object>&& b)
-        : args(std::move(a)), body(std::move(b)), help_doc(std::move(m))
+        : m_args(std::move(a)), m_body(std::move(b)), m_help_doc(std::move(m))
     {
     }
 
@@ -43,7 +46,7 @@ public:
     void print(std::ostream& o) const;
     varlisp::string_t help_msg() const
     {
-        return this->help_doc;
+        return this->m_help_doc;
     }
 };
 
