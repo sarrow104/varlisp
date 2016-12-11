@@ -63,7 +63,7 @@ void json_print_visitor::operator()(const varlisp::Environment& s) const
         }
         m_o << sss::raw_string(it->first);
         m_o << ":";
-        boost::apply_visitor(json_print_visitor(m_o), it->second);
+        boost::apply_visitor(json_print_visitor(m_o), it->second.first);
     }
     m_o << '}';
 }
