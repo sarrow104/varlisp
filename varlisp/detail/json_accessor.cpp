@@ -42,7 +42,7 @@ json_accessor::json_accessor(const std::string& jstyle_name)
 
 const Object * json_accessor::access(const Environment& env) const
 {
-    const Object * p_obj = env.find(this->prefix());
+    const Object * p_obj = env.deep_find(this->prefix());
     if (m_stems.empty() || !p_obj) {
         return const_cast<Object*>(p_obj);
     }
@@ -85,6 +85,17 @@ Object * json_accessor::access(Environment& env) const
 const Object * json_accessor::find_name(const Object* obj, size_t id) const
 {
     const Environment * p_env = boost::get<varlisp::Environment>(obj);
+    // TODO FIXME
+    // 从access 到 find_name，内部连续调用了Environment::find()；而
+    // Environment::find()，本身就是一个递归的查找——这在逻辑上有些错误了！
+    // 我本意是查找手动形成的{}嵌套关系！
+    // 而手动创建的{}嵌套关系，只能从外部找内部——内部则并没有到外部的parent的
+    // 关系，因此本程序虽然通过递归版的Environment::find()查找标识符，但是工作仍
+    // 然正常——逻辑不对，但是结果正确。
+    // 解决办法是：
+    // 1. Environment::find() 改名为更确定的Environment::deep_find()；
+    // 2. 本函数使用map::find()来完成查找；
+    // 3. 修改Environment的赋值动作，创建链接关系；
     const Object * p_ret = p_env->find(m_stems[id]);
     if (!p_ret || id + 1 == m_stems.size()) {
         return p_ret;
