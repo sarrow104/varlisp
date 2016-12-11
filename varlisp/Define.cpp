@@ -28,8 +28,8 @@ Object Define::eval(Environment& env) const
 
     COLOG_DEBUG(this->name.name(), resRef);
 
-    top_env->operator[](this->name.name())
-        = resRef;
+    // FIXME binding
+    top_env->operator[](this->name.name()) = resRef;
     // 为什么不再返回value呢？
     // 为例减少显示；
     // 既然是定义了变量，链式赋值，也意义不大了
