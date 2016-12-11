@@ -96,11 +96,11 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
         for (auto it = p_env->begin(); it != p_env->end(); ++it) {
             if (dumped_obj_set.find(it->first) == dumped_obj_set.end()) {
                 dumped_obj_set.insert(it->first);
-                if (boost::get<varlisp::Builtin>(&it->second)) {
+                if (boost::get<varlisp::Builtin>(&it->second.first)) {
                     continue;
                 }
                 ofs << "(define " << it->first << " ";
-                boost::apply_visitor(print_visitor(ofs), it->second);
+                boost::apply_visitor(print_visitor(ofs), it->second.first);
                 ofs << ")" << std::endl;
                 ++item_cnt;
             }
