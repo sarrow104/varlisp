@@ -80,6 +80,10 @@ public:
         return mNode.valid();
     }
 
+    CNode getCNode() const {
+        return mNode;
+    }
+
     std::vector<gumboNode> find(const std::string& query) const;
     std::vector<gumboNode> children() const;
 
