@@ -32,7 +32,7 @@ varlisp::arithmetic_t arithmetic_cast_visitor::operator()(
 
 varlisp::arithmetic_t arithmetic_cast_visitor::operator()(const varlisp::symbol& s) const
 {
-    Object* p_obj = m_env.find(s.name());
+    Object* p_obj = m_env.deep_find(s.name());
     if (!p_obj) {
         SSS_POSITION_THROW(std::runtime_error, "symbol ", s.name(),
                           " not exists!");
