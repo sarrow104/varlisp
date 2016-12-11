@@ -44,7 +44,8 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": cannot undef keywords", p_sym->name(), ")");
     }
     bool ret = false;
-    Object* it = env.find(p_sym->name());
+    // FIXME
+    Object* it = env.deep_find(p_sym->name());
     if (it) {
         const varlisp::Builtin * p_b = boost::get<varlisp::Builtin>(&(*it));
         if (p_b) {
@@ -80,7 +81,7 @@ Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
     if (varlisp::keywords_t::is_keyword(p_sym->name())) {
         return true;
     }
-    Object* it = env.find(p_sym->name());
+    Object* it = env.deep_find(p_sym->name());
     return bool(it);
 }
 
@@ -118,7 +119,7 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
             for (auto it = p_env->begin(); it != p_env->end(); ++it) {
                 if (outted.find(it->first) == outted.end()) {
                     std::cout << it->first << "\n"
-                        << "\t" << it->second
+                        << "\t" << it->second.first
                         << std::endl;
                     outted.insert(it->first);
                 }
@@ -224,7 +225,7 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
                                ": 1st must be a symbol; but ", args.nth(i),
                                ")");
         }
-        p_value = env.find(p_sym->name());
+        p_value = env.deep_find(p_sym->name());
         if (!p_value) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
                                *p_sym, " not exist!)");
@@ -295,12 +296,13 @@ Object eval_swap(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": 2nd must be a symbol)");
     }
 
-    Object * p_val1 = env.find(p_sym1->name());
+    // FIXME swap也需要重建 binding
+    Object * p_val1 = env.deep_find(p_sym1->name());
     if (!p_val1) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st symbol, ", *p_sym1, " not exist)");
     }
-    Object * p_val2 = env.find(p_sym2->name());
+    Object * p_val2 = env.deep_find(p_sym2->name());
     if (!p_val2) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 2nd symbol, ", *p_sym2, " not exist)");
