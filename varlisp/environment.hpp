@@ -10,18 +10,32 @@
 
 namespace varlisp {
 class Interpreter;
-struct Environment : private std::map<std::string, Object> {
+// std::map<std::string, std::pair<Object, bool>>
+//  <name - Object is_const>
+struct property_t
+{
+    property_t() : is_const(false) {}
+    property_t(bool c) : is_const(c) {}
+    bool is_const = false;
+};
+
+struct Environment : private std::map<std::string, std::pair<Object, property_t>> {
     explicit Environment(Environment* parent = 0);
     ~Environment();
+    // Environment(const Environment& ref);
+    // Environment& operator = (const Environment& ref);
 
 public:
-    typedef std::map<std::string, Object> BaseT;
-    typedef std::map<std::string, Object>::const_iterator const_iterator;
-    typedef std::map<std::string, Object>::iterator iterator;
+    typedef std::map<std::string, std::pair<Object, property_t> > BaseT;
+    typedef BaseT::const_iterator                                 const_iterator;
+    typedef BaseT::iterator                                       iterator;
 
 public:
     const Object* find(const std::string& name) const;
     Object* find(const std::string& name);
+
+    const Object* deep_find(const std::string& name) const;
+    Object* deep_find(const std::string& name);
 
     using BaseT::begin;
     using BaseT::end;

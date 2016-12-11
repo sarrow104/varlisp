@@ -57,13 +57,13 @@ void   Environment::print(std::ostream& o) const
 
     for (auto it = this->BaseT::begin(); it != this->BaseT::end(); ++it) {
         o << '(' << it->first << ' ';
-        boost::apply_visitor(print_visitor(o), it->second);
+        boost::apply_visitor(print_visitor(o), it->second.first);
         o << ')';
     }
     o << '}';
 }
 
-const Object* Environment::find(const std::string& name) const
+const Object* Environment::deep_find(const std::string& name) const
 {
     detail::json_accessor jc(name);
     if (!jc.has_sub()) {
@@ -72,7 +72,7 @@ const Object* Environment::find(const std::string& name) const
         do {
             auto it = pe->BaseT::find(name);
             if (it != pe->BaseT::cend()) {
-                ret = &it->second;
+                ret = &it->second.first;
             }
             pe = pe->m_parent;
         } while (pe && !ret);
@@ -82,36 +82,41 @@ const Object* Environment::find(const std::string& name) const
     else {
         return jc.access(*this);
     }
+}
+
+Object* Environment::deep_find(const std::string& name)
+{
+    return const_cast<Object*>(const_cast<const Environment*>(this)->deep_find(name));
+}
+
+const Object* Environment::find(const std::string& name) const
+{
+    const Object* ret = nullptr;
+    auto it = this->BaseT::find(name);
+    if (it != this->BaseT::end()) {
+        ret = &it->second.first;
+    }
+    return ret;
 }
 
 Object* Environment::find(const std::string& name)
 {
-    detail::json_accessor jc(name);
-    if (!jc.has_sub()) {
-        Environment* pe = this;
-        Object* ret = 0;
-        do {
-            auto it = pe->BaseT::find(name);
-            if (it != pe->BaseT::end()) {
-                ret = &it->second;
-            }
-            pe = pe->m_parent;
-        } while (pe && !ret);
-
-        return ret;
-    }
-    else {
-        return jc.access(*this);
-    }
+    return const_cast<Object*>(const_cast<const Environment*>(this)->find(name));
 }
 
 bool Environment::erase(const std::string& name)
 {
+    // FIXME 貌似不能erase子对象，只能整个删除
+    // 因为是往上查找的
     bool erased = false;
     Environment* pe = this;
     do {
         auto it = pe->BaseT::find(name);
         if (it != pe->BaseT::end()) {
+            if (it->second.second.is_const) {
+                SSS_POSITION_THROW(std::runtime_error,
+                                   "cannot erase const Object ", it->second.first);
+            }
             pe->BaseT::erase(it);
             erased = true;
         }
@@ -128,25 +133,29 @@ Environment * Environment::ceiling(){
     return p_curent;
 }
 
+// TODO 增加一个wrapper class；
+// 当完成赋值动作的时候，重建链接关系；
 Object& Environment::operator [](const std::string& name)
 {
     detail::json_accessor jc(name);
     if (!jc.has_sub()) {
-        return this->BaseT::operator[](name);
+        return this->BaseT::operator[](name).first;
     }
     else {
         std::string env_name = jc.prefix();
         auto it = this->BaseT::find(env_name);
         if (it == this->BaseT::end()) {
-            it = this->BaseT::emplace_hint(it, std::move(env_name), Environment(this)); 
+            it = this->BaseT::emplace_hint(it,
+                                           std::move(env_name),
+                                           std::make_pair(std::move(Environment(this)), std::move(varlisp::property_t(false)))); 
             if (it == this->BaseT::end()) {
                 SSS_POSITION_THROW(std::runtime_error, "insert errror!");
             }
         }
-        Environment * p_inner = boost::get<Environment>(&it->second);
+        Environment * p_inner = boost::get<Environment>(&it->second.first);
         if (!p_inner) {
-            it->second = Environment(this);
-            p_inner = boost::get<Environment>(&it->second);
+            it->second.first = Environment(this);
+            p_inner = boost::get<Environment>(&it->second.first);
             if (!p_inner) {
                 SSS_POSITION_THROW(std::runtime_error, "assignment error null");
             }
@@ -160,6 +169,7 @@ bool Environment::operator == (const Environment& env) const
     // TODO
     return false;
 }
+
 bool Environment::operator < (const Environment& env) const
 {
     // TODO
