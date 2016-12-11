@@ -11,7 +11,7 @@
 namespace varlisp {
 
 REGIST_BUILTIN(
-    "fnamemodify", 2, 2, eval_fnamemodify,
+    "path-fnamemodify", 2, 2, eval_path_fnamemodify,
     "; fnamemodify 类vim fnamemodify功能；\n"
     "; Examples, when the file name is \"src/version.c\", current dir\n"
     "; \"/home/mool/vim\": >\n"
@@ -32,19 +32,19 @@ REGIST_BUILTIN(
     "; :s?version?main?:p	/home/mool/vim/src/main.c\n"
     "; :p:gs?/?\\?		\\home\\mool\\vim\\src\\version.c\n"
 
-    "(fnamemodify \"path/string\" \"path modifier\") -> \"modified-fname\"");
+    "(path-fnamemodify \"path/string\" \"path modifier\") -> \"modified-fname\"");
 
 /**
- * @brief (fnamemodify "path/string" "path modifier") -> "modified-fname"
+ * @brief (path-fnamemodify "path/string" "path modifier") -> "modified-fname"
  *
  * @param[in] env
  * @param[in] args
  *
  * @return
  */
-Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
+Object eval_path_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
 {
-    const char *funcName = "fnamemodify";
+    const char *funcName = "path-fnamemodify";
     Object path;
     const string_t *p_path =
         getTypedValue<string_t>(env, detail::car(args), path);
@@ -61,6 +61,33 @@ Object eval_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
     }
     std::string mod_name = sss::path::modify_copy(p_path->to_string(), p_modifier->to_string());
     return Object(string_t(std::move(mod_name)));
+}
+
+REGIST_BUILTIN("path-append", 2, 2, eval_path_append,
+               "; path-append 路径附加操作\n"
+               "(path-append part1 part2) -> part1/part2")
+
+Object eval_path_append(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char *funcName = "path-append";
+    Object path;
+    const string_t *p_path =
+        getTypedValue<string_t>(env, detail::car(args), path);
+    if (!p_path) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": requies one path string at 1st)");
+    }
+    Object toAppend;
+    const string_t *p_toAppend =
+        getTypedValue<string_t>(env, detail::cadr(args), toAppend);
+    if (!p_toAppend) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": requies one string at 2nd)");
+    }
+    std::string out_name = p_path->to_string();
+    out_name.reserve(p_path->size() + p_toAppend->size());
+    sss::path::append(out_name, p_toAppend->to_string());
+    return string_t(std::move(out_name));
 }
 
 REGIST_BUILTIN("glob", 1, 2, eval_glob,
