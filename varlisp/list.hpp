@@ -147,6 +147,24 @@ public:
     Object * unquote();
     const Object * unquote() const;
 
+    template<typename T>
+    const T * unquoteType() const
+    {
+        if (this->is_quoted()) {
+            return boost::get<T>(&this->nth(1));
+        }
+        return nullptr;
+    }
+
+    template<typename T>
+    T * unquoteType()
+    {
+        if (this->is_quoted()) {
+            return boost::get<T>(&this->nth(1));
+        }
+        return nullptr;
+    }
+
     // NOTE FIXME 为了语义明确，下面这个函数名，最好修改
     // 为is_quote();
     bool is_quoted() const;
