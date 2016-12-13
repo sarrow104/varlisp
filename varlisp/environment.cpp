@@ -164,6 +164,43 @@ Object& Environment::operator [](const std::string& name)
     }
 }
 
+size_t Environment::clear(bool is_force)
+{
+    auto it = this->BaseT::begin();
+    size_t cnt = 0;
+    while (it != this->BaseT::end()) {
+        if (is_force || !it->second.second.is_const) {
+            it = this->BaseT::erase(it);
+            ++cnt;
+        }
+        else {
+            ++it;
+        }
+    }
+    return cnt;
+}
+
+void Environment::insert(const std::string& name, const Object& o, bool is_const)
+{
+    auto it = this->BaseT::find(name);
+    if (it == this->BaseT::end()) {
+        this->BaseT::insert(
+            it, std::make_pair(
+                name, std::make_pair(o, varlisp::property_t(is_const))));
+    }
+}
+
+void Environment::insert(std::string&& name, Object&& o, bool is_const)
+{
+    auto it = this->BaseT::find(name);
+    if (it == this->BaseT::end()) {
+        this->BaseT::emplace_hint(
+            it, std::move(name),
+            std::make_pair(std::move(o),
+                           std::move(varlisp::property_t(is_const))));
+    }
+}
+
 bool Environment::operator == (const Environment& env) const
 {
     // TODO

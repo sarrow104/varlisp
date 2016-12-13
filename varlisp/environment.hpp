@@ -57,6 +57,9 @@ public:
     size_t defer_task_size() const;
     void   print(std::ostream& ) const;
 
+    void insert(const std::string& name, const Object& o, bool is_const = false);
+    void insert(std::string&& name, Object&& o, bool is_const = false);
+
     Object eval(Environment& env) const
     {
         return *this;
@@ -64,6 +67,8 @@ public:
 
     bool operator == (const Environment& env) const;
     bool operator < (const Environment& env) const;
+
+    size_t clear(bool is_force = false);
 
 private:
     Environment*        m_parent;
