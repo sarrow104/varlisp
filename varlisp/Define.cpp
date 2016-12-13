@@ -22,6 +22,7 @@ Object Define::eval(Environment& env) const
     Object tmp;
     Environment * top_env = env.ceiling();
     if (top_env->find(this->name.name())) {
+        COLOG_ERROR("cannot redefine ", this->name);
         return Nill{};
     }
     const Object& resRef = getAtomicValue(env, this->value, tmp);
