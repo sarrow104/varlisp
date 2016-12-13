@@ -11,6 +11,7 @@
 
 #include "detail/buitin_info_t.hpp"
 #include "detail/car.hpp"
+#include "detail/json_accessor.hpp"
 
 namespace varlisp {
 
@@ -109,15 +110,32 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
     return item_cnt;
 }
 
-REGIST_BUILTIN("clear", 1, 1, eval_clear,
+REGIST_BUILTIN("clear", 0, 1, eval_clear,
                "(clear) -> item-count");
 
 Object eval_clear(varlisp::Environment& env, const varlisp::List& args)
 {
-    int64_t item_cnt = 0;
-    // TODO FIXME
-    // NOTE 內建部分，不能删除！
-    return item_cnt;
+    auto * p_target = &env;
+    const char * funcName = "clear";
+    Object tmp;
+    if (args.length()) {
+        auto * p_sym = varlisp::getSymbol(env, detail::car(args), tmp);
+        if (!p_sym) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": 1st arg must be sym)");
+        }
+        auto location = detail::json_accessor::locate(env, *p_sym);
+        if (!location.first) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": sym ", *p_sym, " not exist)");
+        }
+        p_target = boost::get<varlisp::Environment>(const_cast<Object*>(location.first));
+        if (!p_target) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": ", *p_sym, " is not an env{})");
+        }
+    }
+    return static_cast<int64_t>(p_target->clear());
 }
 
 }  // namespace varlisp
