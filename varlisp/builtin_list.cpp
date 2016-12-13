@@ -131,8 +131,6 @@ REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
  */
 Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
 {
-    // NOTE TODO FIXME cons会取消一级quote——如果是quote的话。反之不会
-    // 像什么？eval后的行为！
     Object obj;
     const varlisp::List * p_list = varlisp::getQuotedList(env, detail::cadr(args), obj);
     if (!p_list) {
