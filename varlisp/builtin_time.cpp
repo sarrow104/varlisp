@@ -39,38 +39,58 @@ Object eval_time(varlisp::Environment &env, const varlisp::List &args)
     return res_ref;
 }
 
+namespace detail {
+std::tm get_std_tm(const decltype(::std::chrono::system_clock::now()) & now)
+{
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    return *std::localtime(&t);
+}
+} // namespace detail
+
 REGIST_BUILTIN("date", 0, 0, eval_date, "(date) -> [year month day]");
 Object eval_date(varlisp::Environment &env, const varlisp::List &args)
 {
-    // TODO
-    return Nill{};
+    std::tm tm = detail::get_std_tm(::std::chrono::system_clock::now());// 这个得到一个 time_point
+    return varlisp::List::makeSQuoteList(int64_t(tm.tm_year + 1900), int64_t(tm.tm_mon + 1), int64_t(tm.tm_mday));
 }
 
 REGIST_BUILTIN("date-time", 0, 0, eval_date_time, "(date-time) -> [year month day HH MM SS]");
 
 Object eval_date_time(varlisp::Environment &env, const varlisp::List &args)
 {
-    // TODO
-    return Nill{};
+    std::tm tm = detail::get_std_tm(::std::chrono::system_clock::now());// 这个得到一个 time_point
+    return varlisp::List::makeSQuoteList(int64_t(tm.tm_year + 1900), int64_t(tm.tm_mon + 1), int64_t(tm.tm_mday),
+                                         int64_t(tm.tm_hour), int64_t(tm.tm_min), int64_t(tm.tm_sec));
 }
 
 REGIST_BUILTIN("date-time-nano", 0, 0, eval_date_time_nano, "(date-time-nano) -> [year month day HH MM SS nano]");
 
 Object eval_date_time_nano(varlisp::Environment &env, const varlisp::List &args)
 {
-    // TODO
-    return Nill{};
-}
+    auto now = ::std::chrono::high_resolution_clock::now();
 
-// TODO strftime(int64_t)
-// int64_t parse_time(string)
-// > (define l [2016 12 9])
-// nil
-// > l
-// [2016 12 9]
-// > (setq l:0 2017)
-// 2017
-// > l
-// [2017 12 9]
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+
+    std::tm tm = *std::localtime(&t);// 这个得到一个 time_point
+
+    auto duration =
+        now.time_since_epoch();
+    // COLOG_ERROR(duration.count());
+    // auto ms =
+    //     std::chrono::duration_cast<std::chrono::milliseconds>(
+    //         duration % std::chrono::milliseconds(1));
+    // COLOG_ERROR(ms.count());
+    // auto is =
+    //     std::chrono::duration_cast<std::chrono::microseconds>(
+    //         duration % std::chrono::microseconds(1));
+    // COLOG_ERROR(is.count());
+    // auto ns =
+    //     std::chrono::duration_cast<std::chrono::nanoseconds>(
+    //         duration % std::chrono::nanoseconds(1));
+    // COLOG_ERROR(ns.count());
+    return varlisp::List::makeSQuoteList(int64_t(tm.tm_year + 1900), int64_t(tm.tm_mon + 1), int64_t(tm.tm_mday),
+                                         int64_t(tm.tm_hour), int64_t(tm.tm_min), int64_t(tm.tm_sec),
+                                         int64_t(duration.count() % 1000000000));
+}
 
 } // namespace varlisp
