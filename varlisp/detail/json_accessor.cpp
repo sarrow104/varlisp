@@ -40,7 +40,7 @@ json_accessor::json_accessor(const std::string& jstyle_name)
     }
 }
 
-const Object * json_accessor::access(const Environment& env) const
+const varlisp::Object * json_accessor::access(const varlisp::Environment& env) const
 {
     const Object * p_obj = env.deep_find(this->prefix());
     if (m_stems.empty() || !p_obj) {
@@ -77,26 +77,19 @@ const Object * json_accessor::access(const Environment& env) const
     }
 }
 
-Object * json_accessor::access(Environment& env) const
+varlisp::Object * json_accessor::access(varlisp::Environment& env) const
 {
-    return const_cast<Object*>(this->access(const_cast<const Environment&>(env)));
+    return const_cast<varlisp::Object*>(this->access(const_cast<const varlisp::Environment&>(env)));
 }
 
-const Object * json_accessor::find_name(const Object* obj, size_t id) const
+const varlisp::Object * json_accessor::find_name(const varlisp::Object* obj, size_t id) const
 {
-    const Environment * p_env = boost::get<varlisp::Environment>(obj);
-    // TODO FIXME
-    // 从access 到 find_name，内部连续调用了Environment::find()；而
-    // Environment::find()，本身就是一个递归的查找——这在逻辑上有些错误了！
-    // 我本意是查找手动形成的{}嵌套关系！
-    // 而手动创建的{}嵌套关系，只能从外部找内部——内部则并没有到外部的parent的
-    // 关系，因此本程序虽然通过递归版的Environment::find()查找标识符，但是工作仍
-    // 然正常——逻辑不对，但是结果正确。
-    // 解决办法是：
-    // 1. Environment::find() 改名为更确定的Environment::deep_find()；
-    // 2. 本函数使用map::find()来完成查找；
-    // 3. 修改Environment的赋值动作，创建链接关系；
-    const Object * p_ret = p_env->find(m_stems[id]);
+    const varlisp::Environment * p_env = boost::get<varlisp::Environment>(obj);
+    if (!p_env) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           obj->which(), " is not a Environment");
+    }
+    const varlisp::Object * p_ret = p_env->find(m_stems[id]);
     if (!p_ret || id + 1 == m_stems.size()) {
         return p_ret;
     }
@@ -116,6 +109,10 @@ Object * json_accessor::find_name(Object* obj, size_t id) const
 const Object * json_accessor::find_index(const Object * obj, size_t id) const
 {
     const List * p_list = boost::get<varlisp::List>(obj);
+    if (!p_list) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           obj->which(), " is not a list");
+    }
     int index = sss::string_cast<int>(m_stems[id]);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error,
@@ -137,6 +134,59 @@ const Object * json_accessor::find_index(const Object * obj, size_t id) const
 Object * json_accessor::find_index(Object * obj, size_t id) const
 {
     return const_cast<Object*>(this->find_index(const_cast<const Object*>(obj), id));
+}
+
+namespace detail {
+std::pair<const varlisp::Object*, const varlisp::Environment*> locate_impl(const varlisp::Environment& env, const std::string& name)
+{
+    auto * p_env = &env;
+    while (p_env) {
+        auto * p_obj = p_env->find(name);
+        if (p_obj) {
+            return std::make_pair(p_obj, p_env);
+        }
+        p_env = p_env->parent();
+    }
+    return {nullptr, nullptr};
+}
+} // namespace detail
+
+std::pair<const varlisp::Object*, const varlisp::Environment*> json_accessor::locate(const varlisp::Environment& env, const symbol& sym)
+{
+    json_accessor jc(sym.name());
+    if (!jc.has_sub()) {
+        return detail::locate_impl(env, sym.name());
+    }
+    else {
+        auto location = detail::locate_impl(env, jc.prefix());
+        for (size_t i = 0; i < jc.m_stems.size() && location.first; ++i) {
+            if (sss::is_all(jc.m_stems[i], static_cast<int(*)(int)>(std::isdigit))) {
+                auto * p_list = boost::get<varlisp::List>(location.first);
+                if (!p_list) {
+                    SSS_POSITION_THROW(std::runtime_error,
+                                       "need a List here , but ", location.first->which());
+                }
+
+                location.first = p_list->objAt(sss::string_cast<int>(jc.m_stems[i]));
+            }
+            else {
+                // auto * p_env = location.second
+                location.second = boost::get<varlisp::Environment>(location.first);
+                if (!location.second) {
+                    SSS_POSITION_THROW(std::runtime_error,
+                                       "need an Environment here , but ", location.first->which());
+                }
+                location.first = location.second->find(jc.m_stems[i]);
+            }
+        }
+        return location;
+    }
+}
+
+std::pair<varlisp::Object*, varlisp::Environment*> json_accessor::locate(varlisp::Environment& env, const varlisp::symbol& sym)
+{
+    auto ret = json_accessor::locate(const_cast<const varlisp::Environment&>(env), sym);
+    return std::make_pair(const_cast<varlisp::Object*>(std::get<0>(ret)), const_cast<varlisp::Environment*>(std::get<1>(ret)));
 }
 
 } // namespace detail

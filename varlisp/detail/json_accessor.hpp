@@ -40,8 +40,16 @@ public:
             return "";
         }
     }
-    const Object * access(const Environment& env) const;
-    Object *       access(Environment& env) const;
+
+    const std::vector<std::string>& stems() const {
+        return m_stems;
+    }
+
+    const varlisp::Object * access(const varlisp::Environment& env) const;
+    varlisp::Object *       access(varlisp::Environment& env) const;
+
+    static std::pair<const varlisp::Object*, const varlisp::Environment*> locate(const varlisp::Environment& env, const varlisp::symbol& sym);
+    static std::pair<varlisp::Object*, varlisp::Environment*> locate(varlisp::Environment& env, const varlisp::symbol& sym);
 
 private:
     const Object * find_name(const Object* obj, size_t id) const;
