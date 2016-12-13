@@ -117,6 +117,30 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     return Object(string_t{std::move(sss::path::getcwd())});
 }
 
+REGIST_BUILTIN("shell-mkdir", 1, 1, eval_shell_mkdir,
+               "(shell-mkdir \"path/to/make\") -> \"full/path\" | nil");
+
+Object eval_shell_mkdir(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char* funcName = "shell-mkdir";
+    Object path;
+    const string_t* p_path =
+        getTypedValue<string_t>(env, detail::car(args), path);
+    if (!p_path) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": requie one path string!)");
+    }
+    bool is_ok = sss::path::mkpath(p_path->to_string());
+    COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
+               is_ok ? "succeed" : "failed", ")");
+    if (is_ok) {
+        return Object(*p_path);
+    }
+    else {
+        return Nill{};
+    }
+}
+
 REGIST_BUILTIN("shell-ls", 0, -1, eval_shell_ls,
                "(ls \"dir1\" \"dir2\" ...) -> '(\"item1\",\"item2\", ...)");
 
