@@ -23,9 +23,11 @@ void Builtin::regist_builtin_function(Environment& env)
     const std::vector<varlisp::detail::builtin_info_t>& info_vec
         = varlisp::detail::get_builtin_infos();
     for (size_t i = 0; i != info_vec.size() ; ++i) {
-        env[info_vec[i].name] = varlisp::Builtin(i);
+        env.insert(info_vec[i].name, varlisp::Builtin(i), true);
+        // env[info_vec[i].name] = varlisp::Builtin(i);
     }
-#define CONSTANT_INT(i) (env[#i] = varlisp::Object{int64_t(i)})
+#define CONSTANT_INT(i) (env.insert(#i, varlisp::Object{int64_t(i)}, true))
+// #define CONSTANT_INT(i) (env[#i] = varlisp::Object{int64_t(i)})
     CONSTANT_INT(O_RDONLY);
     CONSTANT_INT(O_WRONLY);
     CONSTANT_INT(O_RDWR);
