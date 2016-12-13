@@ -426,6 +426,10 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
             }
 
             p_obj = const_cast<varlisp::Object*>(&p_list->nth(*p_index));
+            if (!p_obj) {
+                SSS_POSITION_THROW(std::runtime_error,
+                                   *p_index, "th element not exist! only ", p_list->length(), " element(s).");
+            }
         }
         else if (auto * p_sym = boost::get<varlisp::symbol>(&*stem_it)) {
             p_env = const_cast<varlisp::Environment*>(boost::get<varlisp::Environment>(p_obj));
@@ -434,6 +438,10 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
                                    "need an Environment here , but ", *stem_it);
             }
             p_obj = p_env->find(p_sym->name());
+            if (!p_obj) {
+                SSS_POSITION_THROW(std::runtime_error,
+                                   "field ", p_sym->name(), " not exist! use (symbol ...) to check");
+            }
         }
         else {
             SSS_POSITION_THROW(std::runtime_error,
