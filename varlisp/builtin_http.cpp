@@ -18,6 +18,7 @@
 
 #include "detail/buitin_info_t.hpp"
 #include "detail/car.hpp"
+#include "detail/http.hpp"
 
 namespace varlisp {
 
@@ -26,9 +27,6 @@ REGIST_BUILTIN(
     "(http-get \"url\") -> \"<html>\"\n"
     "(http-get \"url\" \"proxy-url\" proxy-port-number) -> \"<html>\"");
 
-// TODO
-// 对于失败的下载，应该告知用户content-length，以及终止在何处(已经接受的bytes数)
-// 另外，ensure-utf，应该交给用户，而不是自动完成。
 /**
  * @brief
  *        (http-get "url") -> "<html>"
@@ -69,69 +67,20 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     ss1x::http::Headers headers;
 
-    string_t max_content;
+    std::string max_content;
 
-    boost::system::error_code ec;
-
-    int max_test = 5;
-    do {
-        std::ostringstream oss;
-        if (p_proxy) {
-            ec = ss1x::asio::proxyRedirectHttpGet(oss, headers,
-                                                  p_proxy->to_string(), *p_port,
-                                                  p_url->to_string());
-            // ss1x::asio::proxyGetFile(oss, headers, p_proxy->to_string(),
-            // *p_port, p_url->to_string());
-        }
-        else {
-            // ss1x::asio::getFile(oss, headers, p_url->to_string());
-            ec = ss1x::asio::redirectHttpGet(oss, headers, p_url->to_string());
-        }
-
-        if (headers.status_code != 200) {
-            COLOG_ERROR("(", funcName, ": http-status code:",
-                        headers.status_code, ")");
-            for (const auto& item : headers) {
-                std::cerr << "header : " << item.first << ": " << item.second
-                          << std::endl;
-            }
-            continue;
-        }
-        if (!headers.has("Content-Length")) {
-            if (ec == boost::asio::error::eof) {
-                max_content = oss.str();
-                break;
-            }
-        }
-        else {
-            std::string content_length_str = headers.get("Content-Length");
-            sss::trim(content_length_str);
-            if (content_length_str.empty()) {
-                break;
-            }
-            size_t content_length =
-                sss::string_cast<unsigned int>(content_length_str);
-            COLOG_DEBUG(SSS_VALUE_MSG(oss.str().length()));
-            size_t actual_recieved = oss.tellp();
-            if (actual_recieved > content_length) {
-                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '>',
-                            SSS_VALUE_MSG(content_length));
-                break;
-            }
-            else if (actual_recieved < content_length) {
-                COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '<',
-                            SSS_VALUE_MSG(content_length));
-                // retry
-            }
-            if (actual_recieved > max_content.length() &&
-                actual_recieved <= content_length) {
-                max_content = oss.str();
-            }
-            if (max_content.length() == content_length) {
-                break;
-            }
-        }
-    } while (max_test-- > 0);
+    if (p_proxy) {
+        varlisp::detail::http::downloadUrl(p_url->to_string(), max_content, headers,
+                                           std::bind(ss1x::asio::proxyRedirectHttpGet,
+                                                     std::placeholders::_1,
+                                                     std::placeholders::_2,
+                                                     p_proxy->to_string(), *p_port,
+                                                     std::placeholders::_3));
+    }
+    else {
+        varlisp::detail::http::downloadUrl(p_url->to_string(), max_content, headers,
+                                           ss1x::asio::redirectHttpGet);
+    }
 
     // COLOG_INFO(headers.status_code, headers.http_version);
     Environment ret;
@@ -142,16 +91,27 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     for (const auto& it : headers) {
         // COLOG_INFO(it.first, ": ", sss::raw_string(it.second));
+        // NOTE 最好按字符串保存值——因为header的值可能比较奇葩。
+        // 而且，有可能数字以0开头——你保存为int，那么前导的0就丢失了！
+#if 0
         if (sss::is_all(it.second, static_cast<int (*)(int)>(std::isdigit))) {
-            ret[it.first] = sss::string_cast<int64_t>(it.second);
+            try {
+                ret[it.first] = sss::string_cast<int64_t>(it.second);
+            }
+            catch (std::runtime_error& e) {
+                ret[it.first] = string_t(std::move(it.second));
+            }
         }
         else {
             ret[it.first] = string_t(std::move(it.second));
         }
+#else
+        ret[it.first] = string_t(std::move(it.second));
+#endif
     }
     COLOG_INFO(ret);
 
-    return varlisp::List::makeSQuoteList(std::move(max_content),
+    return varlisp::List::makeSQuoteList(string_t(std::move(max_content)),
                                          std::move(ret));
 }
 
