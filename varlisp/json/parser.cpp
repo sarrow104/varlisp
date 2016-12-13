@@ -262,14 +262,14 @@ struct JParser
 
         default:
             SSS_POSITION_THROW(std::runtime_error,
-                               "unkonw char", s);
+                               "unkonw char", sss::raw_char(s.front()));
         }
         // 先跳过负号
         if (s.front() == '-') {
             s.pop_front();
             if (s.empty()) {
                 SSS_POSITION_THROW(std::runtime_error,
-                                   "unfinished -number", s);
+                                   "unfinished -number");
             }
         }
 
