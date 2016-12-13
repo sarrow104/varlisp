@@ -176,6 +176,9 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
 
     int64_t fd = ::open(std_path.c_str(), flag, S_IRUSR | S_IWUSR);
     COLOG_DEBUG(SSS_VALUE_MSG(fd));
+    if (fd == -1) {
+        COLOG_ERROR(std::strerror(errno));
+    }
     return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
 }
 
