@@ -98,8 +98,6 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN("sort!", 2, 2, eval_sort_bar,
                "(sort! func '(list)) -> Nil ; sort in-place");
 
-// TODO 原地sort list？
-// 疑问：针对变量？
 /**
  * @brief
  *      (sort! func '(list)) -> nil
