@@ -274,6 +274,7 @@ int test_string_t()
     std::cout << sss::raw_string(tmp) << std::endl;
     return EXIT_SUCCESS;
 }
+
 int main(int argc, char* argv[])
 {
     (void)argc;
