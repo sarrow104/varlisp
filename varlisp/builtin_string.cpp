@@ -31,9 +31,6 @@ REGIST_BUILTIN("split", 1,  2,  eval_split,
  *
  * @return 分割之后的列表；
  *
- * TODO 支持正则表达式，确定sep!
- * 需要三个参数；
- * 其中第三个参数是表示正则的的symbol
  */
 Object eval_split(varlisp::Environment &env, const varlisp::List &args)
 {
