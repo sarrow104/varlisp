@@ -66,13 +66,11 @@ Object eval_json_string(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN("json-parse", 1, 1, eval_json_parse,
                "; json-parse 用json格式，解释字符串参数，并返回解析后的对象；\n"
                "; 如果解析成功返回list或者env；如果失败，返回nil\n"
-               "; TODO complete me!\n"
                "(json-parse \"string\") -> list | env | nil");
 
 Object eval_json_parse(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "json-parse";
-    // 这基本需要重写解析器了
     Object obj;
     const string_t * p_s = varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), obj);
     if (!p_s) {
