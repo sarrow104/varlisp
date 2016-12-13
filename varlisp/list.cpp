@@ -10,6 +10,7 @@
 #include <sss/log.hpp>
 #include <sss/util/PostionThrow.hpp>
 
+#include "detail/json_accessor.hpp"
 #include "object.hpp"
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
@@ -70,24 +71,6 @@ void List::make_unique()
         }
     }
 }
-
-namespace detail {
-
-const List *get_list(const List& l)
-{
-    // TODO FIXME 对于'1这种单值，可能有问题
-    const List * p_l = l.get_slist();
-    if (!p_l) {
-        p_l = &l;
-    }
-    return p_l;
-}
-
-List * get_list(List & l)
-{
-    return const_cast<List*>(static_cast<const List&>(l).get_slist());
-}
-} // namespace detail
 
 void List::append(const Object& o)
 {
@@ -164,6 +147,24 @@ Object List::eval(Environment& env) const
 
     varlisp::List nil;
 
+    // NOTE 比如，调用的是內建函数，那么內建函数所处的环境是顶层；
+    // 如果此时，env被修改为顶层，那么注定内部的符号的查找，就很可能失败！
+    // 因为求值顺序，实际是递归的方式，从外到内。
+    // 怎么办？计算lambda所处的env，就没用了吗？
+    // 看样子，this关键字势在必行！
+    // 只有这个关键字，才能解决查找效率的平衡——调用栈的env，是层级的。而所述环
+    // 境，则是另外一个分支——如果把所有的符号(包括环境)，都想象成一棵树上的节点的话。
+    // (分支就是env，端点是具体的原子符号)
+    // if (auto * p_sym = boost::get<varlisp::symbol>(&this->front())) {
+    //     auto location = detail::json_accessor::locate(env, *p_sym);
+    //     if (location.first) {
+    //         COLOG_ERROR(*location.first, *location.second);
+    //     }
+    // }
+
+    // NOTE
+    // lisp 语言，每种对象，都是list组成（递归或者单值）；eval的过程，可以看做是
+    // 对这个list树的遍历——同时需要用到多个栈，用来模拟调用栈。
     Object funcTmp;
     const Object& funcRef = varlisp::getAtomicValue(env, this->front(), funcTmp);
 
