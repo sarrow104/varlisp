@@ -5,6 +5,7 @@
 #include <sss/path.hpp>
 #include <sss/path/glob_path.hpp>
 #include <sss/raw_print.hpp>
+#include <sss/environ.hpp>
 
 #include "object.hpp"
 #include "raw_stream_visitor.hpp"
@@ -13,6 +14,7 @@
 #include "detail/buitin_info_t.hpp"
 #include "detail/list_iterator.hpp"
 #include "detail/car.hpp"
+#include "detail/varlisp_env.hpp"
 
 namespace varlisp {
 // 应该如何处理shell-eval时候的参数？
@@ -111,7 +113,14 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requie one path string!)");
     }
-    bool is_ok = sss::path::chgcwd(p_path->to_string());
+    std::string target_path = p_path->to_string();
+    if (target_path.find('$') != std::string::npos) {
+        target_path = varlisp::detail::get_envmgr().get_expr(target_path);
+    }
+    else {
+        sss::path::full_of(target_path);
+    }
+    bool is_ok = sss::path::chgcwd(target_path);
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
     return Object(string_t{std::move(sss::path::getcwd())});
@@ -230,6 +239,45 @@ Object eval_shell_pwd(varlisp::Environment& env, const varlisp::List& args)
     (void)env;
     (void)args;
     return Object(string_t(std::move(sss::path::getcwd())));
+}
+
+REGIST_BUILTIN("shell-env", 0, 1, eval_shell_env,
+               "(shell-env) -> {(kev \"value\")...}\n"
+               "(shell-env key) -> \"value-string\" | nil");
+
+Object eval_shell_env(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "shell-env";
+    if (args.empty()) {
+        varlisp::Environment sysEnv(&env);
+
+        char ** p_env = environ;
+        while (p_env && p_env[0]) {
+            int eq_pos = std::strchr(p_env[0], '=') - p_env[0];
+            sysEnv[std::string(p_env[0], eq_pos)] = string_t(std::string(p_env[0] + eq_pos + 1));
+            p_env++;
+        }
+
+        return sysEnv;
+    }
+    else {
+        Object tmp;
+        const string_t* p_path =
+            getTypedValue<string_t>(env, detail::car(args), tmp);
+
+        if (!p_path) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "(", funcName, ": 1st argument must b string)");
+        }
+
+        const char * p_value = ::getenv(p_path->to_string().c_str());
+        if (!p_value) {
+            return Nill{};
+        }
+        else {
+            return string_t(std::string(p_value));
+        }
+    }
 }
 
 }  // namespace varlisp
