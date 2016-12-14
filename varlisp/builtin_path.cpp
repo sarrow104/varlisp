@@ -149,6 +149,42 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 }
 
 REGIST_BUILTIN(
+    "file?", 1, 1, eval_file_q,
+    "; file? 询问路径指向的文件是否存在\n"
+    "(file? \"path/to/file\") -> boolean");
+
+Object eval_file_q(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "file?";
+    Object path;
+    const string_t *p_path =
+        getTypedValue<string_t>(env, detail::car(args), path);
+    if (!p_path) {
+        SSS_POSITION_THROW(std::runtime_error,
+                          "(", funcName, ": requies one path string)");
+    }
+    return sss::path::file_exists(p_path->to_string()) == sss::PATH_TO_FILE;
+}
+
+REGIST_BUILTIN(
+    "file?", 1, 1, eval_directory_q,
+    "; directory? 询问路径指向的文件夹是否存在\n"
+    "(directory? \"path/to/directory\") -> boolean");
+
+Object eval_directory_q(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "directory?";
+    Object path;
+    const string_t *p_path =
+        getTypedValue<string_t>(env, detail::car(args), path);
+    if (!p_path) {
+        SSS_POSITION_THROW(std::runtime_error,
+                          "(", funcName, ": requies one path string)");
+    }
+    return sss::path::file_exists(p_path->to_string()) == sss::PATH_TO_DIRECTORY;
+}
+
+REGIST_BUILTIN(
     "glob-recurse", 1, 3, eval_glob_recurse,
     "; glob-recurse 递归枚举目标路径下的文件、文件夹\n"
     "; 参数同 glob；第三个可选参数，指查找深度；\n"
