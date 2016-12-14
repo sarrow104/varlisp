@@ -4,6 +4,7 @@
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
 #include <sss/raw_print.hpp>
+#include <sss/penvmgr2.hpp>
 
 #include "object.hpp"
 #include "builtin_helper.hpp"
@@ -12,6 +13,7 @@
 #include "detail/buitin_info_t.hpp"
 #include "detail/car.hpp"
 #include "detail/json_accessor.hpp"
+#include "detail/varlisp_env.hpp"
 
 namespace varlisp {
 
@@ -23,7 +25,7 @@ REGIST_BUILTIN("load", 1, 1, eval_load, "(load \"path/to/lisp\") -> nil");
  * TODO
  * 由于载入之后的脚本，马上就被执行了——相当于从终端输入。那么，
  * 从逻辑上，返回值应该是脚本中最后一条语句的值。
- *
+ * 
  * @param[in] env
  * @param[in] args
  *
@@ -54,7 +56,14 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": requies a path)");
     }
-    std::string full_path = sss::path::full_of_copy(p_path->to_string());
+    std::string full_path = p_path->to_string();
+    if (full_path.find('$') != std::string::npos) {
+        full_path = varlisp::detail::get_envmgr().get_expr(full_path);
+    }
+    else {
+        full_path = sss::path::full_of_copy(full_path);
+    }
+    
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
                           "` not to file)");
