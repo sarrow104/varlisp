@@ -19,6 +19,7 @@
 #include "detail/car.hpp"
 #include "detail/list_iterator.hpp"
 #include "detail/html.hpp"
+#include "detail/file.hpp"
 
 namespace varlisp {
 
@@ -83,7 +84,18 @@ REGIST_BUILTIN("gumbo-query", 2, 2, eval_gumbo_query,
                "; 范例\n"
                ";\t h1 a.special\n"
                ";\t span[id=\"that's\"]\n"
+               ";\t p:first 第一个p元素\n"
+               ";\t tr:even 所有偶数<tr>元素\n"
+               ";\t ul>li:gt(3) ul中第四个以及以后的li元素(index从0开始)\n"
+               ";\t input:not(:empty) 所有不为空的input元素\n"
+               ";\t :header 所有标题元素\n"
+               ";\t :contains('W3School') 包含指定字符串的所有元素\n"
+               ";\t th,td,.intro 并列规则，满足其一的所有元素\n"
+               ";\t [href] 含有href属性的所有元素\n"
+               ";\t [href!='#'] 拥有不等于'#'的href属性的所有元素\n"
+
                "; dsl 语法规则\n"
+               "; http://www.w3school.com.cn/jquery/jquery_ref_selectors.asp\n"
                ";\t SelectorGroup\n"
                ";\t  -> Selector ( ',' Selector ) *\n"
                ";\t \n"
@@ -200,6 +212,27 @@ Object eval_gumbo_children(varlisp::Environment& env, const varlisp::List& args)
     }
 
     return ret_nodes;
+}
+
+REGIST_BUILTIN("gqnode-indent", 0, 1, eval_gqnode_indent,
+               "; gqnode-indent 获取或者设定gqnode在打印的时候的文本缩进设定;\n"
+               "; 传入、返回的的都是字符串；非空白符号的设定，会被忽略\n"
+               "(gqnode-indent) -> \"current-indent\"\n"
+               "(gqnode-indent \"new-indent\") -> \"new-accept-indent\"");
+
+Object eval_gqnode_indent(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char* funcName = "gqnode-indent";
+    if (args.size()) {
+        Object tmp;
+        const auto * p_indent = varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), tmp);
+        if (!p_indent) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": 1st argument must be a indent string)");
+        }
+        detail::html::set_gpnode_indent(p_indent->to_string());
+    }
+    return string_t(detail::html::get_gpnode_indent());
 }
 
 REGIST_BUILTIN(
@@ -573,43 +606,6 @@ Object eval_gumbo_query_text(varlisp::Environment& env,
     return string_t(std::move(oss.str()));
 }
 
-namespace detail {
-std::string get_fname_from_fd(int fd)
-{
-    const size_t buf_size = 256;
-    char s[buf_size];
-    std::snprintf(s, buf_size - 1, "/proc/%d/fd/%d", getpid(), fd);
-    std::string name;
-    name.resize(buf_size);
-    while (true) {
-        int ec = readlink(s, const_cast<char*>(&name[0]), name.size() - 1);
-        if (ec > 0) {
-            name.resize(ec);
-            break;
-        }
-        else if (ec == -1) {
-            switch (errno) {
-                case ENAMETOOLONG:
-                    name.resize(name.size() * 2);
-                    continue;
-
-                default:
-                    SSS_POSITION_THROW(std::runtime_error,
-                                       std::strerror(errno));
-                    break;
-            }
-        }
-        else {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "unkown readlink return value:", ec,
-                               "; errno = ", errno, std::strerror(errno));
-        }
-    }
-    return name;
-}
-
-} // namespace detail
-
 REGIST_BUILTIN("gumbo-rewrite", 2,  -1,  eval_gumbo_rewrite,
                "gumbo-rewrite 重写gumbo-node到指定文件描述符中\n"
                "注意，链接等会被改写\n"
@@ -626,7 +622,7 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": 1st argument must be int fd)");
     }
 
-    std::string output_dir = sss::path::dirname(detail::get_fname_from_fd(*p_fd));
+    std::string output_dir = sss::path::dirname(detail::file::get_fname_from_fd(*p_fd));
     COLOG_ERROR(output_dir);
 
     // NOTE html正文其他部分，由调用本方法的过程来完成！这里，最多还需要考虑的是
