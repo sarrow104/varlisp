@@ -4,6 +4,8 @@
 
 #include <gumbo_query/QueryUtil.h>
 
+#include "detail/html.hpp"
+
 namespace varlisp {
 
 gumboNode::gumboNode() {}
@@ -28,7 +30,9 @@ gumboNode::gumboNode(const std::string& html)
 void gumboNode::print(std::ostream& o) const
 {
     if (mDocument && mNode.valid()) {
-        CQueryUtil::writeOuterHtml(o, reinterpret_cast<GumboNode*>(mNode.get()));
+        CQueryUtil::writeOuterHtml(
+            o, reinterpret_cast<GumboNode*>(mNode.get()),
+            varlisp::detail::html::get_gpnode_indent().c_str());
     }
 }
 
@@ -96,7 +100,9 @@ std::string gumboNode::innerHtml() const
 {
     if (this->valid()) {
         std::ostringstream oss;
-        CQueryUtil::writeInnerHtml(oss, reinterpret_cast<GumboNode*>(mNode.get()));
+        CQueryUtil::writeInnerHtml(
+            oss, reinterpret_cast<GumboNode*>(mNode.get()),
+            varlisp::detail::html::get_gpnode_indent().c_str());
         return oss.str();
     }
     return "";
@@ -106,7 +112,9 @@ std::string gumboNode::outerHtml() const
 {
     if (this->valid()) {
         std::ostringstream oss;
-        CQueryUtil::writeOuterHtml(oss, reinterpret_cast<GumboNode*>(mNode.get()));
+        CQueryUtil::writeOuterHtml(
+            oss, reinterpret_cast<GumboNode*>(mNode.get()),
+            varlisp::detail::html::get_gpnode_indent().c_str());
         return oss.str();
     }
     return "";
@@ -114,14 +122,20 @@ std::string gumboNode::outerHtml() const
 
 std::vector<gumboNode> gumboNode::find(const std::string& query) const
 {
-    std::vector<gumboNode> ret;
-    if (this->valid()) {
-        CSelection s = mNode.find(query);
-        for (size_t i = 0; i < s.nodeNum(); ++i) {
-            ret.emplace_back(s.nodeAt(i), mDocument);
+    try {
+        std::vector<gumboNode> ret;
+        if (this->valid()) {
+            CSelection s = mNode.find(query);
+            for (size_t i = 0; i < s.nodeNum(); ++i) {
+                ret.emplace_back(s.nodeAt(i), mDocument);
+            }
         }
+        return ret;
     }
-    return ret;
+    catch(const std::string& msg) {
+        COLOG_ERROR(msg);
+        return {};
+    }
 }
 
 std::vector<gumboNode> gumboNode::children() const
