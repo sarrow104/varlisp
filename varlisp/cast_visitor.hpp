@@ -12,6 +12,7 @@
 #include "print_visitor.hpp"
 #include "cast2bool_visitor.hpp"
 #include "detail/is_symbol.hpp"
+#include "builtin_helper.hpp"
 
 namespace varlisp {
 
@@ -44,38 +45,64 @@ struct cast_visitor : public boost::static_visitor<Object>
             return Nill{};
         }
     }
-    Object operator() (const int64_t&, const double& f) const {
-        if (std::abs(f) > std::numeric_limits<int64_t>::max()) {
-            return Nill{};
+    template<typename T>
+    Object operator() (const int64_t&, const T& v) const {
+        Object temp;
+        const Object& res = varlisp::getAtomicValue(m_env, m_value, temp);
+        if (auto * p_bool = boost::get<bool>(&res)) {
+            return int64_t(*p_bool);
         }
-        return int64_t(f);
+        else if (auto * p_double = boost::get<double>(&res)) {
+            if (std::abs(*p_double) > std::numeric_limits<int64_t>::max()) {
+                return Nill{};
+            }
+            else {
+                return int64_t(*p_double);
+            }
+        }
+        else if (auto * p_int64 = boost::get<int64_t>(&res)) {
+            return *p_int64;
+        }
+        else if (auto * p_string = boost::get<varlisp::string_t>(&res)) {
+            std::string s = p_string->to_string();
+            try {
+                return sss::string_cast<int64_t>(s);
+            }
+            catch(...) {
+                return Nill{};
+            }
+        }
+        return Nill{};
     }
-    Object operator() (const double&, const int64_t& f) const {
-        return double(f);
+    template<typename T>
+    Object operator() (const double&, const int64_t& v) const {
+        Object temp;
+        const Object& res = varlisp::getAtomicValue(m_env, m_value, temp);
+        if (auto * p_bool = boost::get<bool>(&res)) {
+            return double(*p_bool);
+        }
+        else if (auto * p_double = boost::get<double>(&res)) {
+            return *p_double;
+        }
+        else if (auto * p_int64 = boost::get<int64_t>(&res)) {
+            return double(*p_int64);
+        }
+        else if (auto * p_string = boost::get<varlisp::string_t>(&res)) {
+            std::string s = p_string->to_string();
+            try {
+                return sss::string_cast<double>(s);
+            }
+            catch(...) {
+                return Nill{};
+            }
+        }
+        return Nill{};
     }
     template<typename T>
     Object operator() (const string_t, const T& value) const {
         std::ostringstream oss;
         boost::apply_visitor(print_visitor(oss), m_value);
         return string_t{std::move(oss.str())};
-    }
-    Object operator() (const int64_t&, const string_t& s) const {
-        sss::string_view sv = s.to_string_view();
-        try {
-            return sss::string_cast<int64_t>(sv.to_string());
-        }
-        catch(...) {
-            return Nill{};
-        }
-    }
-    Object operator() (const double&, const string_t& s) const {
-        sss::string_view sv = s.to_string_view();
-        try {
-            return sss::string_cast<double>(sv.to_string());
-        }
-        catch(...) {
-            return Nill{};
-        }
     }
     template<typename T>
     Object operator() (const bool&, const T& s) const {
