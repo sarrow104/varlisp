@@ -81,7 +81,6 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
     const varlisp::symbol* p_sym =
         boost::get<varlisp::symbol>(&detail::car(*p_loop_ctrl));
 
-    COLOG_DEBUG(SSS_VALUE_MSG(ctrl_block_len));
     if (2 == ctrl_block_len) {
         if (!p_sym) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
@@ -104,16 +103,15 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
                                ": a symbol is_needed as iterator arg; but",
                                detail::car(*p_loop_ctrl), ")");
         }
-        p_loop_ctrl = p_loop_ctrl->get_slist();
         Object tmpStart;
         Object tmpEnd;
         Object tmpStep{int64_t(1)};
         return eval_loop_step(
             env, *p_sym,
-            varlisp::getAtomicValue(env, detail::car(*p_loop_ctrl), tmpStart),
-            varlisp::getAtomicValue(env, detail::cadr(*p_loop_ctrl), tmpEnd),
+            varlisp::getAtomicValue(env, detail::cadr(*p_loop_ctrl), tmpStart),
+            varlisp::getAtomicValue(env, detail::caddr(*p_loop_ctrl), tmpEnd),
             ctrl_block_len == 4 ? varlisp::getAtomicValue(
-                                      env, detail::caddr(*p_loop_ctrl), tmpStep)
+                                      env, p_loop_ctrl->nth(2), tmpStep)
                                 : tmpStep,
             args.tail());
     }
@@ -174,7 +172,7 @@ public:
           m_condition(detail::cadr(*p_ctrl_block)),
           m_next(detail::caddr(*p_ctrl_block))
     {
-        COLOG_ERROR(m_condition, m_next);
+        COLOG_DEBUG(m_condition, m_next);
         const char * funcName = "for";
         const varlisp::List* p_kv_pair_list =
             boost::get<varlisp::List>(&detail::car(*p_ctrl_block));
@@ -187,7 +185,7 @@ public:
                                "for(v4) need positive even number elements");
         }
 
-        COLOG_ERROR(p_kv_pair_list->size());
+        COLOG_DEBUG("kv pair list lengh = ", p_kv_pair_list->size());
 
         for (size_t i = 0; i < p_kv_pair_list->size(); i += 2) {
             Object tmpObj;
@@ -203,7 +201,7 @@ public:
             m_sym_vec.push_back(p_sym->name());
             Object res;
             m_init_value_vec.push_back(getAtomicValue(env, p_kv_pair_list->nth(i + 1), res));
-            COLOG_ERROR(m_sym_vec.back(), m_init_value_vec.back());
+            COLOG_DEBUG(m_sym_vec.back(), m_init_value_vec.back());
         }
     }
 
@@ -220,7 +218,7 @@ public:
     void start() {
         for (size_t i = 0; i != m_sym_vec.size(); ++i) {
             m_env[m_sym_vec[i]] = m_init_value_vec[i];
-            COLOG_DEBUG(m_sym_vec[i], '=', m_init_value_vec[i]);
+            COLOG_DEBUG("loop ", i, m_sym_vec[i], '=', m_init_value_vec[i]);
         }
     }
     bool condition() {
