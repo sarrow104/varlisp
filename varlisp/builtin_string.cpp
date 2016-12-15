@@ -194,6 +194,66 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     }
 }
 
+REGIST_BUILTIN("ltrim", 1, 1, eval_ltrim,
+               "(ltrim \"target-string\") -> \"left-trimed-string\"");
+
+Object eval_ltrim(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char *funcName = "ltrim";
+    Object obj;
+    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
+    if (!p_str) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": need an string as the 1st argument)");
+    }
+    sss::string_view sv = p_str->to_string_view();
+    while(!sv.empty() && std::isspace(sv.front())) {
+        sv.pop_front();
+    }
+    return p_str->substr(sv);
+}
+
+REGIST_BUILTIN("rtrim", 1, 1, eval_rtrim,
+               "(rtrim \"target-string\") -> \"right-trimed-string\"");
+
+Object eval_rtrim(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char *funcName = "rtrim";
+    Object obj;
+    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
+    if (!p_str) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": need an string as the 1st argument)");
+    }
+    sss::string_view sv = p_str->to_string_view();
+    while(!sv.empty() && std::isspace(sv.back())) {
+        sv.pop_back();
+    }
+    return p_str->substr(sv);
+}
+
+REGIST_BUILTIN("trim", 1, 1, eval_trim,
+               "(trim \"target-string\") -> \"bothsides-trimed-string\"");
+
+Object eval_trim(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char *funcName = "trim";
+    Object obj;
+    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
+    if (!p_str) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": need an string as the 1st argument)");
+    }
+    sss::string_view sv = p_str->to_string_view();
+    while(!sv.empty() && std::isspace(sv.front())) {
+        sv.pop_front();
+    }
+    while(!sv.empty() && std::isspace(sv.back())) {
+        sv.pop_back();
+    }
+    return p_str->substr(sv);
+}
+
 REGIST_BUILTIN("strlen", 1, 1, eval_strlen,
                "(strlen \"target-string\") -> length");
 
