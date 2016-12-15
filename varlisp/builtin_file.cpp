@@ -9,6 +9,7 @@
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
 #include <sss/raw_print.hpp>
+#include <sss/path/glob_path.hpp>
 
 #include "object.hpp"
 #include "builtin_helper.hpp"
@@ -18,6 +19,7 @@
 #include "detail/buitin_info_t.hpp"
 #include "detail/car.hpp"
 #include "detail/list_iterator.hpp"
+#include "detail/file.hpp"
 
 namespace varlisp {
 
@@ -389,6 +391,56 @@ Object eval_write_string(varlisp::Environment& env, const varlisp::List& args)
     }
     int64_t ec = detail::writestring(fd, p_str->to_string_view());
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
+}
+
+REGIST_BUILTIN("get-fd-fname", 1, 1, eval_get_fd_fname,
+               "(get-fd-fname fd) -> \"path\" | nill");
+
+Object eval_get_fd_fname(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "get-fd-fname";
+    Object obj;
+    const int64_t* p_fd =
+        getTypedValue<int64_t>(env, detail::car(args), obj);
+    if (!p_fd) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": requies int64_t fd as 1st argument)");
+    }
+    try {
+        return string_t(detail::file::get_fname_from_fd(*p_fd));
+    }
+    catch (std::runtime_error& e) {
+        COLOG_ERROR(e.what());
+        return Nill{};
+    }
+}
+
+REGIST_BUILTIN("list-opend-fd", 0, 0, eval_list_opend_fd,
+               "; list-opend-fd 枚举打开的文件描述符以及对应的文件名\n"
+               "; 并以list的形式返回\n"
+               "(list-opend-fd) -> [(fd name)...] | []");
+
+Object eval_list_opend_fd(varlisp::Environment& env, const varlisp::List& args)
+{
+    const size_t buf_size = 256;
+    char dir[buf_size];
+    std::snprintf(dir, buf_size - 1, "/proc/%d/fd/", getpid());
+    sss::path::file_descriptor fd;
+    sss::path::glob_path gp(dir, fd);
+    varlisp::List ret;
+    auto back_it = varlisp::detail::list_back_inserter<varlisp::Object>(ret);
+    while (gp.fetch()) {
+        if (!fd.is_normal_file()) {
+            continue;
+        }
+        if (!std::isdigit(fd.get_name()[0])) {
+            continue;
+        }
+        int id = sss::string_cast<int>(fd.get_name());
+        *back_it++ = varlisp::List::makeSQuoteList(int64_t(id),
+                                                   string_t(detail::file::get_fname_from_fd(id)));
+    }
+    return varlisp::List::makeSQuoteObj(std::move(ret));
 }
 
 }  // namespace
