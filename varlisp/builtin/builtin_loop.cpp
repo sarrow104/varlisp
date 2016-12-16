@@ -13,6 +13,17 @@
 #include "detail/car.hpp"
 #include "detail/list_iterator.hpp"
 
+// TODO
+//
+// (for (a {})
+//   exprs...)
+// 循环遍历{}中每个object——a为object
+//
+// (for-map (k v {})
+//   exprs...)
+// k = (quote symbol)
+// v = object
+// 同样是循环
 
 namespace varlisp {
 
