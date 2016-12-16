@@ -4,16 +4,16 @@
 #include <sss/spliter.hpp>
 #include <sss/colorlog.hpp>
 
-#include "object.hpp"
-#include "builtin_helper.hpp"
-#include "print_visitor.hpp"
-#include "arithmetic_cast_visitor.hpp"
-#include "arithmetic_t.hpp"
-#include "builtin_helper.hpp"
+#include "../object.hpp"
+#include "../builtin_helper.hpp"
+#include "../print_visitor.hpp"
+#include "../arithmetic_cast_visitor.hpp"
+#include "../arithmetic_t.hpp"
+#include "../builtin_helper.hpp"
 
-#include "detail/buitin_info_t.hpp"
-#include "detail/list_iterator.hpp"
-#include "detail/car.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/list_iterator.hpp"
+#include "../detail/car.hpp"
 
 namespace varlisp {
 

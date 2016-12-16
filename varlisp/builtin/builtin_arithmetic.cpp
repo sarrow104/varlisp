@@ -4,12 +4,12 @@
 
 #include <sss/debug/value_msg.hpp>
 
-#include "arithmetic_cast_visitor.hpp"
-#include "is_instant_visitor.hpp"
-#include "object.hpp"
-#include "detail/car.hpp"
+#include "../arithmetic_cast_visitor.hpp"
+#include "../is_instant_visitor.hpp"
+#include "../object.hpp"
+#include "../detail/car.hpp"
 
-#include "detail/buitin_info_t.hpp"
+#include "../detail/buitin_info_t.hpp"
 
 namespace varlisp {
 

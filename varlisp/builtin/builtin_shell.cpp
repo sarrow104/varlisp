@@ -7,14 +7,14 @@
 #include <sss/raw_print.hpp>
 #include <sss/environ.hpp>
 
-#include "object.hpp"
-#include "raw_stream_visitor.hpp"
-#include "builtin_helper.hpp"
+#include "../object.hpp"
+#include "../raw_stream_visitor.hpp"
+#include "../builtin_helper.hpp"
 
-#include "detail/buitin_info_t.hpp"
-#include "detail/list_iterator.hpp"
-#include "detail/car.hpp"
-#include "detail/varlisp_env.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/list_iterator.hpp"
+#include "../detail/car.hpp"
+#include "../detail/varlisp_env.hpp"
 
 namespace varlisp {
 // 应该如何处理shell-eval时候的参数？

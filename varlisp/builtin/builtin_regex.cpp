@@ -1,11 +1,11 @@
 #include <sss/debug/value_msg.hpp>
 
-#include "object.hpp"
-#include "builtin_helper.hpp"
+#include "../object.hpp"
+#include "../builtin_helper.hpp"
 
-#include "detail/buitin_info_t.hpp"
-#include "detail/list_iterator.hpp"
-#include "detail/car.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/list_iterator.hpp"
+#include "../detail/car.hpp"
 
 namespace varlisp {
 

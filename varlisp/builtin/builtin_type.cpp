@@ -1,10 +1,10 @@
-#include "object.hpp"
+#include "../object.hpp"
 
-#include "builtin_helper.hpp"
-#include "cast_visitor.hpp"
-#include "detail/buitin_info_t.hpp"
-#include "detail/is_symbol.hpp"
-#include "detail/car.hpp"
+#include "../builtin_helper.hpp"
+#include "../cast_visitor.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/is_symbol.hpp"
+#include "../detail/car.hpp"
 
 namespace varlisp {
 

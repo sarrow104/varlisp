@@ -1,9 +1,9 @@
 #include <string.h>
 
-#include "object.hpp"
-#include "builtin_helper.hpp"
-#include "detail/buitin_info_t.hpp"
-#include "detail/car.hpp"
+#include "../object.hpp"
+#include "../builtin_helper.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/car.hpp"
 
 namespace varlisp {
 

@@ -4,18 +4,18 @@
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
 
-#include "object.hpp"
-#include "builtin_helper.hpp"
-#include "environment.hpp"
-#include "cast_visitor.hpp"
-#include "eval_visitor.hpp"
-#include "keyword_t.hpp"
-#include "detail/buitin_info_t.hpp"
-#include "tokenizer.hpp"
-#include "keyword_t.hpp"
-#include "detail/car.hpp"
-#include "detail/json_accessor.hpp"
-#include "detail/list_iterator.hpp"
+#include "../object.hpp"
+#include "../builtin_helper.hpp"
+#include "../environment.hpp"
+#include "../cast_visitor.hpp"
+#include "../eval_visitor.hpp"
+#include "../keyword_t.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../tokenizer.hpp"
+#include "../keyword_t.hpp"
+#include "../detail/car.hpp"
+#include "../detail/json_accessor.hpp"
+#include "../detail/list_iterator.hpp"
 
 namespace varlisp {
 

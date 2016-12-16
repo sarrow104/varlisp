@@ -1,10 +1,10 @@
-#include "object.hpp"
+#include "../object.hpp"
 
-#include "strict_less_visitor.hpp"
-#include "builtin_helper.hpp"
-#include "detail/buitin_info_t.hpp"
-#include "detail/list_iterator.hpp"
-#include "detail/car.hpp"
+#include "../strict_less_visitor.hpp"
+#include "../builtin_helper.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/list_iterator.hpp"
+#include "../detail/car.hpp"
 
 // NOTE 为什么不把min,max放mapreduce下面呢？
 // map,reduce系列的特点：

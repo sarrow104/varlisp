@@ -11,15 +11,15 @@
 #include <ss1x/asio/utility.hpp>
 #include <ss1x/asio/headers.hpp>
 
-#include "object.hpp"
-#include "list.hpp"
-#include "builtin_helper.hpp"
+#include "../object.hpp"
+#include "../list.hpp"
+#include "../builtin_helper.hpp"
 
-#include "detail/buitin_info_t.hpp"
-#include "detail/car.hpp"
-#include "detail/list_iterator.hpp"
-#include "detail/html.hpp"
-#include "detail/file.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/car.hpp"
+#include "../detail/list_iterator.hpp"
+#include "../detail/html.hpp"
+#include "../detail/file.hpp"
 
 namespace varlisp {
 

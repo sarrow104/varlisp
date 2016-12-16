@@ -6,14 +6,14 @@
 #include <sss/raw_print.hpp>
 #include <sss/penvmgr2.hpp>
 
-#include "object.hpp"
-#include "builtin_helper.hpp"
-#include "interpreter.hpp"
+#include "../object.hpp"
+#include "../builtin_helper.hpp"
+#include "../interpreter.hpp"
 
-#include "detail/buitin_info_t.hpp"
-#include "detail/car.hpp"
-#include "detail/json_accessor.hpp"
-#include "detail/varlisp_env.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/car.hpp"
+#include "../detail/json_accessor.hpp"
+#include "../detail/varlisp_env.hpp"
 
 namespace varlisp {
 

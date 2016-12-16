@@ -13,12 +13,12 @@
 #include <ss1x/asio/GetFile.hpp>
 #include <ss1x/asio/headers.hpp>
 
-#include "builtin_helper.hpp"
-#include "object.hpp"
+#include "../builtin_helper.hpp"
+#include "../object.hpp"
 
-#include "detail/buitin_info_t.hpp"
-#include "detail/car.hpp"
-#include "detail/http.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/car.hpp"
+#include "../detail/http.hpp"
 
 namespace varlisp {
 

@@ -1,12 +1,12 @@
-#include "object.hpp"
+#include "../object.hpp"
 
-#include "builtin_helper.hpp"
-#include "strict_equal_visitor.hpp"
-#include "strict_less_visitor.hpp"
-#include "builtin_helper.hpp"
+#include "../builtin_helper.hpp"
+#include "../strict_equal_visitor.hpp"
+#include "../strict_less_visitor.hpp"
+#include "../builtin_helper.hpp"
 
-#include "detail/buitin_info_t.hpp"
-#include "detail/car.hpp"
+#include "../detail/buitin_info_t.hpp"
+#include "../detail/car.hpp"
 
 namespace varlisp {
 // 对于drracket来说，比较运算符，它会直接要求转换到real域；
