@@ -82,6 +82,57 @@ inline const T* getTypedValue(varlisp::Environment& env,
     return boost::get<const T>(&getAtomicValue(env, value, obj));
 }
 
+struct debug_info_t
+{
+    const char * file;
+    const char * func;
+    size_t       line;
+};
+
+#ifndef DEBUG_INFO
+#define DEBUG_INFO debug_info_t{__FILE__, __PRETTY_FUNCTION__, __LINE__}
+#endif
+
+template <typename T>
+const char * typeName();
+
+template <> inline const char * typeName<varlisp::Nill>()        { return "nil";     }
+template <> inline const char * typeName<bool>()                 { return "boolean"; }
+template <> inline const char * typeName<int64_t>()              { return "int64_t"; }
+template <> inline const char * typeName<varlisp::string_t>()    { return "string";  }
+template <> inline const char * typeName<varlisp::List>()        { return "list";    }
+template <> inline const char * typeName<varlisp::symbol>()      { return "symbol";  }
+template <> inline const char * typeName<varlisp::Environment>() { return "context"; }
+
+inline const char* readableIndex(size_t index)
+{
+    static char buf[30] = "";
+    switch (index) {
+        case 0: return "1st"; break;
+        case 1: return "2nd"; break;
+        case 2: return "3rd"; break;
+        case 3: return "4th"; break;
+        default:
+                std::sprintf(buf, "%d", int(index));
+                return buf;
+    }
+}
+
+template <typename T>
+inline const T * requireTypedValue(varlisp::Environment& env,
+                                   const varlisp::Object& value, Object& objTmp,
+                                   const char * funcName, size_t index, const debug_info_t& debug_info)
+{
+    const T * p_value = getTypedValue<T>(env, value, objTmp);
+    if (!p_value) {
+        std::ostringstream oss;
+        oss << "(" << funcName << ": require a " << typeName<T>() << " as "
+            << readableIndex(index) << " argument); from [" << debug_info.file << ":" << debug_info.line << "]";
+        throw std::runtime_error(oss.str());
+    }
+    return p_value;
+}
+
 template <typename T>
 inline const T* getQuotedType(varlisp::Environment& env,
                               const varlisp::Object& obj, Object& tmp)
