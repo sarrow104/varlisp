@@ -177,7 +177,13 @@ Object List::eval(Environment& env) const
 
     COLOG_DEBUG(funcRef);
 
-    return eval_impl(env, funcRef, this->tail());
+    try {
+        return eval_impl(env, funcRef, this->tail());
+    }
+    catch (std::runtime_error& e) {
+        COLOG_ERROR("while execute ", *this);
+        throw;
+    }
 }
 
 void List::print(std::ostream& o) const
