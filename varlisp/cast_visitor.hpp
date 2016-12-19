@@ -109,8 +109,8 @@ struct cast_visitor : public boost::static_visitor<Object>
         return boost::apply_visitor(cast2bool_visitor(m_env), m_value);
     }
     //NOTE cast到正则
-    Object operator() (const sss::regex::CRegex&, const varlisp::string_t& s) const {
-        return sss::regex::CRegex(s.to_string_view().to_string());
+    Object operator() (const varlisp::regex_t&, const varlisp::string_t& s) const {
+        return std::make_shared<RE2>(s.to_string_view().to_string());
     }
     // NOTE
     // 并不准备支持cast到gumbo-node
