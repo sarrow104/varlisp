@@ -1,3 +1,7 @@
+#include <stdexcept>
+
+#include <sss/util/PostionThrow.hpp>
+
 #include "json_print_visitor.hpp"
 
 #include "String.hpp"
@@ -9,10 +13,13 @@
 
 namespace varlisp {
 
-void json_print_visitor::operator()(const sss::regex::CRegex& reg) const
+void json_print_visitor::operator()(const varlisp::regex_t& reg) const
 {
     // FIXME 应该escape一下
-    m_o << '/' << reg.regstr() << '/';
+    if (!reg) {
+        SSS_POSITION_THROW(std::runtime_error, "null regex-obj");
+    }
+    m_o << '/' << reg->pattern() << '/';
 }
 
 void json_print_visitor::operator()(const string_t& v) const { m_o << sss::raw_string(v); }
