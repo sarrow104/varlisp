@@ -20,7 +20,7 @@ struct eval_visitor : public boost::static_visitor<Object> {
     Object operator()(const varlisp::symbol& s    ) const ;
     Object operator()(const varlisp::keywords_t& k) const { return k; }
 
-    Object operator()(const sss::regex::CRegex& v ) const { return v; }
+    Object operator()(const varlisp::regex_t& v   ) const { return v; }
     Object operator()(const gumboNode& g          ) const { return g; }
     Object operator()(const Empty&                ) const { return Object(); }
     Object operator()(const Nill& n               ) const { return n; }
