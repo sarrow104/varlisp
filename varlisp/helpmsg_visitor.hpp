@@ -3,9 +3,8 @@
 #include <boost/variant.hpp>
 
 #include <sss/raw_print.hpp>
-#include <sss/regex/cregex.hpp>
-#include <sss/raw_print.hpp>
 
+#include "regex_t.hpp"
 #include "String.hpp"
 
 namespace varlisp {
@@ -34,7 +33,7 @@ struct helpmsg_visitor : public boost::static_visitor<varlisp::string_t> {
     varlisp::string_t operator()(const string_t&           ) const { return varlisp::string_t{"string"};        }
     varlisp::string_t operator()(const varlisp::symbol& s  ) const ;
     varlisp::string_t operator()(const varlisp::keywords_t& k ) const ;
-    varlisp::string_t operator()(const sss::regex::CRegex& ) const { return varlisp::string_t{"regex"};         }
+    varlisp::string_t operator()(const varlisp::regex_t&   ) const { return varlisp::string_t{"regex"};         }
 };
 
 }  // namespace varlisp
