@@ -3,9 +3,9 @@
 
 #include <boost/variant.hpp>
 
-#include <sss/regex/cregex.hpp>
 #include <sss/colorlog.hpp>
 
+#include "regex_t.hpp"
 #include "fmtArgInfo.hpp"
 
 namespace varlisp {
@@ -48,12 +48,24 @@ struct fmt_print_visitor : public boost::static_visitor<void> {
     void operator()(const varlisp::symbol&      s) const;
     void operator()(const varlisp::List&        l) const;
     void operator()(const varlisp::Environment& e) const;
-    void operator()(const sss::regex::CRegex& reg) const
+    void operator()(const varlisp::regex_t& reg) const
     {
         std::string tmp;
+#ifdef USE_SSS_CREGEX
         tmp.reserve(reg.regstr().length() + 2);
+#else
+        if (reg) {
+            tmp.reserve(reg->pattern().length() + 2);
+        }
+#endif
         tmp += '/';
+#ifdef USE_SSS_CREGEX
         tmp += reg.regstr();
+#else
+        if (reg) {
+            tmp += reg->pattern();
+        }
+#endif
         tmp += '/';
         m_fmt.print(m_o, tmp);
     }
