@@ -5,6 +5,8 @@
 
 #include <sss/string_view.hpp>
 
+#include <re2/re2.h>
+
 namespace varlisp {
 
 struct String : public sss::string_view {
@@ -91,6 +93,11 @@ public:
     }
 
     sss::string_view to_string_view() const
+    {
+        return {this->data(), this->size()};
+    }
+
+    operator re2::StringPiece() const
     {
         return {this->data(), this->size()};
     }

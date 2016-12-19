@@ -250,7 +250,7 @@ void Tokenizer::init(const std::string& data)
           ss1x::parser::char_p('/'))) >
           &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator beg, StrIterator end, ss1x::parser::rule::matched_value_t v) {
-            tok = sss::regex::CRegex(std::string(beg + 1, end - 1));
+            tok = std::make_shared<RE2>(std::string(beg + 1, end - 1));
         })]).name("Regex_p");
 
     this->FallthrowError_p =

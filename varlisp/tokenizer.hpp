@@ -5,14 +5,16 @@
 #include <vector>
 #include <list>
 #include <iostream>
+#include <stdexcept>
 
 #include <boost/variant.hpp>
 
 #include <ss1x/parser/oparser.hpp>
 
-#include <sss/regex/cregex.hpp>
 #include <sss/raw_print.hpp>
+#include <sss/util/PostionThrow.hpp>
 
+#include "regex_t.hpp"
 #include "symbol.hpp"
 #include "keyword_t.hpp"
 
@@ -47,7 +49,7 @@ typedef boost::variant<empty,   // 0
         double,                 // 4
         std::string,            // 5 保存去掉括号后的字符串
         varlisp::symbol,        // 6 符号(包括运算符)
-        sss::regex::CRegex,     // 7 正则表达式
+        varlisp::regex_t,       // 7 正则表达式
         varlisp::keywords_t,    // 8 关键字（包括关键字）
         quote_sign_t            // 9 单引号
         >
@@ -97,12 +99,16 @@ public:
     {
         m_o << char(p);
     }
-    void operator() (const sss::regex::CRegex& r) const
+    void operator() (const varlisp::regex_t& r) const
     {
         // NOTE FIXME
         // 这里，应该对串中的空格，以及'/'进行转义后打印
         // escaper()
-        m_o << '/' << r.regstr() << '/';
+        if (!r) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "nullptr regex-obj");
+        }
+        m_o << '/' << r->pattern() << '/';
     }
     void operator() (const varlisp::keywords_t& k) const
     {

@@ -312,7 +312,7 @@ Object Parser::parseExpression()
             return *p_v;
         }
     }
-    else if (const sss::regex::CRegex* p_v = boost::get<sss::regex::CRegex>(&tok)) {
+    else if (const varlisp::regex_t* p_v = boost::get<varlisp::regex_t>(&tok)) {
         this->m_toknizer.consume();
         return varlisp::Object(*p_v);
     }
@@ -516,7 +516,7 @@ Object Parser::parseList()
 
             case 7:
                 {
-                    *inserter++ = boost::get<sss::regex::CRegex>(tok);
+                    *inserter++ = boost::get<varlisp::regex_t>(tok);
                     m_toknizer.consume();
                 }
                 break;

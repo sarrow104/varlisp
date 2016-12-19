@@ -42,10 +42,10 @@ struct strict_less_visitor : boost::static_visitor<bool> {
         throw std::runtime_error("Nill < Nill");
     }
 
-    bool operator()(const sss::regex::CRegex& lhs,
-                    const sss::regex::CRegex& rhs) const
+    bool operator()(const varlisp::regex_t& lhs,
+                    const varlisp::regex_t& rhs) const
     {
-        throw std::runtime_error("CRegex < CRegex");
+        throw std::runtime_error("regex_t < regex_t");
     }
 
     template <typename T>
