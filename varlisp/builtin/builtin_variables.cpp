@@ -167,12 +167,12 @@ Object let_and_letn_impl(varlisp::Environment& env, const varlisp::List& args,
         if (!p_sym_pair) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": must be name-value  list; but",
-                               p_sym_pair->nth(0), ")");
+                               p_sym_pairs->nth(0), ")");
         }
         if (p_sym_pair->length() != 2) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": must be name-value  list; but",
-                               p_sym_pair->nth(0), ")");
+                               p_sym_pairs->nth(0), ")");
         }
         const varlisp::symbol* p_sym =
             boost::get<varlisp::symbol>(&p_sym_pair->nth(0));
