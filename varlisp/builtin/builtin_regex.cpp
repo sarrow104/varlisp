@@ -29,7 +29,7 @@ Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to construct)");
     }
-    return sss::regex::CRegex(p_regstr->to_string());
+    return std::make_shared<RE2>(p_regstr->to_string());
 }
 
 REGIST_BUILTIN("regex-match", 2, 2, eval_regex_match,
@@ -47,8 +47,8 @@ Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-match";
     Object regobj;
-    const sss::regex::CRegex *p_regobj =
-        getTypedValue<sss::regex::CRegex>(env, detail::car(args), regobj);
+    const varlisp::regex_t *p_regobj =
+        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
     if (!p_regobj) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
@@ -60,7 +60,7 @@ Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to match)");
     }
-    return p_regobj->match(p_target->to_string());
+    return RE2::PartialMatch(*p_target, *(*p_regobj));
 }
 
 REGIST_BUILTIN("regex-search", 2, 3, eval_regex_search,
@@ -78,8 +78,8 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-search";
     Object regobj;
-    const sss::regex::CRegex *p_regobj =
-        getTypedValue<sss::regex::CRegex>(env, detail::car(args), regobj);
+    const varlisp::regex_t *p_regobj =
+        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
     if (!p_regobj) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
@@ -110,11 +110,15 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
 
-    std::string to_match = p_target->substr(offset).to_string();
-    if (p_regobj->match(to_match)) {
+    std::vector<re2::StringPiece> sub_matches;
+    sub_matches.resize(10);
+    if ((*p_regobj)->Match(*p_target, offset, p_target->size(), RE2::UNANCHORED, &sub_matches[0], sub_matches.size())) {
         auto back_it = detail::list_back_inserter<varlisp::string_t>(ret);
-        for (int i = 0; i < p_regobj->submatch_count(); ++i) {
-            *back_it++ = string_t(p_regobj->submatch(i));
+        while (!sub_matches.empty() && sub_matches.back().empty()) {
+            sub_matches.pop_back();
+        }
+        for (const auto& piece : sub_matches) {
+            *back_it++ = p_target->substr(sss::string_view(piece.data(), piece.size()));
         }
     }
 
@@ -137,8 +141,8 @@ Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-replace";
     Object regobj;
-    const sss::regex::CRegex *p_regobj =
-        getTypedValue<sss::regex::CRegex>(env, detail::car(args), regobj);
+    const varlisp::regex_t *p_regobj =
+        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
     if (!p_regobj) {
         SSS_POSITION_THROW(std::runtime_error, "regex-replace: regex obj");
     }
@@ -159,8 +163,8 @@ Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
                           "(", funcName, ": need fmt string at 3rd)");
     }
 
-    std::string out;
-    p_regobj->substitute(p_target->to_string(), p_fmt->to_string(), out);
+    std::string out = p_target->to_string();
+    RE2::GlobalReplace(&out, *(*p_regobj), *p_fmt);
     return string_t(std::move(out));
 }
 
@@ -181,8 +185,8 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-split";
     Object regobj;
-    const sss::regex::CRegex *p_regobj =
-        getTypedValue<sss::regex::CRegex>(env, detail::car(args), regobj);
+    const varlisp::regex_t *p_regobj =
+        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
     if (!p_regobj) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
@@ -196,21 +200,18 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
                           "(", funcName, ": need one string to replace)");
     }
 
-    // FIXME 换 pcre？
-    std::string target_str = p_target->to_string();
-    const char *str_beg = target_str.c_str();
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto back_it = detail::list_back_inserter<varlisp::string_t>(ret);
 
-    while (str_beg && *str_beg && p_regobj->match(str_beg)) {
-
-        *back_it++ = p_target->substr(str_beg - target_str.c_str(), p_regobj->submatch_start(0));
-
-        str_beg += p_regobj->submatch_end(0);
+    re2::StringPiece sub_matches;
+    size_t start_pos = 0;
+    while ((*p_regobj)->Match(*p_target, start_pos, p_target->size(), RE2::UNANCHORED, &sub_matches, 1)) {
+        *back_it++ = p_target->substr(start_pos, sub_matches.data() - p_target->data() - start_pos);
+        start_pos = sub_matches.end() - p_target->data();
     }
 
-    if (str_beg && *str_beg) {
-        *back_it++ = p_target->substr(str_beg - target_str.c_str());
+    if (start_pos < p_target->size()) {
+        *back_it++ = p_target->substr(start_pos);
     }
 
     return ret;
@@ -236,8 +237,8 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-collect";
     Object regobj;
-    const sss::regex::CRegex *p_regobj =
-        getTypedValue<sss::regex::CRegex>(env, detail::car(args), regobj);
+    const varlisp::regex_t *p_regobj =
+        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
     if (!p_regobj) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": regex obj)");
@@ -250,7 +251,6 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need one string to search)");
     }
-    std::string fmt;
     const string_t *p_fmt = 0;
     Object fmtobj;
     if (args.length() == 3) {
@@ -258,35 +258,29 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
     }
 
     // FIXME TODO pcre
-    std::string content = p_target->to_string();
-    const char *str_beg = content.c_str();
     varlisp::List ret = varlisp::List::makeSQuoteList();
-
     auto back_it = detail::list_back_inserter<varlisp::string_t>(ret);
 
-    while (str_beg && *str_beg && p_regobj->match(str_beg)) {
-        if (p_fmt) {
-            std::ostringstream oss;
-            for (std::string::size_type i = 0; i != p_fmt->length(); ++i) {
-                if (p_fmt->at(i) == '\\' && i + 1 != p_fmt->length() &&
-                    std::isdigit(p_fmt->at(i + 1))) {
-                    int index = p_fmt->at(i + 1) - '0';
-                    oss.write(str_beg + p_regobj->submatch_start(index),
-                              p_regobj->submatch_consumed(index));
-                    ++i;
-                }
-                else {
-                    oss << p_fmt->at(i);
-                }
-            }
-            *back_it++ = string_t{std::move(oss.str())};
+    if (!(*p_regobj)) {
+        SSS_POSITION_THROW(std::runtime_error, "not init regex-obj!");
+    }
+    std::vector<re2::StringPiece> sub_matches;
+    std::string fmt_error_msg;
+    if (p_fmt && !(*p_regobj)->CheckRewriteString(*p_fmt, &fmt_error_msg)) {
+        SSS_POSITION_THROW(std::runtime_error, fmt_error_msg);
+    }
+
+    re2::StringPiece rewrite = p_fmt ? *p_fmt : re2::StringPiece("\\0");
+    sub_matches.resize(RE2::MaxSubmatch(rewrite) + 1);
+
+    size_t start_pos = 0;
+    while ((*p_regobj)->Match(*p_target, start_pos, p_target->size(), RE2::UNANCHORED, &sub_matches[0], sub_matches.size())) {
+        std::string out;
+
+        if ((*p_regobj)->Rewrite(&out, rewrite, &sub_matches[0], sub_matches.size())) {
+            *back_it++ = string_t(std::move(out));
         }
-        else {
-            *back_it++ = p_target->substr(
-                str_beg + p_regobj->submatch_start(0) - content.c_str(),
-                p_regobj->submatch_consumed(0));
-        }
-        str_beg += p_regobj->submatch_end(0);
+        start_pos = sub_matches.front().end() - p_target->data();
     }
 
     return ret;
