@@ -25,9 +25,12 @@ struct htmlEntityEscape_t : public sss::string_view
     {}
 	void print(std::ostream& o) const
     {
-        for (auto ch : *this)
+		// 0xA0 -> &#160 -> &nbsp;
+		// 对应utf8，是两个字节，分别是
+		// 0xC2, 0xA0
+        for (const char * p_ch = this->begin(); p_ch < this->end(); ++p_ch)
         {
-            switch (ch) {
+            switch (*p_ch) {
                 case '&':
                     o << "&amp;";
                     break;
@@ -45,7 +48,13 @@ struct htmlEntityEscape_t : public sss::string_view
 					break;
 
                 default:
-                    o << ch;
+					if (p_ch + 1 < this->end() && std::memcmp(p_ch, "\xC2\xA0", 2) == 0) {
+						o << "&nbsp;";
+						++p_ch;
+					}
+					else {
+						o << *p_ch;
+					}
                     break;
             }
         }
