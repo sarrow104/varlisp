@@ -19,6 +19,7 @@
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
 #include "../detail/http.hpp"
+#include "../detail/cookie.hpp"
 
 namespace varlisp {
 
@@ -69,18 +70,40 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 
     std::string max_content;
 
-    if (p_proxy) {
-        varlisp::detail::http::downloadUrl(p_url->to_string(), max_content, headers,
-                                           std::bind(ss1x::asio::proxyRedirectHttpGet,
-                                                     std::placeholders::_1,
-                                                     std::placeholders::_2,
-                                                     p_proxy->to_string(), *p_port,
-                                                     std::placeholders::_3));
+    std::function<boost::system::error_code(
+        std::ostream&, ss1x::http::Headers&, const std::string& url)> downloadFunc;
+
+    if (detail::CookieMgr_t::get_cookie_enable_status()) {
+        if (p_proxy) {
+            downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGetCookie,
+                                     std::placeholders::_1,
+                                     std::placeholders::_2,
+                                     p_proxy->to_string(), *p_port,
+                                     std::placeholders::_3,
+                                     varlisp::detail::CookieMgr_t::getCookie);
+        }
+        else {
+            downloadFunc = std::bind(ss1x::asio::redirectHttpGetCookie,
+                                     std::placeholders::_1,
+                                     std::placeholders::_2,
+                                     std::placeholders::_3,
+                                     varlisp::detail::CookieMgr_t::getCookie);
+        }
     }
     else {
-        varlisp::detail::http::downloadUrl(p_url->to_string(), max_content, headers,
-                                           ss1x::asio::redirectHttpGet);
+        if (p_proxy) {
+            downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGet,
+                                     std::placeholders::_1,
+                                     std::placeholders::_2,
+                                     p_proxy->to_string(), *p_port,
+                                     std::placeholders::_3);
+        }
+        else {
+            downloadFunc = ss1x::asio::redirectHttpGet;
+        }
     }
+
+    varlisp::detail::http::downloadUrl(p_url->to_string(), max_content, headers, downloadFunc);
 
     // COLOG_INFO(headers.status_code, headers.http_version);
     Environment ret;
@@ -93,21 +116,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
         // COLOG_INFO(it.first, ": ", sss::raw_string(it.second));
         // NOTE 最好按字符串保存值——因为header的值可能比较奇葩。
         // 而且，有可能数字以0开头——你保存为int，那么前导的0就丢失了！
-#if 0
-        if (sss::is_all(it.second, static_cast<int (*)(int)>(std::isdigit))) {
-            try {
-                ret[it.first] = sss::string_cast<int64_t>(it.second);
-            }
-            catch (std::runtime_error& e) {
-                ret[it.first] = string_t(std::move(it.second));
-            }
-        }
-        else {
-            ret[it.first] = string_t(std::move(it.second));
-        }
-#else
         ret[it.first] = string_t(std::move(it.second));
-#endif
     }
     COLOG_INFO(ret);
 
