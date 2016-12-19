@@ -7,7 +7,7 @@
 #include <boost/variant.hpp>
 #include <boost/variant/recursive_wrapper.hpp>
 
-#include <sss/regex/cregex.hpp>
+#include "regex_t.hpp"
 
 #include "symbol.hpp"
 #include "gumboNode.hpp"
@@ -56,7 +56,7 @@ typedef boost::variant<
     int64_t,                                // 3
     double,                                 // 4
     string_t,                               // 5
-    sss::regex::CRegex,                     // 6
+    regex_t,                                // 6
     symbol,                                 // 7
     keywords_t,                             // 8
     gumboNode,                              // 9
