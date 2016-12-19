@@ -2,7 +2,7 @@
 
 #include <boost/variant.hpp>
 
-#include <sss/regex/cregex.hpp>
+#include "regex_t.hpp"
 
 // 即，是否需要eval_visitor()的判断。
 // 是否立即值？
@@ -29,7 +29,7 @@ struct is_instant_visitor : public boost::static_visitor<bool> {
     bool operator()(const varlisp::List& v    ) const ;
 
     bool operator()(const varlisp::Lambda&    ) const { return true; }
-    bool operator()(const sss::regex::CRegex& ) const { return true; }
+    bool operator()(const varlisp::regex_t&   ) const { return true; }
     bool operator()(const gumboNode&          ) const { return true; }
     bool operator()(const Empty&              ) const { return true; }
     bool operator()(const Nill&               ) const { return true; }
