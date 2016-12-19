@@ -2,10 +2,13 @@
 #define __RAW_STREAM_VISITOR_HPP_1478481280__
 
 #include <iosfwd>
+#include <stdexcept>
 
 #include <boost/variant.hpp>
 
-#include <sss/regex/cregex.hpp>
+#include <sss/util/PostionThrow.hpp>
+
+#include "regex_t.hpp"
 
 namespace varlisp {
 struct Empty;
@@ -32,9 +35,13 @@ struct raw_stream_visitor : public boost::static_visitor<void> {
     void operator()(bool v) const { m_o << (v ? "true" : "false"); }
     void operator()(const std::string& v) const { m_o << v; }
     void operator()(const varlisp::symbol& s) const;
-    void operator()(const sss::regex::CRegex& reg) const
+    void operator()(const varlisp::regex_t& reg) const
     {
-        m_o << reg.regstr();
+        if (!reg) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "nullptr regex-obj");
+        }
+        m_o << reg->pattern();
     }
 };
 
