@@ -1,3 +1,5 @@
+#include <array>
+
 #include <sss/linux/epollPipeRun.hpp>
 #include <sss/ps.hpp>
 #include <sss/util/Escaper.hpp>
@@ -51,14 +53,10 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "shell";
     std::ostringstream oss;
 
-    Object program;
+    std::array<Object, 1> objs;
 
     const string_t* p_program =
-        getTypedValue<string_t>(env, detail::car(args), program);
-    if (!p_program || p_program->empty()) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": 1st arg must be an none-empty string)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     oss << p_program->to_string();
 
@@ -83,11 +81,8 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     COLOG_INFO("(", funcName, ": ", oss.str(), ')');
     std::tie(out, err) = sss::epoll::rwe_pipe_run(oss.str(), 1 + 2);
 
-    varlisp::List ret = varlisp::List::makeSQuoteList();
-    auto ret_it = detail::list_back_inserter<Object>(ret);
-
-    *ret_it++ = string_t(std::move(out));
-    *ret_it = string_t(std::move(err));
+    varlisp::List ret = varlisp::List::makeSQuoteList(
+        string_t(std::move(out)), string_t(std::move(err)));
 
     return Object(ret);
 }
@@ -106,13 +101,10 @@ REGIST_BUILTIN("shell-cd", 1, 1, eval_shell_cd,
 Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "shell-cd";
-    Object path;
+    std::array<Object, 1> objs;
     const string_t* p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requie one path string!)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     std::string target_path = p_path->to_string();
     if (target_path.find('$') != std::string::npos) {
         target_path = varlisp::detail::get_envmgr().get_expr(target_path);
@@ -120,6 +112,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     else {
         sss::path::full_of(target_path);
     }
+
     bool is_ok = sss::path::chgcwd(target_path);
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
@@ -132,13 +125,10 @@ REGIST_BUILTIN("shell-mkdir", 1, 1, eval_shell_mkdir,
 Object eval_shell_mkdir(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "shell-mkdir";
-    Object path;
+    std::array<Object, 1> objs;
     const string_t* p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requie one path string!)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     bool is_ok = sss::path::mkpath(p_path->to_string());
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
@@ -167,15 +157,13 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "shell-ls";
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto ret_it = detail::list_back_inserter<Object>(ret);
-    if (args.length() && detail::car(args).which()) {
-        
-        for (auto it = args.begin(); it != args.end(); ++it) {
-            Object ls_arg;
-            const string_t* p_ls_arg = getTypedValue<string_t>(env, *it, ls_arg);
-            if (!p_ls_arg) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                  "(", funcName, ": require string-type args)");
-            }
+    if (args.length()) {
+
+        for (size_t i = 0; i < args.length(); ++i) {
+            std::array<Object, 1> objs;
+            const string_t* p_ls_arg =
+                requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
             switch (sss::path::file_exists(p_ls_arg->to_string())) {
                 case sss::PATH_TO_FILE:
                     *ret_it++ = *p_ls_arg;
@@ -261,14 +249,9 @@ Object eval_shell_env(varlisp::Environment& env, const varlisp::List& args)
         return sysEnv;
     }
     else {
-        Object tmp;
+        std::array<Object, 1> objs;
         const string_t* p_path =
-            getTypedValue<string_t>(env, detail::car(args), tmp);
-
-        if (!p_path) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": 1st argument must b string)");
-        }
+            requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
         const char * p_value = ::getenv(p_path->to_string().c_str());
         if (!p_value) {
