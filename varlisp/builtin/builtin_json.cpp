@@ -72,12 +72,8 @@ Object eval_json_parse(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "json-parse";
     Object obj;
-    const string_t * p_s = varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), obj);
-    if (!p_s) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": 1st argument must be string; but ",
-                           detail::car(args), ")");
-    }
+    const string_t * p_s =
+        requireTypedValue<string_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     return json::parse(p_s->to_string_view());
 }
