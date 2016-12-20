@@ -53,11 +53,7 @@ Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "cdr";
     Object obj;
     const varlisp::List* p_list =
-        varlisp::getTypedValue<varlisp::List>(env, detail::car(args), obj);
-    if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": need squote-List)");
-    }
+        requireTypedValue<varlisp::List>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
     return p_list->cdr();
 }
 
@@ -76,17 +72,14 @@ REGIST_BUILTIN("car-nth", 2, 2, eval_car_nth,
  */
 Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object obj1;
-    const int64_t * p_nth = varlisp::getTypedValue<int64_t>(env, detail::car(args), obj1);
-    if (!p_nth) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(car-nth: 1st argument must be an Integar)");
-    }
-    Object obj2;
-    const varlisp::List* p_list = varlisp::getQuotedList(env, detail::cadr(args), obj2);
+    const char * funcName = "car-nth";
+    std::array<Object, 2> objs;
+    const int64_t * p_nth =
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const varlisp::List* p_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error,
-                          "(car-nth: 2nd argument must be an S-list");
+                          "(", funcName, ": 2nd argument must be an S-list");
     }
     return p_list->nth(*p_nth);
 }
@@ -106,15 +99,12 @@ REGIST_BUILTIN("cdr-nth", 2, 2, eval_cdr_nth,
  */
 Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object obj1;
-    const int64_t * p_nth = varlisp::getTypedValue<int64_t>(env, detail::car(args), obj1);
-    if (!p_nth) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(car-nth: 1st argument must be an Integar)");
-    }
-    Object obj2;
+    const char * funcName = "cdr-nth";
+    std::array<Object, 2> objs;
+    const int64_t * p_nth =
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     const varlisp::List* p_list =
-        varlisp::getTypedValue<varlisp::List>(env, detail::cadr(args), obj2);
+        requireTypedValue<List>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
     return p_list->cdr(*p_nth);
 }
 
@@ -223,15 +213,17 @@ REGIST_BUILTIN("append", 2, 2, eval_append,
  */
 Object eval_append(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object obj1;
-    const varlisp::List * p_list1 = getQuotedList(env, detail::car(args), obj1);
+    const char * funcName = "append";
+    std::array<Object, 2> objs;
+    const varlisp::List * p_list1 = getQuotedList(env, args.nth(0), objs[0]);
     if (!p_list1) {
-        SSS_POSITION_THROW(std::runtime_error, "(append: need s-List as the 1st argument)");
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": need s-List as the 1st argument)");
     }
-    Object obj2;
-    const varlisp::List * p_list2 = getQuotedList(env, detail::cadr(args), obj2);
+    const varlisp::List * p_list2 = getQuotedList(env, args.nth(1), objs[1]);
     if (!p_list2) {
-        SSS_POSITION_THROW(std::runtime_error, "(append: need s-List as the 2nd argument)");
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": need s-List as the 2nd argument)");
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
 
@@ -243,8 +235,7 @@ Object eval_append(varlisp::Environment& env, const varlisp::List& args)
     for (auto read_it = p_list2->begin(); read_it != p_list2->end();) {
         *back_it++ = *read_it++;
     }
-    // std::copy(detail::list_object_const_iterator_t(p_list1->next()), detail::list_object_const_iterator_t(), back_it);
-    // std::copy(detail::list_object_const_iterator_t(p_list2->next()), detail::list_object_const_iterator_t(), back_it);
+
     return ret;
 }
 
