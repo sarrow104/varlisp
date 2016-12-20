@@ -37,11 +37,8 @@ Object eval_strerr(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "strerr";
     Object obj;
     const int64_t* p_err =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_err) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t errnor as 1st argument)");
-    }
+        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+
 #if 0
     char buf[128] = "\0";
     ::strerror_r(*p_err, buf, sizeof(buf));
