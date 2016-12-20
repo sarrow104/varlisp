@@ -1,4 +1,5 @@
 #include <set>
+#include <array>
 
 #include <sss/util/PostionThrow.hpp>
 #include <sss/colorlog.hpp>
@@ -245,13 +246,13 @@ REGIST_BUILTIN("set", 2, 2, eval_set,
 Object eval_set(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "setq";
-    Object tmpObj;
-    auto * p_quoted_symbol = varlisp::getTypedValue<varlisp::List>(env, args.nth(0), tmpObj);
+    std::array<Object, 2> objs;
+    auto * p_quoted_symbol =
+        varlisp::getTypedValue<varlisp::List>(env, args.nth(0), objs[0]);
     if (p_quoted_symbol && p_quoted_symbol->is_quoted()) {
         if(auto * p_sym = boost::get<varlisp::symbol>(p_quoted_symbol->unquote())) {
             if (auto * p_value = env.deep_find(p_sym->name())) {
-                Object res;
-                *p_value = varlisp::getAtomicValue(env, args.nth(1), res);
+                *p_value = varlisp::getAtomicValue(env, args.nth(1), objs[1]);
                 return *p_value;
             }
             else {
