@@ -44,11 +44,9 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "it-debug";
     Object status;
-    const bool* p_status = getTypedValue<bool>(env, detail::car(args), status);
-    if (!p_status) {
-        SSS_POSITION_THROW(::std::runtime_error, "(", funcName,
-                          ": requires bool status at 1st argument)");
-    }
+    const bool* p_status =
+        requireTypedValue<bool>(env, args.nth(0), status, funcName, 0, DEBUG_INFO);
+
     auto ll = sss::colog::get_log_levels();
     sss::colog::log_level next_ll = ll;
     if (*p_status) {
