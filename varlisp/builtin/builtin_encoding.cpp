@@ -1,5 +1,6 @@
 #include <cctype>
 
+#include <array>
 #include <stdexcept>
 
 #include <uchardet/uchardet.h>
@@ -57,12 +58,10 @@ REGIST_BUILTIN("uchardet", 1, 1, eval_uchardet,
  */
 Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char * funcName = "uchardet";
     Object obj;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::car(args), obj);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(uchardet: 1st argument must be string)");
-    }
+    const string_t * p_content =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     uchardet_t ud = uchardet_new();
     std::string encoding;
@@ -82,7 +81,7 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
 
     if (err) {
         SSS_POSITION_THROW(std::runtime_error,
-                          "uchardet: analyze coding faild！");
+                          "(", funcName, ": analyze coding faild！)");
     }
     return string_t(std::move(encoding));
 }
@@ -101,12 +100,11 @@ REGIST_BUILTIN("pychardet", 1, 1, eval_pychardet,
  */
 Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
 {
+    const char * funcName = "pychardet";
     Object obj;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::car(args), obj);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(pychardet: 1st argument must be string)");
-    }
+    const string_t * p_content =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+
     // Python 支持两种使用方式：
     //
     // 1. 外部文件；
@@ -184,18 +182,12 @@ REGIST_BUILTIN("ivchardet", 2, 2, eval_ivchardet,
  */
 Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object obj1;
-    const string_t * p_encodings = varlisp::getTypedValue<string_t>(env, detail::car(args), obj1);
-    if (!p_encodings) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(ivchardet: 1st argument must be encodings string)");
-    }
-    Object obj2;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::cadr(args), obj2);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(ivchardet: 2nd argument must be content string)");
-    }
+    const char * funcName = "ivchardet";
+    std::array<Object, 2> objs;
+    const string_t* p_encodings = requireTypedValue<varlisp::string_t>(
+        env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const string_t * p_content = requireTypedValue<varlisp::string_t>(
+        env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     sss::string_view encoding;
     bool has_found = false;
@@ -227,6 +219,7 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN(
     "iconv", 3, 3, eval_iconv,
     "(iconv \"enc-from\" \"enc-to\" \"content\") -> \"converted-out\"");
+
 /**
  * @brief
  *      (iconv "enc-from" "enc-to" "content") -> "converted-out"
@@ -238,24 +231,17 @@ REGIST_BUILTIN(
  */
 Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object obj1;
-    const string_t * p_enc_from = varlisp::getTypedValue<string_t>(env, detail::car(args), obj1);
-    if (!p_enc_from) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(iconv: 1st argument must be encodings string)");
-    }
-    Object obj2;
-    const string_t * p_enc_to = varlisp::getTypedValue<string_t>(env, detail::cadr(args), obj2);
-    if (!p_enc_to) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(iconv: 2nd argument must be encodings string)");
-    }
-    Object obj3;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::caddr(args), obj3);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(iconv: 3rd argument must be content string)");
-    }
+    const char * funcName = "iconv";
+    std::array<Object, 3> objs;
+
+    const string_t * p_enc_from =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const string_t * p_enc_to =
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    const string_t * p_content =
+        requireTypedValue<varlisp::string_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
 
     std::string out;
     sss::iConv ic(p_enc_to->to_string(), p_enc_from->to_string());
@@ -266,7 +252,7 @@ Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
     return string_t(std::move(out));
 }
 
-REGIST_BUILTIN("ensure-utf8", 2, 3, eval_ensure_utf8,
+REGIST_BUILTIN("ensure-utf8", 1, 2, eval_ensure_utf8,
                "(ensure-utf8 \"content\") -> \"utf8-content\"\n"
                "(ensure-utf8 \"content\" \"fencodings\") -> \"utf8-content\"");
 
@@ -283,22 +269,16 @@ REGIST_BUILTIN("ensure-utf8", 2, 3, eval_ensure_utf8,
 Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ensure-utf8";
-    Object obj2;
-    const string_t * p_content = varlisp::getTypedValue<string_t>(env, detail::car(args), obj2);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": 1st argument must be content string)");
-    }
+    std::array<Object, 2> objs;
+    const string_t* p_content =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    Object obj1;
     const string_t * p_encodings = 0;
     if (args.length() >= 2) {
-        p_encodings = varlisp::getTypedValue<string_t>(env, detail::cadr(args), obj1);
-        if (!p_encodings) {
-            SSS_POSITION_THROW(std::runtime_error,
-                              "(", funcName, ": 2nd argument must be encodings string)");
-        }
+        p_encodings =
+            requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
     }
+
     std::string encodings;
     std::string to_encoding = "utf8";
     if (p_encodings) {
