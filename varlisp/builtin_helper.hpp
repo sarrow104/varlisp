@@ -103,6 +103,8 @@ template <> inline const char * typeName<varlisp::string_t>()    { return "strin
 template <> inline const char * typeName<varlisp::List>()        { return "list";    }
 template <> inline const char * typeName<varlisp::symbol>()      { return "symbol";  }
 template <> inline const char * typeName<varlisp::Environment>() { return "context"; }
+template <> inline const char * typeName<varlisp::regex_t>()     { return "regex";   }
+template <> inline const char * typeName<varlisp::gumboNode>()   { return "gumboNode"; }
 
 inline const char* readableIndex(size_t index)
 {
