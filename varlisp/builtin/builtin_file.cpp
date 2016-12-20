@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <array>
 #include <fstream>
 
 #include <sss/debug/value_msg.hpp>
@@ -38,16 +39,13 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "read-all";
     Object path;
-    const string_t* p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies a path string as 1st argument)");
-    }
+    const string_t* p_path = requireTypedValue<varlisp::string_t>(
+        env, args.nth(0), path, funcName, 0, DEBUG_INFO);
+
     std::string full_path = sss::path::full_of_copy(p_path->to_string());
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
-        SSS_POSITION_THROW(std::runtime_error, "path `", *p_path,
-                          "` not to file");
+        SSS_POSITION_THROW(std::runtime_error, "(path `", *p_path,
+                          "` not to file)");
     }
 
     std::string content;
@@ -58,10 +56,10 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
 
 /**
  * @brief eval_write_impl
- *           (write        (list) path)
- *           (write-append (list) path)
- *           (write        item path)
- *           (write-append item path)
+ *           (write        path (list))
+ *           (write-append path (list))
+ *           (write        path item...)
+ *           (write-append path item...)
  *              -> written-bytes-count
  *
  * 原样，无格式；也没有额外插入"sep-string"
@@ -76,13 +74,9 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
                        bool append)
 {
     const char* funcName = append ? "write-append" : "write";
-    Object path;
+    std::array<Object, 2> objs;
     const string_t* p_path =
-        getTypedValue<string_t>(env, detail::cadr(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies path as 2nd argument to write)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string full_path = sss::path::full_of_copy(p_path->to_string());
     sss::path::mkpath(sss::path::dirname(full_path));
@@ -92,14 +86,15 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     }
     std::ofstream ofs(full_path, bit_op);
     if (!ofs.good()) {
-        SSS_POSITION_THROW(std::runtime_error, "(write: failed open file ",
-                          sss::raw_string(*p_path), " to write");
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": failed open file ", sss::raw_string(*p_path),
+                           " to write");
     }
 
     std::ofstream::pos_type pos = ofs.tellp();
 
-    Object obj, objList;
-    const Object& firstArg = getAtomicValue(env, detail::car(args), obj);
+    Object objList;
+    const Object& firstArg = getAtomicValue(env, args.nth(1), objs[1]);
 
     if (auto p_list = getQuotedList(env, firstArg, objList)) {
         // NOTE this p_list must be an s-list!
@@ -110,6 +105,10 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     }
     else {
         boost::apply_visitor(raw_stream_visitor(ofs, env), firstArg);
+        for (size_t i = 2; i < args.length(); ++i) {
+            const Object& arg = getAtomicValue(env, args.nth(i), objs[1]);
+            boost::apply_visitor(raw_stream_visitor(ofs, env), arg);
+        }
     }
 
     std::ofstream::pos_type write_cnt = ofs.tellp() - pos;
@@ -119,25 +118,28 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     return Object(int64_t(write_cnt));
 }
 
-REGIST_BUILTIN("write", 2, 2, eval_write,
-               "(write (list) path)\n(write item path)");
+REGIST_BUILTIN("write", 2, -1, eval_write,
+               "(write path (list))\n"
+               "(write path item...)");
 
 Object eval_write(varlisp::Environment& env, const varlisp::List& args)
 {
     return eval_write_impl(env, args, false);
 }
 
-REGIST_BUILTIN("write-append", 2, 2, eval_write_append,
-               "(write-append (list) path)\n(write-append item path)");
+REGIST_BUILTIN("write-append", 2, -1, eval_write_append,
+               "(write-append path (list))\n"
+               "(write-append path item...)");
 
 Object eval_write_append(varlisp::Environment& env, const varlisp::List& args)
 {
     return eval_write_impl(env, args, true);
 }
 
-REGIST_BUILTIN("open", 1, 2, eval_open,
-               "(open \"path\") -> file_descriptor | nil;\n"
-               "(open \"path\" flag) -> file_descriptor | nil");
+REGIST_BUILTIN("open", 1, -1, eval_open,
+               "(open \"path\") -> file_descriptor | nil\n"
+               "(open \"path\" flag) -> file_descriptor | nil\n"
+               "(open \"path\" flag1 flag2...) -> file_descriptor | nil");
 
 /**
  * @brief
@@ -147,28 +149,25 @@ REGIST_BUILTIN("open", 1, 2, eval_open,
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_open(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "open";
-    Object obj;
-    const string_t* p_path =
-        getTypedValue<string_t>(env, detail::car(args), obj);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies string path as 1nd argument)");
-    }
-    std::string std_path = p_path->to_string_view().to_string();
+    std::array<Object, 2> objs;
+    const string_t* p_path = requireTypedValue<varlisp::string_t>(
+        env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    std::string std_path = p_path->to_string();
     int64_t flag = O_RDONLY;
     if (args.length() >= 2) {
-        const int64_t* p_flag =
-            getTypedValue<int64_t>(env, detail::cadr(args), obj);
-        if (!p_flag) {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": requies int64_t flag as 2nd argument)");
+        flag = *requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName,
+                                           1, DEBUG_INFO);
+
+        for (size_t i = 2; i < args.length(); ++i) {
+            flag |= *requireTypedValue<int64_t>(env, args.nth(i), objs[1],
+                                                funcName, i, DEBUG_INFO);
         }
-        flag = *p_flag;
     }
 
     // NOTE 当提供 O_CREAT 掩码的时候，必须使用mode_t 参数！
@@ -194,18 +193,15 @@ REGIST_BUILTIN("getfdflag", 1, 1, eval_getfdflag,
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_getfdflag(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "getfdflag";
     Object obj;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
+        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+
     int64_t flag = ::fcntl(*p_fd, F_GETFL);
     return flag == -1 ? Object{varlisp::Nill{}} : Object{flag};
 }
@@ -220,26 +216,19 @@ REGIST_BUILTIN("setfdflag", 2, 2, eval_setfdflag,
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_setfdflag(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "setfdflag";
-    Object obj;
+    std::array<Object, 2> objs;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
-    int64_t fd = *p_fd;
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const int64_t* p_flag =
-        getTypedValue<int64_t>(env, detail::cadr(args), obj);
-    if (!p_flag) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t flag as 2nd argument)");
-    }
-    int64_t ec = ::fcntl(fd, F_SETFL, *p_flag);
+        requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    int64_t ec = ::fcntl(*p_fd, F_SETFL, *p_flag);
     return ec == -1 ? int64_t(errno) : int64_t(0);
 }
 
@@ -251,20 +240,17 @@ REGIST_BUILTIN("close", 1, 1, eval_close, "(close file_descriptor) -> errno");
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_close(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "close";
     Object obj;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
+        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+
     COLOG_DEBUG(SSS_VALUE_MSG(*p_fd));
-    
+
     // errno；
     // 由于我这个是脚本，不是真正编译程序；也就是说，从产生错误号，到获取
     // 错误号，间隔了多少系统调用？错误号是否被覆盖。
@@ -280,18 +266,15 @@ REGIST_BUILTIN("read-line", 1, 1, eval_read_line,
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "read-line";
     Object obj;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
+        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+
     std::string line = detail::readline(*p_fd);
     if (line.empty() && errno) {
         return varlisp::Nill{};
@@ -308,18 +291,15 @@ REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "read-char";
     Object obj;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
+        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+
     int64_t ch = detail::readchar(*p_fd);
     if (ch == -1 || errno) {
         return varlisp::Nill{};
@@ -337,25 +317,17 @@ REGIST_BUILTIN("write-char", 2, 2, eval_write_char,
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "write-char";
-    Object obj;
+    std::array<Object, 2> objs;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
-    Object chObj;
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const int64_t* p_ch =
-        getTypedValue<int64_t>(env, detail::cadr(args), chObj);
-    if (!p_ch) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 2nd argument)");
-    }
+        requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     int64_t ec = detail::writechar(*p_fd, *p_ch);
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
@@ -370,26 +342,19 @@ REGIST_BUILTIN("write-string", 2, 2, eval_write_string,
  * @param[in] env
  * @param[in] args
  *
- * @return 
+ * @return
  */
 Object eval_write_string(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "write-char";
-    Object obj;
+    std::array<Object, 2> objs;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
-    int64_t fd = *p_fd;
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const varlisp::string_t* p_str =
-        getTypedValue<varlisp::string_t>(env, detail::cadr(args), obj);
-    if (!p_str) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies string as 2nd argument)");
-    }
-    int64_t ec = detail::writestring(fd, p_str->to_string_view());
+        requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    int64_t ec = detail::writestring(*p_fd, p_str->to_string_view());
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
 
@@ -401,11 +366,8 @@ Object eval_get_fd_fname(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "get-fd-fname";
     Object obj;
     const int64_t* p_fd =
-        getTypedValue<int64_t>(env, detail::car(args), obj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": requies int64_t fd as 1st argument)");
-    }
+        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+
     try {
         return string_t(detail::file::get_fname_from_fd(*p_fd));
     }
