@@ -20,7 +20,8 @@ REGIST_BUILTIN("help", 1, 1, eval_help, "(help symbol) -> nil");
  */
 Object eval_help(varlisp::Environment& env, const varlisp::List& args)
 {
-    std::cout << boost::apply_visitor(helpmsg_visitor(env), detail::car(args)) << std::endl;
+    std::cout << boost::apply_visitor(helpmsg_visitor(env), detail::car(args))
+              << std::endl;
     return varlisp::Nill{};
 }
 
