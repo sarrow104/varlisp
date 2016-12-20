@@ -1,3 +1,5 @@
+#include <array>
+
 #include <sss/debug/value_msg.hpp>
 
 #include "../object.hpp"
@@ -10,6 +12,8 @@
 namespace varlisp {
 
 REGIST_BUILTIN("regex", 1, 1, eval_regex,
+               "; regex 生成基于Google/re2 的正则表达式对象\n"
+               "; 完整的语法描述，见$root/re2-syntax.html 和 $root/re2-syntax.txt\n"
                "(regex \"regex-string\") -> regex-obj");
 
 /**
@@ -23,12 +27,9 @@ REGIST_BUILTIN("regex", 1, 1, eval_regex,
 Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex";
-    Object regstr;
-    const string_t *p_regstr = getTypedValue<string_t>(env, detail::car(args), regstr);
-    if (!p_regstr) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need one string to construct)");
-    }
+    std::array<Object, 1> objs;
+    const string_t *p_regstr =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     return std::make_shared<RE2>(p_regstr->to_string());
 }
 
@@ -46,20 +47,13 @@ REGIST_BUILTIN("regex-match", 2, 2, eval_regex_match,
 Object eval_regex_match(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-match";
-    Object regobj;
+    std::array<Object, 2> objs;
     const varlisp::regex_t *p_regobj =
-        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
-    if (!p_regobj) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": regex obj)");
-    }
-    Object target;
+        requireTypedValue<varlisp::regex_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const string_t *p_target =
-        getTypedValue<string_t>(env, detail::cadr(args), target);
-    if (!p_target) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need one string to match)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
     return RE2::PartialMatch(*p_target, *(*p_regobj));
 }
 
@@ -77,27 +71,16 @@ REGIST_BUILTIN("regex-search", 2, 3, eval_regex_search,
 Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-search";
-    Object regobj;
+    std::array<Object, 3> objs;
     const varlisp::regex_t *p_regobj =
-        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
-    if (!p_regobj) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": regex obj)");
-    }
+        requireTypedValue<varlisp::regex_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    Object target;
-    const string_t *p_target = getTypedValue<string_t>(env, detail::cadr(args), target);
-    if (!p_target) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need one string to search)");
-    }
+    const string_t *p_target =
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     int64_t offset = 0;
     if (args.length() == 3) {
-        Object obj;
-        if (const int64_t *p_offset = getTypedValue<int64_t>(env, detail::caddr(args), obj)) {
-            offset = *p_offset;
-        }
+        offset = *requireTypedValue<int64_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
     }
 
     if (offset < 0) {
@@ -112,7 +95,9 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
 
     std::vector<re2::StringPiece> sub_matches;
     sub_matches.resize(10);
-    if ((*p_regobj)->Match(*p_target, offset, p_target->size(), RE2::UNANCHORED, &sub_matches[0], sub_matches.size())) {
+    if ((*p_regobj)->Match(*p_target, offset, p_target->size(), RE2::UNANCHORED,
+                           &sub_matches[0], sub_matches.size()))
+    {
         auto back_it = detail::list_back_inserter<varlisp::string_t>(ret);
         while (!sub_matches.empty() && sub_matches.back().empty()) {
             sub_matches.pop_back();
@@ -125,12 +110,13 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
     return ret;
 }
 
-REGIST_BUILTIN("regex-replace", 3, 3, eval_regex_replace,
+REGIST_BUILTIN("regex-replace", 2, 3, eval_regex_replace,
+               "; regex-replace 如果不提供fmt参数，则表示删除匹配到的部分文字\n"
+               "(regex-replace reg-obj target) -> string\n"
                "(regex-replace reg-obj target fmt) -> string");
 
 /**
  * @brief
- *      (regex-replace reg-obj target fmt) -> string
  *
  * @param [in]env
  * @param [in]args
@@ -140,31 +126,22 @@ REGIST_BUILTIN("regex-replace", 3, 3, eval_regex_replace,
 Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-replace";
-    Object regobj;
+    std::array<Object, 3> tmpObjs;
     const varlisp::regex_t *p_regobj =
-        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
-    if (!p_regobj) {
-        SSS_POSITION_THROW(std::runtime_error, "regex-replace: regex obj");
-    }
+        requireTypedValue<varlisp::regex_t>(env, args.nth(0), tmpObjs[0], funcName, 0, DEBUG_INFO);
 
-    Object target;
     const string_t *p_target =
-        getTypedValue<string_t>(env, detail::cadr(args), target);
-    if (!p_target) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need one string to replace)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), tmpObjs[1], funcName, 1, DEBUG_INFO);
 
-    Object fmtobj;
-    const string_t *p_fmt =
-        getTypedValue<string_t>(env, detail::caddr(args), fmtobj);
-    if (!p_fmt) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need fmt string at 3rd)");
+    re2::StringPiece fmt = "";
+    if (args.length() == 3) {
+        const string_t *p_fmt =
+            requireTypedValue<varlisp::string_t>(env, args.nth(2), tmpObjs[2], funcName, 2, DEBUG_INFO);
+        fmt = *p_fmt;
     }
 
     std::string out = p_target->to_string();
-    RE2::GlobalReplace(&out, *(*p_regobj), *p_fmt);
+    RE2::GlobalReplace(&out, *(*p_regobj), fmt);
     return string_t(std::move(out));
 }
 
@@ -236,34 +213,25 @@ REGIST_BUILTIN("regex-collect", 2, 3, eval_regex_collect,
 Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "regex-collect";
-    Object regobj;
+    std::array<Object, 3> objs;
     const varlisp::regex_t *p_regobj =
-        getTypedValue<varlisp::regex_t>(env, detail::car(args), regobj);
-    if (!p_regobj) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": regex obj)");
-    }
-
-    Object target;
-    const string_t *p_target =
-        getTypedValue<string_t>(env, detail::cadr(args), target);
-    if (!p_target) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need one string to search)");
-    }
-    const string_t *p_fmt = 0;
-    Object fmtobj;
-    if (args.length() == 3) {
-        p_fmt = getTypedValue<string_t>(env, detail::caddr(args), fmtobj);
-    }
-
-    // FIXME TODO pcre
-    varlisp::List ret = varlisp::List::makeSQuoteList();
-    auto back_it = detail::list_back_inserter<varlisp::string_t>(ret);
+        requireTypedValue<varlisp::regex_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     if (!(*p_regobj)) {
         SSS_POSITION_THROW(std::runtime_error, "not init regex-obj!");
     }
+
+    const string_t *p_target =
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    const string_t *p_fmt = 0;
+    if (args.length() == 3) {
+        p_fmt = requireTypedValue<varlisp::string_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
+    }
+
+    varlisp::List ret = varlisp::List::makeSQuoteList();
+    auto back_it = detail::list_back_inserter<varlisp::string_t>(ret);
+
     std::vector<re2::StringPiece> sub_matches;
     std::string fmt_error_msg;
     if (p_fmt && !(*p_regobj)->CheckRewriteString(*p_fmt, &fmt_error_msg)) {
@@ -274,7 +242,10 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
     sub_matches.resize(RE2::MaxSubmatch(rewrite) + 1);
 
     size_t start_pos = 0;
-    while ((*p_regobj)->Match(*p_target, start_pos, p_target->size(), RE2::UNANCHORED, &sub_matches[0], sub_matches.size())) {
+    while ((*p_regobj)->Match(*p_target, start_pos, p_target->size(),
+                              RE2::UNANCHORED, &sub_matches[0],
+                              sub_matches.size()))
+    {
         std::string out;
 
         if ((*p_regobj)->Rewrite(&out, rewrite, &sub_matches[0], sub_matches.size())) {
