@@ -1,3 +1,5 @@
+#include <array>
+
 #include <sss/path/glob_path.hpp>
 #include <sss/path/glob_path_recursive.hpp>
 #include <sss/path/name_filter.hpp>
@@ -45,20 +47,14 @@ REGIST_BUILTIN(
 Object eval_path_fnamemodify(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "path-fnamemodify";
+    std::array<Object, 2> objs;
     Object path;
     const string_t *p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies one path string at 1st)");
-    }
-    Object modifier;
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const string_t *p_modifier =
-        getTypedValue<string_t>(env, detail::cadr(args), modifier);
-    if (!p_modifier) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies one path-modifier string at 2nd)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
     std::string mod_name = sss::path::modify_copy(p_path->to_string(), p_modifier->to_string());
     return Object(string_t(std::move(mod_name)));
 }
@@ -70,20 +66,13 @@ REGIST_BUILTIN("path-append", 2, 2, eval_path_append,
 Object eval_path_append(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "path-append";
-    Object path;
+    std::array<Object, 2> objs;
     const string_t *p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies one path string at 1st)");
-    }
-    Object toAppend;
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const string_t *p_toAppend =
-        getTypedValue<string_t>(env, detail::cadr(args), toAppend);
-    if (!p_toAppend) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies one string at 2nd)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
     std::string out_name = p_path->to_string();
     out_name.reserve(p_path->size() + p_toAppend->size());
     sss::path::append(out_name, p_toAppend->to_string());
@@ -108,24 +97,14 @@ REGIST_BUILTIN("glob", 1, 2, eval_glob,
 Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "glob";
-    Object path;
+    std::array<Object, 2> objs;
     const string_t *p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          " requies one path string at 1st)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::unique_ptr<sss::path::filter_t> f;
     if (args.length() > 1) {
-        Object filter;
         const string_t *p_filter =
-            getTypedValue<string_t>(env, detail::cadr(args), filter);
-        if (!p_filter) {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                              ": requires filter string as 2nd argument)");
-        }
+            requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
         f.reset(new sss::path::name_filter_t(p_filter->to_string()));
     }
 
@@ -156,13 +135,10 @@ REGIST_BUILTIN(
 Object eval_file_q(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "file?";
-    Object path;
+    std::array<Object, 1> objs;
     const string_t *p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": requies one path string)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     return sss::path::file_exists(p_path->to_string()) == sss::PATH_TO_FILE;
 }
 
@@ -174,13 +150,10 @@ REGIST_BUILTIN(
 Object eval_directory_q(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "directory?";
-    Object path;
+    std::array<Object, 1> objs;
     const string_t *p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": requies one path string)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     return sss::path::file_exists(p_path->to_string()) == sss::PATH_TO_DIRECTORY;
 }
 
@@ -205,34 +178,23 @@ REGIST_BUILTIN(
 Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "glob-recurse";
-    Object path;
+    std::array<Object, 3> objs;
     const string_t *p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": requies one path string)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     std::unique_ptr<sss::path::filter_t> f;
     if (args.length() > 1) {
         Object filter;
         const string_t *p_filter =
-            getTypedValue<string_t>(env, detail::cadr(args), filter);
-        if (!p_filter) {
-            SSS_POSITION_THROW(
-                std::runtime_error,
-                "(", funcName, ": second filter arg must be a string)");
-        }
+            requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
         f.reset(new sss::path::name_filter_t(p_filter->to_string()));
     }
 
     int depth = 0;
     if (args.length() > 2) {
         Object arg;
-        const int64_t *p_depth = getTypedValue<int64_t>(env, detail::caddr(args), arg);
-        if (!p_depth) {
-            SSS_POSITION_THROW(std::runtime_error,
-                              "(", funcName, ": third arg must be an integar)");
-        }
+        const int64_t *p_depth =
+            requireTypedValue<int64_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
         depth = *p_depth;
     }
 
