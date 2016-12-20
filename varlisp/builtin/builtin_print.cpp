@@ -1,3 +1,5 @@
+#include <array>
+
 #include <sss/raw_print.hpp>
 #include <sss/util/PostionThrow.hpp>
 #include <sss/debug/value_msg.hpp>
@@ -16,12 +18,10 @@ namespace varlisp {
 void fmt_impl(std::ostream& oss, varlisp::Environment& env,
               const varlisp::List& args, const char* funcName)
 {
-    Object obj1;
-    const string_t* p_fmt = getTypedValue<string_t>(env, detail::car(args), obj1);
-    if (!p_fmt) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires string to escape at 1st)");
-    }
+    std::array<Object, 1> objs;
+    const string_t* p_fmt =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     std::vector<fmtArgInfo> fmts;
     std::vector<sss::string_view> padding;
     parseFmt(p_fmt, fmts, padding);
@@ -181,12 +181,9 @@ REGIST_BUILTIN("fmt-escape", 1, 1, eval_fmt_escape,
 Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "fmt-escape";
-    Object obj1;
-    const string_t* p_fmt = getTypedValue<string_t>(env, detail::car(args), obj1);
-    if (!p_fmt) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires string to escape at 1st)");
-    }
+    std::array<Object, 1> objs;
+    const string_t* p_fmt =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     std::string escaped_str;
     escaped_str.reserve(p_fmt->size());
     for (auto i : *p_fmt) {
