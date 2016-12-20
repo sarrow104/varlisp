@@ -33,7 +33,6 @@ REGIST_BUILTIN("load", 1, 1, eval_load, "(load \"path/to/lisp\") -> nil");
  */
 Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char* funcName = "load";
     // NOTE 既然
     // load是内建函数，那么load，就可以出现在任何地方；比如另外一个脚本；
     // 而，我的解释器，对于脚本的load，本质上，是让内部的Tokenizer对象，
@@ -49,14 +48,13 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     // 这是作用域的问题；即，对于(load "path/to/script")语句而言，新解析到
     // 的标识符(对象、函数等等)，应该放到哪个Environment中呢？
 
-    Object path;
+    const char* funcName = "load";
+    std::array<Object, 1> objs;
     const string_t* p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies a path)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     std::string full_path = p_path->to_string();
+
     if (full_path.find('$') != std::string::npos) {
         full_path = varlisp::detail::get_envmgr().get_expr(full_path);
     }
@@ -85,13 +83,10 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "load";
 
-    Object path;
+    std::array<Object, 1> objs;
     const string_t* p_path =
-        getTypedValue<string_t>(env, detail::car(args), path);
-    if (!p_path) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies a path)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     std::string full_path = sss::path::full_of_copy(p_path->to_string());
     if (sss::path::file_exists(full_path) == sss::PATH_TO_DIRECTORY) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
