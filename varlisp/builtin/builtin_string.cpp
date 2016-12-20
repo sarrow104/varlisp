@@ -1,3 +1,4 @@
+#include <array>
 #include <iterator>
 
 #include <sss/util/utf8.hpp>
@@ -14,6 +15,7 @@
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/list_iterator.hpp"
 #include "../detail/car.hpp"
+#include "../raw_stream_visitor.hpp"
 
 namespace varlisp {
 
@@ -35,24 +37,14 @@ REGIST_BUILTIN("split", 1,  2,  eval_split,
 Object eval_split(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "split";
-    Object content;
+    std::array<Object, 2> objs;
     const string_t *p_content =
-        getTypedValue<string_t>(env, detail::car(args), content);
-
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requies string as 1st argument)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string sep(1, ' ');
     if (args.length() == 2) {
-        Object sep_obj;
         const string_t *p_sep =
-            getTypedValue<string_t>(env, detail::cadr(args), sep_obj);
-        if (!p_sep) {
-            SSS_POSITION_THROW(std::runtime_error,
-                              "(", funcName, ": requires seq string as 2nd argument)");
-        }
+            requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
         sep = p_sep->to_string();
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
@@ -88,8 +80,8 @@ REGIST_BUILTIN("join", 1, 2, eval_join,
 Object eval_join(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "join";
-    Object obj;
-    const List *p_list = getQuotedList(env, detail::car(args), obj);
+    std::array<Object, 2> objs;
+    const List *p_list = getQuotedList(env, detail::car(args), objs[0]);
 
     if (!p_list) {
         SSS_POSITION_THROW(std::runtime_error,
@@ -98,12 +90,8 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
 
     std::string sep;
     if (args.length() == 2) {
-        Object sep_obj;
-        const string_t *p_sep = getTypedValue<string_t>(env, detail::cadr(args), sep_obj);
-        if (!p_sep) {
-            SSS_POSITION_THROW(std::runtime_error,
-                              "(", funcName, ": 2nd sep must be a string)");
-        }
+        const string_t *p_sep =
+            requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
         sep = p_sep->to_string();
     }
 
@@ -113,16 +101,19 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     for (auto it = p_list->begin(); it != p_list->end(); ++it) {
         Object obj;
         const string_t *p_stem = getTypedValue<string_t>(env, *it, obj);
-        if (!p_stem) {
-            break;
-        }
         if (is_first) {
             is_first = false;
         }
         else {
             oss << sep;
         }
-        oss << *p_stem;
+        
+        if (!p_stem) {
+            boost::apply_visitor(raw_stream_visitor(oss, env), *it);
+        }
+        else {
+            oss << *p_stem;
+        }
     }
 
     return Object(string_t(std::move(oss.str())));
@@ -146,16 +137,11 @@ REGIST_BUILTIN("substr", 2, 3, eval_substr,
 Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "substr";
-    Object content;
+    std::array<Object, 3> objs;
     const string_t *p_content =
-        getTypedValue<string_t>(env, detail::car(args), content);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need string as 1st argument)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    Object offset;
-    const Object &offset_ref = getAtomicValue(env, detail::cadr(args), offset);
+    const Object &offset_ref = getAtomicValue(env, args.nth(1), objs[1]);
 
     arithmetic_t offset_number =
         boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
@@ -174,9 +160,9 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 
     int64_t length = -1;
     if (args.length() == 3) {
-        Object length_obj;
         const Object &length_obj_ref =
-            getAtomicValue(env, detail::caddr(args), length_obj);
+            getAtomicValue(env, args.nth(2), objs[2]);
+
         arithmetic_t arithmetic_length = boost::apply_visitor(
             arithmetic_cast_visitor(env), (length_obj_ref));
         if (!arithmetic_length.which()) {
@@ -200,12 +186,10 @@ REGIST_BUILTIN("ltrim", 1, 1, eval_ltrim,
 Object eval_ltrim(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "ltrim";
-    Object obj;
-    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
-    if (!p_str) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need an string as the 1st argument)");
-    }
+    std::array<Object, 1> objs;
+    const string_t *p_str = 
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     sss::string_view sv = p_str->to_string_view();
     while(!sv.empty() && std::isspace(sv.front())) {
         sv.pop_front();
@@ -219,12 +203,10 @@ REGIST_BUILTIN("rtrim", 1, 1, eval_rtrim,
 Object eval_rtrim(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "rtrim";
-    Object obj;
-    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
-    if (!p_str) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need an string as the 1st argument)");
-    }
+    std::array<Object, 1> objs;
+    const string_t *p_str =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     sss::string_view sv = p_str->to_string_view();
     while(!sv.empty() && std::isspace(sv.back())) {
         sv.pop_back();
@@ -238,12 +220,10 @@ REGIST_BUILTIN("trim", 1, 1, eval_trim,
 Object eval_trim(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "trim";
-    Object obj;
-    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
-    if (!p_str) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need an string as the 1st argument)");
-    }
+    std::array<Object, 1> objs;
+    const string_t *p_str = 
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     sss::string_view sv = p_str->to_string_view();
     while(!sv.empty() && std::isspace(sv.front())) {
         sv.pop_front();
@@ -270,12 +250,9 @@ REGIST_BUILTIN("strlen", 1, 1, eval_strlen,
 Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "strlen";
-    Object obj;
-    const string_t *p_str = getTypedValue<string_t>(env, detail::car(args), obj);
-    if (!p_str) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need an string as the 1st argument)");
-    }
+    std::array<Object, 1> objs;
+    const string_t *p_str = 
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     return int64_t(p_str->length());
 }
 
@@ -301,13 +278,10 @@ REGIST_BUILTIN("split-char", 1, 1, eval_split_char,
 Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "split-char";
-    Object obj;
-    const varlisp::string_t *p_str =
-        varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), obj);
-    if (!p_str) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need an string as the 1st argument)");
-    }
+    std::array<Object, 1> objs;
+    const string_t *p_str = 
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     varlisp::List ret = varlisp::List::makeSQuoteList();
     sss::util::utf8::dumpout2ucs(
         p_str->begin(), p_str->end(),
@@ -350,13 +324,10 @@ REGIST_BUILTIN("split-byte",       1,  1,  eval_split_byte,
 Object eval_split_byte(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "split-byte";
-    Object obj;
-    const varlisp::string_t *p_str =
-        varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), obj);
-    if (!p_str) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": need an string as the 1st argument)");
-    }
+    std::array<Object, 1> objs;
+    const string_t *p_str = 
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     varlisp::List ret = varlisp::List::makeSQuoteList();
 
     // NOTE  谨防 0x80 0xFF 字符可能引起问题
