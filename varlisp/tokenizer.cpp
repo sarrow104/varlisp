@@ -250,7 +250,28 @@ void Tokenizer::init(const std::string& data)
           ss1x::parser::char_p('/'))) >
           &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator beg, StrIterator end, ss1x::parser::rule::matched_value_t v) {
-            tok = std::make_shared<RE2>(std::string(beg + 1, end - 1));
+              std::string regstr;
+              ++beg;
+              --end;
+              for (auto it = beg; it != end; ++it) {
+                  if (*it == '\\' && it + 1 < end) {
+                      switch (*(it + 1)) {
+                          case ' ': regstr += ' '; break;
+                          case 'a': regstr += '\a'; break;
+                          case 'f': regstr += '\f'; break;
+                          case 't': regstr += '\t'; break;
+                          case 'n': regstr += '\n'; break;
+                          case 'r': regstr += '\r'; break;
+                          case 'v': regstr += '\v'; break;
+                          default: regstr += '\\', regstr += *(it + 1); break;
+                      }
+                      ++it;
+                  }
+                  else {
+                    regstr += *it;
+                  }
+              }
+            tok = std::make_shared<RE2>(regstr);
         })]).name("Regex_p");
 
     this->FallthrowError_p =
