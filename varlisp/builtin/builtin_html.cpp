@@ -1,3 +1,5 @@
+#include <array>
+
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -14,12 +16,14 @@
 #include "../object.hpp"
 #include "../list.hpp"
 #include "../builtin_helper.hpp"
+#include "../raw_stream_visitor.hpp"
 
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
 #include "../detail/list_iterator.hpp"
 #include "../detail/html.hpp"
 #include "../detail/file.hpp"
+#include "../detail/io.hpp"
 
 namespace varlisp {
 
@@ -39,22 +43,15 @@ REGIST_BUILTIN("gumbo", 1, 2, eval_gumbo,
 Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gumbo";
-    Object content;
+    std::array<Object, 2> objs;
     const string_t* p_content =
-        varlisp::getTypedValue<string_t>(env, detail::car(args), content);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires 1st argument as content to parsing)");
-    }
-    Object query;
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const string_t* p_query = 0;
 
     if (args.length() >= 2) {
-        varlisp::getTypedValue<string_t>(env, detail::cadr(args), query);
-        if (!p_query) {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                              "： requires 2nd argument as query string)");
-        }
+        p_query =
+            requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
     }
     if (p_content->empty()) {
         return Object{Nill{}};
@@ -161,20 +158,12 @@ REGIST_BUILTIN("gumbo-query", 2, 2, eval_gumbo_query,
 Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gumbo-query";
-    Object gNode;
+    std::array<Object, 2> objs;
     const gumboNode* p_node =
-        varlisp::getTypedValue<gumboNode>(env, detail::car(args), gNode);
-    if (!p_node) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumboNode as 1st argument to querying)");
-    }
-    Object query;
+        requireTypedValue<gumboNode>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const string_t* p_query =
-        varlisp::getTypedValue<string_t>(env, detail::cadr(args), query);
-    if (!p_query) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires query string as 2nd argument)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     varlisp::List ret_nodes = varlisp::List::makeSQuoteList();
     if (p_node->valid() && p_query && p_query->length()) {
@@ -198,11 +187,7 @@ Object eval_gumbo_children(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "gumbo-query";
     Object gNode;
     const gumboNode* p_node =
-        varlisp::getTypedValue<gumboNode>(env, detail::car(args), gNode);
-    if (!p_node) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumboNode as 1st argument to querying)");
-    }
+        requireTypedValue<gumboNode>(env, args.nth(0), gNode, funcName, 0, DEBUG_INFO);
 
     varlisp::List ret_nodes = varlisp::List::makeSQuoteList();
     std::vector<gumboNode> vec = p_node->children();
@@ -225,11 +210,7 @@ Object eval_gqnode_indent(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "gqnode-indent";
     if (args.size()) {
         Object tmp;
-        const auto * p_indent = varlisp::getTypedValue<varlisp::string_t>(env, detail::car(args), tmp);
-        if (!p_indent) {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": 1st argument must be a indent string)");
-        }
+        const auto * p_indent =requireTypedValue<varlisp::string_t>(env, args.nth(0), tmp, funcName, 0, DEBUG_INFO);
         detail::html::set_gpnode_indent(p_indent->to_string());
     }
     return string_t(detail::html::get_gpnode_indent());
@@ -251,20 +232,13 @@ REGIST_BUILTIN(
 Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gqnode-attr";
-    Object gqnode;
+    std::array<Object, 2> objs;
     const gumboNode* p_gqnode =
-        varlisp::getTypedValue<gumboNode>(env, detail::car(args), gqnode);
-    if (!p_gqnode) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumbo-query-node as 1st argument)");
-    }
-    Object attrib_name;
-    const string_t* p_attrib_name = varlisp::getTypedValue<string_t>(
-        env, detail::cadr(args), attrib_name);
-    if (!p_attrib_name) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumbo-query-node as 1st argument)");
-    }
+        requireTypedValue<gumboNode>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const string_t* p_attrib_name =
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
     if (p_gqnode->valid()) {
         std::string attribute = p_gqnode->attribute(p_attrib_name->to_string());
         if (!attribute.empty()) {
@@ -289,20 +263,14 @@ REGIST_BUILTIN("gqnode-hasAttr", 2, 2, eval_gqnode_hasAttr,
 Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gqnode-hasAttr";
-    Object gqnode;
+
+    std::array<Object, 2> objs;
     const gumboNode* p_gqnode =
-        varlisp::getTypedValue<gumboNode>(env, detail::car(args), gqnode);
-    if (!p_gqnode) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumbo-query-node as 1st argument)");
-    }
-    Object attrib_name;
-    const string_t* p_attrib_name = varlisp::getTypedValue<string_t>(
-        env, detail::cadr(args), attrib_name);
-    if (!p_attrib_name) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumbo-query-node as 1st argument)");
-    }
+        requireTypedValue<gumboNode>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const string_t* p_attrib_name =
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
     if (p_gqnode->valid()) {
         return p_gqnode->hasAttr(p_attrib_name->to_string());
     }
@@ -321,11 +289,7 @@ public:
     {
         Object gqnode;
         const gumboNode* p_gqnode =
-            varlisp::getTypedValue<gumboNode>(env, detail::car(args), gqnode);
-        if (!p_gqnode) {
-            SSS_POSITION_THROW(std::runtime_error, "(", m_funcName,
-                               ": requires gumbo-query-node as 1st argument)");
-        }
+            requireTypedValue<gumboNode>(env, args.nth(0), gqnode, m_funcName, 0, DEBUG_INFO);
         if (p_gqnode->valid()) {
             return string_t(std::move((p_gqnode->*m_method)()));
         }
@@ -354,11 +318,7 @@ Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "gqnode-valid";
     Object gqnode;
     const gumboNode* p_gqnode =
-        varlisp::getTypedValue<gumboNode>(env, detail::car(args), gqnode);
-    if (!p_gqnode) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumbo-query-node as 1st argument)");
-    }
+        requireTypedValue<gumboNode>(env, args.nth(0), gqnode, funcName, 0, DEBUG_INFO);
     return p_gqnode->valid();
 }
 
@@ -379,11 +339,8 @@ Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "gqnode-isText";
     Object gqnode;
     const gumboNode* p_gqnode =
-        varlisp::getTypedValue<gumboNode>(env, detail::car(args), gqnode);
-    if (!p_gqnode) {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                          ": requires gumbo-query-node as 1st argument)");
-    }
+        requireTypedValue<gumboNode>(env, args.nth(0), gqnode, funcName, 0, DEBUG_INFO);
+
     if (p_gqnode->valid()) {
         return p_gqnode->isText();
     }
@@ -586,20 +543,13 @@ Object eval_gumbo_query_text(varlisp::Environment& env,
                              const varlisp::List& args)
 {
     const char * funcName = "gumbo-query-text";
-    Object content;
+    std::array<Object, 2> objs;
     const string_t* p_content =
-        varlisp::getTypedValue<string_t>(env, detail::car(args), content);
-    if (!p_content) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": requires content to parsing)");
-    }
-    Object query;
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
     const string_t* p_query =
-        varlisp::getTypedValue<string_t>(env, detail::cadr(args), query);
-    if (!p_query) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": requires query string)");
-    }
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
     std::ostringstream oss;
     ss1x::util::html::queryText(oss, p_content->to_string(), p_query->to_string());
 
@@ -610,17 +560,14 @@ REGIST_BUILTIN("gumbo-rewrite", 2,  -1,  eval_gumbo_rewrite,
                "gumbo-rewrite 重写gumbo-node到指定文件描述符中\n"
                "注意，链接等会被改写\n"
                "文件名，如何确定？\n"
-               "(gumbo-gumbo-rewrite int-fd '(gq-node) "") -> nil");
+               "(gumbo-rewrite int-fd '(gq-node) "") -> nil");
 
 Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "gumbo-gumbo-rewrite";
-    Object fdObj;
-    const int64_t * p_fd = varlisp::getTypedValue<int64_t>(env, detail::car(args), fdObj);
-    if (!p_fd) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": 1st argument must be int fd)");
-    }
+    std::array<Object, 2> objs;
+    const int64_t * p_fd =
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string output_dir = sss::path::dirname(detail::file::get_fname_from_fd(*p_fd));
     COLOG_ERROR(output_dir);
@@ -633,28 +580,34 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 
     // 在重写的时候，如何处理重复的url？
     // 需要建立一个url与本地path的对应关系；同时，需要备注上下载状态；
-    Object second;
-    auto& secondRef = varlisp::getAtomicValue(env, detail::cadr(args), second);
-    Object gpNodeList;
-    Object gpNodeObj;
 
-    detail::html::resource_manager_t rs_mgr;
-    if (auto * p_list = varlisp::getQuotedList(env, secondRef, gpNodeList)) {
-        for (auto it = p_list->begin(); it != p_list->end(); ++it) {
-            auto * p_gp = varlisp::getTypedValue<gumboNode>(env, *it, gpNodeObj);
-            if (!p_gp) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                   "(", funcName, ": 2st argument must be construct by gpnode)");
+    for (size_t i = 1; i < args.length(); ++i) {
+        auto& secondRef = varlisp::getAtomicValue(env, args.nth(i), objs[1]);
+
+        Object gpNodeList;
+        Object gpNodeObj;
+        detail::html::resource_manager_t rs_mgr;
+        if (auto * p_list = varlisp::getQuotedList(env, secondRef, gpNodeList)) {
+            for (auto it = p_list->begin(); it != p_list->end(); ++it) {
+                auto * p_gp = varlisp::getTypedValue<gumboNode>(env, *it, gpNodeObj);
+                if (!p_gp) {
+                    std::ostringstream oss;
+                    boost::apply_visitor(raw_stream_visitor(oss, env), *it);
+                    detail::writestring(*p_fd, oss.str());
+                }
+                else {
+                    detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr);
+                }
             }
+        }
+        else if (auto * p_gp = varlisp::getTypedValue<gumboNode>(env, secondRef, gpNodeObj)) {
             detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr);
         }
-    }
-    else if (auto * p_gp = varlisp::getTypedValue<gumboNode>(env, secondRef, gpNodeObj)) {
-        detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr);
-    }
-    else {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": cannot rewirte ", secondRef, " to ", *p_fd, ")");
+        else {
+            std::ostringstream oss;
+            boost::apply_visitor(raw_stream_visitor(oss, env), secondRef);
+            detail::writestring(*p_fd, oss.str());
+        }
     }
 
     return Nill{};
