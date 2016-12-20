@@ -1,3 +1,5 @@
+#include <array>
+
 #include <stdexcept>
 
 #include <sss/util/PostionThrow.hpp>
@@ -23,20 +25,12 @@ Object eval_bit_and(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "&";
     Object res;
-    const int64_t * p_var = varlisp::getTypedValue<int64_t>(env, detail::car(args), res);
-    if (!p_var) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
+    const int64_t * p_var =
+        requireTypedValue<int64_t>(env, args.nth(0), res, funcName, 0, DEBUG_INFO);
+
     int64_t ret = *p_var;
-    const varlisp::List tail = args.tail();
-    for (auto it = tail.begin(); it != tail.end(); ++it) {
-        p_var = varlisp::getTypedValue<int64_t>(env, *it, res);
-        if (!p_var) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": int64_t as parameter needed)");
-        }
-        ret &= *p_var;
+    for (size_t i = 1; i < args.length(); ++i) {
+        ret &= *requireTypedValue<int64_t>(env, args.nth(i), res, funcName, i, DEBUG_INFO);
     }
     return ret;
 }
@@ -55,20 +49,12 @@ Object eval_bit_or(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "|";
     Object res;
-    const int64_t * p_var = varlisp::getTypedValue<int64_t>(env, detail::car(args), res);
-    if (!p_var) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
+    const int64_t * p_var =
+        requireTypedValue<int64_t>(env, args.nth(0), res, funcName, 0, DEBUG_INFO);
+
     int64_t ret = *p_var;
-    const varlisp::List tail = args.tail();
-    for (auto it = tail.begin(); it != tail.end(); ++it) {
-        p_var = varlisp::getTypedValue<int64_t>(env, *it, res);
-        if (!p_var) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": int64_t as parameter needed)");
-        }
-        ret |= *p_var;
+    for (size_t i = 1; i < args.length(); ++i) {
+        ret |= *requireTypedValue<int64_t>(env, args.nth(i), res, funcName, i, DEBUG_INFO);
     }
     return ret;
 }
@@ -87,12 +73,7 @@ Object eval_bit_rev(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "~";
     Object res;
-    const int64_t * p_var = varlisp::getTypedValue<int64_t>(env, detail::car(args), res);
-    if (!p_var) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
-    return ~(*p_var);
+    return ~(*requireTypedValue<int64_t>(env, args.nth(0), res, funcName, 0, DEBUG_INFO));
 }
 
 REGIST_BUILTIN("^", 2, -1, eval_bit_xor, "(^ int1 int2 ...) -> int64_t");
@@ -109,20 +90,12 @@ Object eval_bit_xor(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "^";
     Object res;
-    const int64_t * p_var = varlisp::getTypedValue<int64_t>(env, detail::car(args), res);
-    if (!p_var) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
+    const int64_t * p_var =
+        requireTypedValue<int64_t>(env, args.nth(0), res, funcName, 0, DEBUG_INFO);
+
     int64_t ret = *p_var;
-    const varlisp::List tail = args.tail();
-    for (auto it = tail.begin(); it != tail.end(); ++it) {
-        p_var = varlisp::getTypedValue<int64_t>(env, *it, res);
-        if (!p_var) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": int64_t as parameter needed)");
-        }
-        ret ^= *p_var;
+    for (size_t i = 1; i < args.length(); ++i) {
+        ret ^= *requireTypedValue<int64_t>(env, args.nth(i), res, funcName, i, DEBUG_INFO);
     }
     return ret;
 }
@@ -140,19 +113,9 @@ REGIST_BUILTIN(">>", 2, 2, eval_bit_shift_right, "(>> int64_t shift) -> int64_t"
 Object eval_bit_shift_right(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = ">>";
-    Object obj_arg;
-    const int64_t * p_var = varlisp::getTypedValue<int64_t>(env, detail::car(args), obj_arg);
-    if (!p_var) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
-
-    Object obj_shift;
-    const int64_t * p_shift = varlisp::getTypedValue<int64_t>(env, detail::cadr(args), obj_shift);
-    if (!p_shift) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
+    std::array<Object, 2> objs;
+    const int64_t * p_var   = requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const int64_t * p_shift = requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
     return (*p_var) >> (*p_shift);
 }
 
@@ -169,19 +132,9 @@ REGIST_BUILTIN("<<", 2, 2, eval_bit_shift_left, "(<< int64_t shift) -> int64_t")
 Object eval_bit_shift_left(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "<<";
-    Object obj_arg;
-    const int64_t * p_var = varlisp::getTypedValue<int64_t>(env, detail::car(args), obj_arg);
-    if (!p_var) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
-
-    Object obj_shift;
-    const int64_t * p_shift = varlisp::getTypedValue<int64_t>(env, detail::cadr(args), obj_shift);
-    if (!p_shift) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": int64_t as parameter needed)");
-    }
+    std::array<Object, 2> objs;
+    const int64_t * p_var   = requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const int64_t * p_shift = requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
     return (*p_var) << (*p_shift);
 }
 
