@@ -272,7 +272,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
         if (!nth_ptr) {
             return Nill{};
         }
-        auto end_ptr = detail::locateNthUtf8(nth_ptr, p_content->end(), length - offset_int);
+        auto end_ptr = detail::locateNthUtf8(nth_ptr, p_content->end(), length - offset_int + 1);
         if (!nth_ptr) {
             return Nill{};
         }
