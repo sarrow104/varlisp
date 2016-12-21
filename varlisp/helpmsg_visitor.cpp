@@ -25,6 +25,9 @@ varlisp::string_t helpmsg_visitor::operator()(const varlisp::symbol& s) const
     }
     else if (const varlisp::Lambda * p_tmp = boost::get<varlisp::Lambda>(&objref)) {
         help_msg = p_tmp->help_msg();
+        if (help_msg.empty()) {
+            help_msg = p_tmp->gen_help_msg(s.name());
+        }
     }
     else {
         help_msg = boost::apply_visitor(helpmsg_visitor(m_env), objref);

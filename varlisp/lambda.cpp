@@ -38,6 +38,19 @@ void Lambda::print(std::ostream& o) const
     o << ")";
 }
 
+varlisp::string_t Lambda::gen_help_msg(const std::string& name) const
+{
+    std::ostringstream oss;
+    oss << "(" << name << " ";
+    if (!this->m_args.empty()) {
+        std::copy(this->m_args.begin(), this->m_args.end() - 1,
+                  std::ostream_iterator<std::string>(oss, " "));
+        oss << this->m_args.back();
+    }
+    oss << ")";
+    return string_t(std::move(oss.str()));
+}
+
 Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
 {
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, true_args);

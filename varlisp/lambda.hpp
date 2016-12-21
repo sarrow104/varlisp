@@ -48,6 +48,8 @@ public:
     {
         return this->m_help_doc;
     }
+
+    varlisp::string_t gen_help_msg(const std::string& name) const;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Lambda& l)
