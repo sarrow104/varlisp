@@ -119,15 +119,101 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     return Object(string_t(std::move(oss.str())));
 }
 
+namespace detail {
+const char * locateNthUtf8(const char * it_beg, const char * it_end, size_t nth)
+{
+    while(nth > 0 && it_beg < it_end) {
+        auto len = sss::util::utf8::next_length(it_beg, it_end);
+        if (!len) {
+            // NOTE utf8-parse error
+            return nullptr;
+        }
+        --nth;
+        it_beg += len;
+    }
+    if (nth == 0) {
+        return it_beg;
+    }
+    return nullptr;
+}
+
+uint32_t nthUtf8(const char* it_beg, const char* it_end, size_t nth)
+{
+    auto nth_ptr = locateNthUtf8(it_beg, it_end, nth);
+    if (!nth_ptr) {
+        return 0;
+    }
+    return sss::util::utf8::peek(nth_ptr, it_end).first;
+}
+
+} // namespace detail
+
+REGIST_BUILTIN("substr-byte", 2, 3, eval_substr_byte,
+               "(substr-byte \"target-string\" offset)\n"
+               "(substr-byte \"target-string\" offset length) -> sub-str");
+
+/**
+ * @brief
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_substr_byte(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char *funcName = "substr-byte";
+    std::array<Object, 3> objs;
+    const string_t *p_content =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const Object &offset_ref = getAtomicValue(env, args.nth(1), objs[1]);
+
+    arithmetic_t offset_number =
+        boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
+    if (!offset_number.which()) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                          ": need int64_t as 2nd argument)");
+    }
+    int64_t offset_int = arithmetic2int(offset_number);
+
+    if (offset_int < 0) {
+        offset_int = 0;
+    }
+    if (offset_int > int64_t(p_content->length())) {
+        offset_int = p_content->length();
+    }
+
+    int64_t length = -1;
+    if (args.length() == 3) {
+        const Object &length_obj_ref =
+            getAtomicValue(env, args.nth(2), objs[2]);
+
+        arithmetic_t arithmetic_length = boost::apply_visitor(
+            arithmetic_cast_visitor(env), (length_obj_ref));
+        if (!arithmetic_length.which()) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                              ": need int64_t as 3rd argument)");
+        }
+        length = arithmetic2int(arithmetic_length);
+    }
+
+
+    if (length < 0) {
+        return p_content->substr(offset_int);
+
+    }
+    else {
+        return p_content->substr(offset_int, length);
+    }
+}
+
 REGIST_BUILTIN("substr", 2, 3, eval_substr,
                "(substr \"target-string\" offset)\n"
                "(substr \"target-string\" offset length) -> sub-str");
 
 /**
  * @brief
- *    (substr "target-string" offset)
- *    (substr "target-string" offset length)
- *      -> sub-str
  *
  * @param[in] env
  * @param[in] args
@@ -136,7 +222,7 @@ REGIST_BUILTIN("substr", 2, 3, eval_substr,
  */
 Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 {
-    const char *funcName = "substr";
+    const char *funcName = "substr-byte";
     std::array<Object, 3> objs;
     const string_t *p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
@@ -173,10 +259,25 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     }
 
     if (length < 0) {
-        return p_content->substr(offset_int);
+        auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
+        if (!nth_ptr) {
+            return Nill{};
+        }
+        else {
+            return p_content->substr(nth_ptr - p_content->begin());
+        }
     }
     else {
-        return p_content->substr(offset_int, length);
+        auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
+        if (!nth_ptr) {
+            return Nill{};
+        }
+        auto end_ptr = detail::locateNthUtf8(nth_ptr, p_content->end(), length - offset_int);
+        if (!nth_ptr) {
+            return Nill{};
+        }
+
+        return p_content->substr(nth_ptr - p_content->begin(), end_ptr - nth_ptr);
     }
 }
 
@@ -250,6 +351,26 @@ REGIST_BUILTIN("strlen", 1, 1, eval_strlen,
 Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "strlen";
+    std::array<Object, 1> objs;
+    const string_t *p_str = 
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    return int64_t(sss::util::utf8::count_nocheck(p_str->begin(), p_str->end()));
+}
+
+REGIST_BUILTIN("strlen-byte", 1, 1, eval_strlen_byte,
+               "(strlen-byte \"target-string\") -> length");
+
+/**
+ * @brief
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_strlen_byte(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char *funcName = "strlen-byte";
     std::array<Object, 1> objs;
     const string_t *p_str = 
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
@@ -357,5 +478,60 @@ Object eval_join_byte(varlisp::Environment &env, const varlisp::List &args)
     }
     return varlisp::string_t{std::move(ret)};
 }
+
+REGIST_BUILTIN("byte-nth", 2, 2, eval_byte_nth,
+               "(byte-nth int64_nth \"string\" -> int64_t)");
+
+// NOTE 或许，可以用负数，表示逆向index
+Object eval_byte_nth(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "byte-nth";
+    std::array<Object, 1> objs;
+    const auto * p_nth =
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const auto * p_str =
+        requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    if (*p_nth < 0 || *p_nth > int64_t(p_str->size())) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": query ", *p_nth, "th elment, out of range 0 ", p_str->size(), ")");
+    }
+
+    return int64_t(uint8_t(p_str->operator[](*p_nth)));
+}
+
+REGIST_BUILTIN("char-nth", 2, 2, eval_char_nth,
+               "(char-nth int64_nth \"string\" -> int64_t)");
+
+Object eval_char_nth(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "byte-nth";
+    std::array<Object, 1> objs;
+    const auto * p_nth =
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const auto * p_str =
+        requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    if (*p_nth < 0) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "(", funcName, ": query ", *p_nth, "th elment)");
+    }
+
+    auto nth_char = detail::nthUtf8(p_str->begin(), p_str->end(), *p_nth);
+
+    if (nth_char) {
+        return int64_t(nth_char);
+    }
+    else {
+        return Nill{};
+    }
+}
+
+// TODO (string var) <- 变字符串
+// (u8-car str) <- 获取第一个字符
+// (u8-cdr str) <- 返回除第一个字符后的字符串
+// 字符 按照utf8计算；
+//
+// (strlen 分为ut8f和bytes，两个版本）
 
 }  // namespace varlisp
