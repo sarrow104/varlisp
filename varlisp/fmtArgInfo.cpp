@@ -100,7 +100,7 @@ bool fmtArgInfo::parsePrecision(Iter_t& beg, Iter_t end)
 };
 bool fmtArgInfo::parseType(Iter_t& beg, Iter_t end)
 {
-    return parser_t::parseSetChar(beg, end, "bcdeEfFgGnosxX%j", this->type);
+    return parser_t::parseSetChar(beg, end, "bcdeEfFgGnosxX%jJ", this->type);
 }
 
 void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
@@ -444,6 +444,10 @@ void fmtArgInfo::print(std::ostream& o, const List&             l ) const
         varlisp::json_print_visitor jv(*p_o);
         jv(l);
     }
+    else if (this->type == 'J') {
+        varlisp::json_print_visitor jv(*p_o, true);
+        jv(l);
+    }
     else {
         *p_o << l;
     }
@@ -459,6 +463,10 @@ void fmtArgInfo::print(std::ostream& o, const Environment&      e ) const
     std::ostream * p_o = this->width ? &oss : &o;
     if (this->type == 'j') {
         varlisp::json_print_visitor jv(*p_o);
+        jv(e);
+    }
+    else if (this->type == 'J') {
+        varlisp::json_print_visitor jv(*p_o, true);
         jv(e);
     }
     else {
