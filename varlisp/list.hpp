@@ -165,8 +165,6 @@ public:
         return nullptr;
     }
 
-    // NOTE FIXME 为了语义明确，下面这个函数名，最好修改
-    // 为is_quote();
     bool is_quoted() const;
 
     const List * get_slist() const;

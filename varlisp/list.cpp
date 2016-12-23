@@ -293,7 +293,7 @@ bool List::is_quoted() const
     return bool(this->unquote());
 }
 
-// NOTE FIXME is_quoted() 函数语义变化。
+// NOTE is_quoted() 函数语义变化。
 // 之前，我不支持'操作符，因此，is_quoted()，就能区分是'()还是()；
 // 而现在，支持'操作符的话，而我是利用vector来模拟这个嵌套关系。
 // 于是，我需要更明确的判断函数，is_slist()，甚至
