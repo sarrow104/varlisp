@@ -144,7 +144,6 @@ Object eval_loop_list(varlisp::Environment& env,
     Object result;
     for (auto it = slist.begin(); it != slist.end(); ++it) {
         inner[sym.name()] = *it;
-        // FIXME keywords check!
         for (auto expr_it = exprs.begin();
              expr_it != exprs.end();
              ++expr_it)
