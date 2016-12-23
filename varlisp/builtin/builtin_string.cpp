@@ -380,12 +380,6 @@ Object eval_strlen_byte(varlisp::Environment &env, const varlisp::List &args)
 REGIST_BUILTIN("split-char", 1, 1, eval_split_char,
                "(split-char \"target-string\") -> '(int64_t-char1 int64_t-char2 ...)");
 
-// NOTE TODO 或许需要这样一个函数，给一个type列表，然后返回转换的结果；
-// 可以转换的，这个列表对应的指针，就是非0；
-// 错误信息呢？
-// 最好传入1：函数名；当前参数位置；然后类型名直接显示吗？也不对；底层
-// 类型名和展示给用户的类型也是不同的。
-
 /**
  * @brief
  *    (split-char "target-string")
