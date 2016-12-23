@@ -114,7 +114,7 @@ REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
  * @brief
  *      (var-list) -> int64_t
  *      枚举所有变量；并返回对象计数
- *      (var-list env-name) -> int64_t # TODO
+ *      (var-list env-name) -> int64_t
  *      枚举提供的环境名所拥有的变量；并返回对象计数
  *
  * @param[in] env
@@ -125,27 +125,28 @@ REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
 Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ifdef";
+    const varlisp::Environment * p_env = &env;
     int64_t var_count = 0;
+    std::array<Object, 1> objs;
     if (args.length()) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": list-environment not implement)");
+       p_env =
+            varlisp::requireTypedValue<varlisp::Environment>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     }
-    else {
-        // 被子环境覆盖了的夫环境变量，不会输出。
-        // keyword不允许覆盖定义
-        std::set<std::string> outted;
-        for (varlisp::Environment * p_env = &env; p_env; p_env = p_env->parent()) {
-            for (auto it = p_env->begin(); it != p_env->end(); ++it) {
-                if (outted.find(it->first) == outted.end()) {
-                    std::cout << it->first << "\n"
-                        << "\t" << it->second.first << (it->second.second.is_const ? " CONST" : "")
-                        << std::endl;
-                    outted.insert(it->first);
-                }
+
+    // 被子环境覆盖了的父环境变量，不会输出。
+    // keyword不允许覆盖定义
+    std::set<std::string> outted;
+    for (; p_env; p_env = p_env->parent()) {
+        for (auto it = p_env->begin(); it != p_env->end(); ++it) {
+            if (outted.find(it->first) == outted.end()) {
+                std::cout << it->first << "\n"
+                    << "\t" << it->second.first << (it->second.second.is_const ? " CONST" : "")
+                    << std::endl;
+                outted.insert(it->first);
             }
         }
-        var_count = outted.size();
     }
+    var_count = outted.size();
     return var_count;
 }
 
