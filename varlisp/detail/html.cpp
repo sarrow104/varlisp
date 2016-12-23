@@ -160,11 +160,12 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
 
         case GUMBO_NODE_ELEMENT:
             {
-                bool is_self_close = CQueryUtil::isSelfCloseTag(apNode);
-                bool is_neat_print = (CQueryUtil::childNum(apNode) == 1 &&
-                                      CQueryUtil::childNum(CQueryUtil::nthChild(apNode, 0)) == 0);
-
                 const std::string tagName = CQueryUtil::tagName(apNode);
+
+                bool is_self_close = CQueryUtil::isSelfCloseTag(apNode);
+                bool is_neat_print = tagName == "pre" || (CQueryUtil::childNum(apNode) == 1 &&
+                                                          CQueryUtil::childNum(CQueryUtil::nthChild(apNode, 0)) == 0);
+
                 // COLOG_ERROR(tagName);
                 o << ind << "<" << tagName;
                 for (size_t i = 0; i < CQueryUtil::attrNum(apNode); ++i) {
@@ -293,6 +294,12 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
     }
 }
 
+// NOTE TODO 非递归版本；另外，注意pre标签节点。
+// void gumbo_rewrite_outterHtml_stack(std::ostream& o, GumboNode* apNode,
+//                                     CQueryUtil::CIndenter& ind,
+//                                     const std::string& output_dir,
+//                                     resource_manager_t& rs_mgr)
+
 void gumbo_rewrite_impl(int fd, const gumboNode& g,
                         const std::string& output_dir, resource_manager_t& rs_mgr)
 {
@@ -303,7 +310,7 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
     std::ostringstream oss;
     GumboNode * apNode = reinterpret_cast<GumboNode*>(n.get());
 
-    CQueryUtil::CIndenter indent(" ");
+    CQueryUtil::CIndenter indent(get_gqnode_indent());
     gumbo_rewrite_outterHtml(oss, apNode, indent, output_dir, rs_mgr);
     std::string content(oss.str());
     int ec = ::write(fd, content.c_str(), content.size());
@@ -313,16 +320,16 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
     COLOG_ERROR(fd, content.size(), SSS_VALUE_MSG(ec));
 }
 
-void         set_gpnode_indent(const std::string& ind)
+void         set_gqnode_indent(const std::string& ind)
 {
     size_t space_cnt = 0;
     while (space_cnt < ind.size() && std::isspace(ind[space_cnt])) {
         ++space_cnt;
     }
-    get_gpnode_indent().assign(ind, 0, space_cnt);
+    get_gqnode_indent().assign(ind, 0, space_cnt);
 }
 
-std::string& get_gpnode_indent()
+std::string& get_gqnode_indent()
 {
     static std::string indent = " ";
     return indent;
