@@ -73,6 +73,9 @@ typedef boost::variant<
     boost::recursive_wrapper<Environment>   // 18
     >
     Object;
+
+Object apply(Environment& env, const Object& funcObj, const List& args);
+
 }  // namespace varlisp
 
 #include "Define.hpp"
