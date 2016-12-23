@@ -64,10 +64,12 @@ void List::make_unique()
         if (m_length > 0) {
             auto tmp_refer = std::make_shared<shared_t>(m_refer->begin() + m_start,
                                                         m_refer->begin() + m_start + m_length);
-            m_refer = tmp_refer;
+            m_refer = std::move(tmp_refer);
+            m_start = 0;
         }
         else {
             m_refer = std::make_shared<shared_t>();
+            m_start = 0;
         }
     }
 }
@@ -145,8 +147,6 @@ Object List::eval(Environment& env) const
         throw std::runtime_error("() is an illegal empty application!");
     }
 
-    varlisp::List nil;
-
     // NOTE 比如，调用的是內建函数，那么內建函数所处的环境是顶层；
     // 如果此时，env被修改为顶层，那么注定内部的符号的查找，就很可能失败！
     // 因为求值顺序，实际是递归的方式，从外到内。
@@ -165,20 +165,10 @@ Object List::eval(Environment& env) const
     // NOTE
     // lisp 语言，每种对象，都是list组成（递归或者单值）；eval的过程，可以看做是
     // 对这个list树的遍历——同时需要用到多个栈，用来模拟调用栈。
-    Object funcTmp;
-    const Object& funcRef = varlisp::getAtomicValue(env, this->front(), funcTmp);
-
-    // 直接值(字符量，用作list的第一个元素，被求值，都是错误！)
-    // 其次，是IfExpr,List，需要被eval一下；
-    // 如果是Lambda，可以直接使用；
-    // 如果是symbol，则进行调用尝试；
-    // 不可能的值有哪些？Empty和Builtin；前者不用说了；后者只是内建函数的容
-    // 器，不可能出现由表达式生成；解析到的表达式，最多只能是运算符号。
-
-    COLOG_DEBUG(funcRef);
 
     try {
-        return eval_impl(env, funcRef, this->tail());
+        // return eval_impl(env, funcRef, this->tail());
+        return varlisp::apply(env, this->front(), this->tail());
     }
     catch (std::runtime_error& e) {
         COLOG_ERROR("while execute ", *this);
@@ -280,7 +270,7 @@ const Object * List::unquote() const
 {
     if (this->m_length >= 1) {
         const auto * p_key =
-            boost::get<varlisp::keywords_t>(&(*this->begin()));
+            boost::get<varlisp::keywords_t>(&this->front());
         if (!p_key || p_key->type() != keywords_t::kw_QUOTE) {
             return nullptr;
         }
