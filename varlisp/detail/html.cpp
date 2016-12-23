@@ -187,7 +187,7 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                         // 先假设最简单的情况；
                         // o << " " << attrName << "=\""
                         //     << htmlEntityEscape(CQueryUtil::nthAttr(apNode, i)->value) << "\"";
-                        // TODO
+                        // NOTE
                         // <link rel="stylesheet" href="http://static.blog.csdn.net/css/blog_code.css"/>
                         // <script src="http://static.blog.csdn.net/scripts/jquery.js" type="text/javascript"></script>
                         // css的问题在于，部分服务器，使用了css"融合"技术，即同一个链接，虽然获取到的是一个css文件，
