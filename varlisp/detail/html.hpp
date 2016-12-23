@@ -32,8 +32,8 @@ using resource_manager_t = std::map<std::string, local_info_t>;
 void gumbo_rewrite_impl(int fd, const gumboNode& g,
                         const std::string& output_dir, resource_manager_t& rs_mgr);
 
-void         set_gpnode_indent(const std::string& ind);
-std::string& get_gpnode_indent();
+void         set_gqnode_indent(const std::string& ind);
+std::string& get_gqnode_indent();
 
 } // namespace html
 } // namespace detail
