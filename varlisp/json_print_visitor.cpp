@@ -10,8 +10,36 @@
 #include "environment.hpp"
 #include "print_visitor.hpp"
 #include "detail/list_iterator.hpp"
+#include "detail/json.hpp"
 
 namespace varlisp {
+
+void json_print_visitor::Indent::print(std::ostream& o) const {
+    if (m_enable) {
+        for (int i = 0; i < m_indent; ++i) {
+            o << varlisp::detail::json::get_json_indent();
+        }
+    }
+}
+
+void json_print_visitor::operator()(const Nill& ) const
+{
+    m_o << "null";
+}
+
+void json_print_visitor::operator()(bool v ) const
+{
+    m_o << (v ? "true" : "false");
+}
+void json_print_visitor::operator()(int64_t v) const
+{
+    m_o << v;          
+}
+
+void json_print_visitor::operator()(double v) const
+{
+    m_o << v;
+}
 
 void json_print_visitor::operator()(const varlisp::regex_t& reg) const
 {
@@ -22,8 +50,17 @@ void json_print_visitor::operator()(const varlisp::regex_t& reg) const
     m_o << '/' << reg->pattern() << '/';
 }
 
-void json_print_visitor::operator()(const string_t& v) const { m_o << sss::raw_string(v); }
-void json_print_visitor::operator()(const varlisp::symbol& s) const { m_o << s.name(); }
+void json_print_visitor::operator()(const string_t& v) const
+{
+    m_o << sss::raw_string(v);
+}
+
+void json_print_visitor::operator()(const varlisp::symbol& s) const
+{
+    // 貌似，也应该按字符串输出！
+    m_o << sss::raw_string(s.name());
+}
+
 void json_print_visitor::operator()(const varlisp::List& s) const
 {
     if (s.is_quoted()) {
@@ -31,24 +68,31 @@ void json_print_visitor::operator()(const varlisp::List& s) const
         p_tail = boost::get<varlisp::List>(&s.nth(1));
         if (p_tail) {
             m_o << '[';
-            bool is_first = true;
-            for (auto it = p_tail->begin(); it != p_tail->end(); ++it) {
-                if (is_first) {
-                    is_first = false;
+            if (p_tail->size()) {
+                Indent inner(m_indent);
+                IndentHelper ind(inner);
+                bool is_first = true;
+                for (auto it = p_tail->begin(); it != p_tail->end(); ++it) {
+                    if (is_first) {
+                        is_first = false;
+                    }
+                    else {
+                        m_o << ",";
+                    }
+                    m_o << m_indent.endl() << inner;
+                    boost::apply_visitor(json_print_visitor(m_o, inner), *it);
                 }
-                else {
-                    m_o << ", ";
-                }
-                boost::apply_visitor(json_print_visitor(m_o), *it);
+                m_o << m_indent.endl() << m_indent;
             }
             m_o << ']';
         }
         else {
             // (quote 字面值)
-            boost::apply_visitor(json_print_visitor(m_o), s.nth(1));
+            boost::apply_visitor(json_print_visitor(m_o, m_indent), s.nth(1));
         }
     }
     else {
+        // NOTE 针对无法与json格式一一对应的类型，全部转换为字符串。
         std::ostringstream oss;
         s.print(oss);
         COLOG_ERROR(oss.str());
@@ -60,17 +104,25 @@ void json_print_visitor::operator()(const varlisp::List& s) const
 void json_print_visitor::operator()(const varlisp::Environment& s) const
 {
     m_o << '{';
-    bool is_first = true;
-    for (auto it = s.begin(); it != s.end(); ++it) {
-        if (!is_first) {
-            m_o << ",";
+    if (!s.empty()) {
+        bool is_first = true;
+        Indent inner(m_indent);
+        IndentHelper ind(inner);
+        for (auto it = s.begin(); it != s.end(); ++it) {
+            if (is_first) {
+                is_first = false;
+            }
+            else {
+                m_o << ",";
+            }
+            m_o << m_indent.endl() << inner;
+            m_o << sss::raw_string(it->first) << ":";
+            if (m_indent.enable()) {
+                m_o <<" ";
+            }
+            boost::apply_visitor(json_print_visitor(m_o, inner), it->second.first);
         }
-        else {
-            is_first = false;
-        }
-        m_o << sss::raw_string(it->first);
-        m_o << ":";
-        boost::apply_visitor(json_print_visitor(m_o), it->second.first);
+        m_o << m_indent.endl() << m_indent;
     }
     m_o << '}';
 }
