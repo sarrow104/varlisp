@@ -46,8 +46,6 @@ REGIST_BUILTIN("shell", 1, -1,  eval_shell,
  *
  * @return
  */
-// TODO 我想增加一组"强化"的boost::get<type>函数，以便支持单向的提取——允许eval；
-// 如果eval后，返回值类型不对，那么抛出异常；
 Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "shell";
