@@ -10,18 +10,19 @@
 
 namespace varlisp {
 
-REGIST_BUILTIN("time", 1, 1, eval_time, "(time expr) -> result-of-expr");
+REGIST_BUILTIN("time-elapsed", 1, 1, eval_time_elapsed,
+               "; time-elapsed 执行expr 并显示操作耗时\n"
+               "(time-elapsed expr) -> result-of-expr");
 
 /**
  * @brief
- *      (time expr) -> result-of-expr
  *
  * @param[in] env
  * @param[in] args
  *
  * @return
  */
-Object eval_time(varlisp::Environment &env, const varlisp::List &args)
+Object eval_time_elapsed(varlisp::Environment &env, const varlisp::List &args)
 {
     std::ostringstream exprstr;
     exprstr << detail::car(args);
@@ -48,6 +49,7 @@ std::tm get_std_tm(const decltype(::std::chrono::system_clock::now()) & now)
 } // namespace detail
 
 REGIST_BUILTIN("date", 0, 0, eval_date, "(date) -> [year month day]");
+
 Object eval_date(varlisp::Environment &env, const varlisp::List &args)
 {
     std::tm tm = detail::get_std_tm(::std::chrono::system_clock::now());// 这个得到一个 time_point
@@ -91,6 +93,43 @@ Object eval_date_time_nano(varlisp::Environment &env, const varlisp::List &args)
     return varlisp::List::makeSQuoteList(int64_t(tm.tm_year + 1900), int64_t(tm.tm_mon + 1), int64_t(tm.tm_mday),
                                          int64_t(tm.tm_hour), int64_t(tm.tm_min), int64_t(tm.tm_sec),
                                          int64_t(duration.count() % 1000000000));
+}
+
+REGIST_BUILTIN("time-format", 1, 2, eval_time_format,
+               "; time-format\n"
+               "(time-format \"fmt\" '())");
+
+Object eval_time_format(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "time-format";
+    std::array<Object, 2> objs;
+    const auto * p_fmt =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    std::tm tm{0,0,0,0,0,0,0,0,0,0,0};
+    if (args.length() == 2) {
+        const auto * p_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
+        for (size_t i = 0; i < p_list->length(); ++i) {
+            Object tmp;
+            switch (i) {
+                case 0: tm.tm_year = *varlisp::requireTypedValue<int64_t>(env, p_list->nth(i), tmp, funcName, i, DEBUG_INFO) - 1900;
+                case 1: tm.tm_mon  = *varlisp::requireTypedValue<int64_t>(env, p_list->nth(i), tmp, funcName, i, DEBUG_INFO) - 1;
+                case 2: tm.tm_mday = *varlisp::requireTypedValue<int64_t>(env, p_list->nth(i), tmp, funcName, i, DEBUG_INFO);
+                case 3: tm.tm_hour = *varlisp::requireTypedValue<int64_t>(env, p_list->nth(i), tmp, funcName, i, DEBUG_INFO) % 24u;
+                case 4: tm.tm_min  = *varlisp::requireTypedValue<int64_t>(env, p_list->nth(i), tmp, funcName, i, DEBUG_INFO) % 60u;
+                case 5: tm.tm_sec  = *varlisp::requireTypedValue<int64_t>(env, p_list->nth(i), tmp, funcName, i, DEBUG_INFO) % 60u;
+            }
+        }
+    }
+    else {
+        std::tm tm = detail::get_std_tm(::std::chrono::system_clock::now());// 这个得到一个 time_point
+    }
+    std::string buf;
+    buf.resize(p_fmt->size() + 256);
+    std::string fmt = p_fmt->to_string();
+    size_t cnt = std::strftime(const_cast<char*>(&buf[0]), buf.size(), fmt.c_str(), &tm);
+    buf.resize(cnt);
+    return string_t(std::move(buf));
 }
 
 } // namespace varlisp
