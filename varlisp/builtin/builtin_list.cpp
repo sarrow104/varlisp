@@ -81,7 +81,12 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": 2nd argument must be an S-list");
     }
-    return p_list->nth(*p_nth);
+    int index = *p_nth >= 0 ? *p_nth : p_list->length() + *p_nth;
+    if (index < 0) {
+        SSS_POSITION_THROW(std::runtime_error,
+                          "(", funcName, ": 2nd argument too small");
+    }
+    return p_list->nth(index);
 }
 
 REGIST_BUILTIN("cdr-nth", 2, 2, eval_cdr_nth,
@@ -105,7 +110,13 @@ Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     const varlisp::List* p_list =
         requireTypedValue<List>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
-    return p_list->cdr(*p_nth);
+
+    int index = *p_nth >= 0 ? *p_nth : p_list->length() + *p_nth;
+    if (index < 0) {
+        SSS_POSITION_THROW(std::runtime_error,
+                          "(", funcName, ": 2nd argument too small");
+    }
+    return p_list->cdr(index);
 }
 
 REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
