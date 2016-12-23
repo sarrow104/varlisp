@@ -211,9 +211,9 @@ Object eval_gqnode_indent(varlisp::Environment& env, const varlisp::List& args)
     if (args.size()) {
         Object tmp;
         const auto * p_indent =requireTypedValue<varlisp::string_t>(env, args.nth(0), tmp, funcName, 0, DEBUG_INFO);
-        detail::html::set_gpnode_indent(p_indent->to_string());
+        detail::html::set_gqnode_indent(p_indent->to_string());
     }
-    return string_t(detail::html::get_gpnode_indent());
+    return string_t(detail::html::get_gqnode_indent());
 }
 
 REGIST_BUILTIN(
