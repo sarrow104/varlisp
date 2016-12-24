@@ -9,6 +9,7 @@
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
 #include "../detail/list_iterator.hpp"
+#include "../detail/varlisp_env.hpp"
 
 namespace varlisp {
 
@@ -73,8 +74,7 @@ Object eval_path_append(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_toAppend =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
-    std::string out_name = p_path->to_string();
-    out_name.reserve(p_path->size() + p_toAppend->size());
+    std::string out_name = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
     sss::path::append(out_name, p_toAppend->to_string());
     return string_t(std::move(out_name));
 }
@@ -112,7 +112,8 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     auto ret_it = detail::list_back_inserter<Object>(ret);
     
     sss::path::file_descriptor fd;
-    sss::path::glob_path gp(p_path->to_string(), fd, f.get());
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    sss::path::glob_path gp(path, fd, f.get());
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
             std::string name = fd.get_name();
@@ -139,7 +140,8 @@ Object eval_file_q(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    return sss::path::file_exists(p_path->to_string()) == sss::PATH_TO_FILE;
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    return sss::path::file_exists(path) == sss::PATH_TO_FILE;
 }
 
 REGIST_BUILTIN(
@@ -154,7 +156,8 @@ Object eval_directory_q(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    return sss::path::file_exists(p_path->to_string()) == sss::PATH_TO_DIRECTORY;
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    return sss::path::file_exists(path) == sss::PATH_TO_DIRECTORY;
 }
 
 REGIST_BUILTIN(
@@ -202,15 +205,30 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     auto ret_it = detail::list_back_inserter<Object>(ret);
 
     sss::path::file_descriptor fd;
-    sss::path::glob_path_recursive gp(p_path->to_string(), fd, f.get(), false);
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    sss::path::glob_path_recursive gp(path, fd, f.get(), false);
     gp.max_depth(depth);
     while (gp.fetch()) {
         if (fd.is_normal_file()) {
-            *ret_it++ = string_t(sss::path::relative_to(fd.get_path(), p_path->to_string()));
+            *ret_it++ = string_t(sss::path::relative_to(fd.get_path(), path));
         }
     }
 
     return Object(ret);
+}
+
+REGIST_BUILTIN("expand", 1, 1, eval_expand,
+               "(expand \"$var-path\") -> \"expand-path\"")
+
+Object eval_expand(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "expand";
+    std::array<Object, 1> objs;
+    const string_t *p_path = requireTypedValue<varlisp::string_t>(
+        env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    return string_t(varlisp::detail::envmgr::expand(p_path->to_string()));
+    // return string_t(
+    //     std::move(varlisp::detail::envmgr::expand(p_path->to_string())));
 }
 
 }  // namespace varlisp
