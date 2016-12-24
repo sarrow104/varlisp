@@ -33,8 +33,6 @@ Object eval_quit(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN("it-debug", 1, 1, eval_it_debug, "(it-debug #t|#f) -> nil");
 
 /**
- * @brief (it-debug #t|#f) -> nil
- *
  * @param[in] env
  * @param[in] args
  *
@@ -58,6 +56,23 @@ Object eval_it_debug(varlisp::Environment& env, const varlisp::List& args)
 
     sss::colog::set_log_levels(next_ll);
     return *p_status;
+}
+
+REGIST_BUILTIN("colog-style", 0, -1, eval_colog_format,
+               "(colog-format CL_ELEMENT) -> current-format-mask");
+
+Object eval_colog_format(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "colog-style";
+    if (args.length()) {
+        std::array<Object, 1> objs;
+        sss::colog::log_style next_style = sss::colog::ls_NONE;
+        for (size_t i = 0; i != args.length(); ++i) {
+            next_style = next_style | sss::colog::log_style(*requireTypedValue<int64_t>(env, args.nth(i), objs[0], funcName, i, DEBUG_INFO));
+        }
+        sss::colog::set_log_elements(next_style);
+    }
+    return int64_t(sss::colog::get_log_elements());
 }
 
 }  // namespace varlisp
