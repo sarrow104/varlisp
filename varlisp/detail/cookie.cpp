@@ -18,7 +18,7 @@ namespace detail {
 
 const std::string& get_cookie_path()
 {
-    static std::string cookie_path = varlisp::detail::get_envmgr().get_expr("$root_cookie");
+    static std::string cookie_path = varlisp::detail::envmgr::expand("$root_cookie");
     return cookie_path;
 }
 
