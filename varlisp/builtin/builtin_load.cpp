@@ -53,15 +53,8 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string full_path = p_path->to_string();
+    std::string full_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
 
-    if (full_path.find('$') != std::string::npos) {
-        full_path = varlisp::detail::get_envmgr().get_expr(full_path);
-    }
-    else {
-        full_path = sss::path::full_of_copy(full_path);
-    }
-    
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
                           "` not to file)");
