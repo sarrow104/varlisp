@@ -103,13 +103,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string target_path = p_path->to_string();
-    if (target_path.find('$') != std::string::npos) {
-        target_path = varlisp::detail::get_envmgr().get_expr(target_path);
-    }
-    else {
-        sss::path::full_of(target_path);
-    }
+    std::string target_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
 
     bool is_ok = sss::path::chgcwd(target_path);
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
@@ -162,14 +156,15 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
             const string_t* p_ls_arg =
                 requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-            switch (sss::path::file_exists(p_ls_arg->to_string())) {
+            std::string ls_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_ls_arg->to_string()));
+            switch (sss::path::file_exists(ls_path)) {
                 case sss::PATH_TO_FILE:
                     *ret_it++ = *p_ls_arg;
                     break;
 
                 case sss::PATH_TO_DIRECTORY: {
                     sss::path::file_descriptor fd;
-                    sss::path::glob_path gp(p_ls_arg->to_string(), fd);
+                    sss::path::glob_path gp(ls_path, fd);
                     while (gp.fetch()) {
                         if (fd.is_normal_dir()) {
                             std::string item{fd.get_name()};
