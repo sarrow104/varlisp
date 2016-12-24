@@ -1,9 +1,12 @@
 #include "varlisp_env.hpp"
 
+#include <sss/path.hpp>
+
 namespace varlisp {
 namespace detail {
+namespace envmgr {
 
-sss::PenvMgr2& get_envmgr()
+sss::PenvMgr2& get_instance()
 {
     static sss::PenvMgr2 mgr;
     static bool init_mgr = [](sss::PenvMgr2& mgr)->bool {
@@ -18,5 +21,19 @@ sss::PenvMgr2& get_envmgr()
     (void)init_mgr;
     return mgr;
 }
+
+// NOTE TODO
+// 这里应该分开；expand就是只做$替换；至于路径补全，用fnamemodify就好。
+std::string expand(const std::string& path)
+{
+    if (path.find('$') != std::string::npos) {
+        return envmgr::get_instance().get_expr(path);
+    }
+    else {
+        return path;
+    }
+}
+
+} // namespace envmgr
 } // namespace detail
 } // namespace varlisp

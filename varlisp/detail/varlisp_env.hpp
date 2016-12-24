@@ -4,6 +4,10 @@
 
 namespace varlisp {
 namespace detail {
-sss::PenvMgr2& get_envmgr();
+namespace envmgr {
+sss::PenvMgr2& get_instance();
+std::string expand(const std::string& path);
+
+} // namespace envmgr
 } // namespace detail
 } // namespace varlisp
