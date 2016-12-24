@@ -71,6 +71,19 @@ void Tokenizer::init(const std::string& data)
             }
         })]).name("Decimal_p");
 
+    // 0b0001110 这种表示法，是C语言本身就支持的写法！
+    this->Binary_p =
+        (((char_p('0') >> char_set_p("bB") > +char_set_p("01")) >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
+             StrIterator it_beg, StrIterator it_end,
+             ss1x::parser::rule::matched_value_t) {
+            int64_t h = 0;
+            for (StrIterator it = std::next(it_beg, 2); it != it_end; ++it) {
+                h <<= 1;
+                h += (*it - '0');
+            }
+            tok = h;
+        })]).name("Binary_p");
+
     this->Hex_p =
         (((char_p('0') >> char_set_p("xX") > +xdigit_p) >> &TokenEnd_p)[ss1x::parser::rule::ActionT([&](
              StrIterator it_beg, StrIterator it_end,
@@ -290,6 +303,7 @@ void Tokenizer::init(const std::string& data)
     this->Token_p =
         (refer(Spaces_p) | refer(CommentMulty_p) | refer(Comment_p) |
          refer(Quote_p) |
+         refer(Binary_p) |
          refer(Hex_p) |
          refer(Decimal_p) |
          // 将double放在int后面，只是为了验证解析器不会丢失匹配；我的Integer_p不会

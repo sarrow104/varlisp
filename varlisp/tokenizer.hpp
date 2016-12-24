@@ -198,6 +198,7 @@ private:
     ss1x::parser::rule  Quote_p; // '注意，它可以紧贴其他符号使用！
     ss1x::parser::rule  TokenEnd_p;
     ss1x::parser::rule  Decimal_p;
+    ss1x::parser::rule  Binary_p;
     ss1x::parser::rule  Hex_p;
     ss1x::parser::rule  Double_p;
     ss1x::parser::rule  Symbol_p;
