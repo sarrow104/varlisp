@@ -24,10 +24,8 @@ void Builtin::regist_builtin_function(Environment& env)
         = varlisp::detail::get_builtin_infos();
     for (size_t i = 0; i != info_vec.size() ; ++i) {
         env.insert(info_vec[i].name, varlisp::Builtin(i), true);
-        // env[info_vec[i].name] = varlisp::Builtin(i);
     }
 #define CONSTANT_INT(i) (env.insert(#i, varlisp::Object{int64_t(i)}, true))
-// #define CONSTANT_INT(i) (env[#i] = varlisp::Object{int64_t(i)})
     CONSTANT_INT(O_RDONLY);
     CONSTANT_INT(O_WRONLY);
     CONSTANT_INT(O_RDWR);
@@ -35,6 +33,25 @@ void Builtin::regist_builtin_function(Environment& env)
     CONSTANT_INT(O_TRUNC);
     CONSTANT_INT(O_CREAT);
 #undef CONSTANT_INT
+
+#define CONSTANT_INT2(name,i) (env.insert(#name, varlisp::Object{int64_t(i)}, true))
+    CONSTANT_INT2(CL_NONE           ,sss::colog::ls_NONE);
+    CONSTANT_INT2(CL_DATE           ,sss::colog::ls_DATE);
+    CONSTANT_INT2(CL_TIME           ,sss::colog::ls_TIME);
+    CONSTANT_INT2(CL_TIME_MILL      ,sss::colog::ls_TIME_MILL);
+    CONSTANT_INT2(CL_TIME_MICR      ,sss::colog::ls_TIME_MICR);
+    CONSTANT_INT2(CL_TIME_NANO      ,sss::colog::ls_TIME_NANO);
+    CONSTANT_INT2(CL_TIME_MASK      ,sss::colog::ls_TIME_MASK);
+    CONSTANT_INT2(CL_LEVEL          ,sss::colog::ls_LEVEL);
+    CONSTANT_INT2(CL_LEVEL_SHORT    ,sss::colog::ls_LEVEL_SHORT);
+    CONSTANT_INT2(CL_LEVEL_MASK     ,sss::colog::ls_LEVEL_MASK);
+    CONSTANT_INT2(CL_FILE           ,sss::colog::ls_FILE);
+    CONSTANT_INT2(CL_FILE_SHORT     ,sss::colog::ls_FILE_SHORT);
+    CONSTANT_INT2(CL_FILE_VIM       ,sss::colog::ls_FILE_VIM);
+    CONSTANT_INT2(CL_FILE_MASK      ,sss::colog::ls_FILE_MASK);
+    CONSTANT_INT2(CL_LINE           ,sss::colog::ls_LINE);
+    CONSTANT_INT2(CL_FUNC           ,sss::colog::ls_FUNC);
+#undef CONSTANT_INT2
 }
 
 void Builtin::print(std::ostream& o) const
