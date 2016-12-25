@@ -323,7 +323,7 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
     if (ec == -1) {
         COLOG_ERROR(std::strerror(errno));
     }
-    COLOG_ERROR(fd, content.size(), SSS_VALUE_MSG(ec));
+    COLOG_DEBUG(fd, content.size(), SSS_VALUE_MSG(ec));
 }
 
 void         set_gqnode_indent(const std::string& ind)
