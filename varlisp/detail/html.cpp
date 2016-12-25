@@ -73,12 +73,17 @@ inline std::ostream& operator << (std::ostream&o, const htmlEntityEscape_t& h)
 }
 
 std::string getResourceAuto(const std::string& output_dir, const std::string& url,
-                            resource_manager_t& rs_mgr)
+                            resource_manager_t& rs_mgr, const ss1x::http::Headers& request_header)
 {
     std::string max_content;
     ss1x::http::Headers headers;
 
-    detail::http::downloadUrl(url, max_content, headers, ss1x::asio::redirectHttpGet);
+    detail::http::downloadUrl(url, max_content, headers,
+                              std::bind(ss1x::asio::redirectHttpGet,
+                                        std::placeholders::_1,
+                                        std::placeholders::_2,
+                                        std::placeholders::_3,
+                                        request_header));
 
     if (headers.status_code != 200) {
         rs_mgr[url] = local_info_t{"", 0, fs_ERROR};
@@ -143,6 +148,7 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                               CQueryUtil::CIndenter& ind,
                               const std::string& output_dir,
                               resource_manager_t& rs_mgr,
+                              const ss1x::http::Headers& request_header,
                               bool pre_mode = false)
 {
     switch (apNode->type)
@@ -204,7 +210,7 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                     if (tagName == "img" && attrName == "src") {
                         std::string url = CQueryUtil::nthAttr(apNode, i)->value;
                         if (rs_mgr.find(url) == rs_mgr.end()) {
-                            std::string output_path = getResourceAuto(output_dir, url, rs_mgr);
+                            std::string output_path = getResourceAuto(output_dir, url, rs_mgr, request_header);
                         }
                         if (rs_mgr[url].fsize && rs_mgr[url].is_ok()) {
                             o << " " << attrName << "=\""
@@ -233,12 +239,12 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                             CQueryUtil::CIndenter indInner(ind.get().c_str());
                             gumbo_rewrite_outterHtml(
                                 o, CQueryUtil::nthChild(apNode, i), indInner,
-                                output_dir, rs_mgr, pre_mode);
+                                output_dir, rs_mgr, request_header, pre_mode);
                         }
                         else {
                             gumbo_rewrite_outterHtml(
                                 o, CQueryUtil::nthChild(apNode, i), ind,
-                                output_dir, rs_mgr, pre_mode);
+                                output_dir, rs_mgr, request_header, pre_mode);
                             o << "\n";
                         }
                     }
@@ -278,7 +284,7 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
             for (size_t i = 0; i < CQueryUtil::childNum(apNode); i++)
             {
                 gumbo_rewrite_outterHtml(o, CQueryUtil::nthChild(apNode, i),
-                                         ind, output_dir, rs_mgr);
+                                         ind, output_dir, rs_mgr, request_header);
             }
             break;
 
@@ -300,7 +306,8 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
 }
 
 void gumbo_rewrite_impl(int fd, const gumboNode& g,
-                        const std::string& output_dir, resource_manager_t& rs_mgr)
+                        const std::string& output_dir, resource_manager_t& rs_mgr,
+                        const ss1x::http::Headers& request_header)
 {
     CNode n = g.getCNode();
     if (!n.valid()) {
@@ -310,7 +317,7 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
     GumboNode * apNode = reinterpret_cast<GumboNode*>(n.get());
 
     CQueryUtil::CIndenter indent(get_gqnode_indent());
-    gumbo_rewrite_outterHtml(oss, apNode, indent, output_dir, rs_mgr);
+    gumbo_rewrite_outterHtml(oss, apNode, indent, output_dir, rs_mgr, request_header);
     std::string content(oss.str());
     int ec = ::write(fd, content.c_str(), content.size());
     if (ec == -1) {

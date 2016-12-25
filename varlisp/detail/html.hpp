@@ -1,6 +1,8 @@
 #include <iostream>
 #include <map>
 
+#include <ss1x/asio/headers.hpp>
+
 #include "../object.hpp"
 
 namespace varlisp {
@@ -30,7 +32,9 @@ struct local_info_t {
 using resource_manager_t = std::map<std::string, local_info_t>;
 
 void gumbo_rewrite_impl(int fd, const gumboNode& g,
-                        const std::string& output_dir, resource_manager_t& rs_mgr);
+                        const std::string& output_dir,
+                        resource_manager_t& rs_mgr,
+                        const ss1x::http::Headers& request_header);
 
 void         set_gqnode_indent(const std::string& ind);
 std::string& get_gqnode_indent();
