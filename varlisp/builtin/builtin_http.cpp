@@ -25,15 +25,20 @@
 
 namespace varlisp {
 
+namespace detail {
+// void parse
+} // namespace detail
+
 REGIST_BUILTIN(
-    "http-get", 1, 3, eval_http_get,
-    "(http-get \"url\") -> \"<html>\"\n"
-    "(http-get \"url\" \"proxy-url\" proxy-port-number) -> \"<html>\"");
+    "http-get", 1, 4, eval_http_get,
+    "; http-get 获取网络资源\n"
+    "(http-get \"url\") -> [<html>, {response}]\n"
+    "(http-get \"url\" {request_header}) -> [<html>, {response}]\n"
+    "(http-get \"url\" \"proxy-url\" proxy-port-number) -> [<html>, {response}]\n"
+    "(http-get \"url\" \"proxy-url\" proxy-port-number {request_header}) -> [<html>, {response}]");
 
 /**
  * @brief
- *        (http-get "url") -> "<html>"
- *        (http-get "url" "proxy-url" proxy-port-number) -> "<html>"
  * @param[in] env
  * @param[in] args
  *
@@ -46,19 +51,26 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": need 1 or 3 parameters)");
     }
-    std::array<Object, 3> objs;
+    std::array<Object, 5> objs;
     const string_t* p_url =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     const string_t* p_proxy = 0;
     const int64_t* p_port = 0;
+    ss1x::http::Headers request_header;
 
-    if (args.length() == 3) {
+    if (args.length() >= 3) {
         p_proxy = 
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
         p_port = 
             requireTypedValue<int64_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
+    }
+    if (args.length() == 2 || args.length() == 4) {
+        int rh_index = args.length() - 1;
+        const auto * p_request_header =
+            requireTypedValue<varlisp::Environment>(env, args.nth(rh_index), objs[rh_index], funcName, rh_index, DEBUG_INFO);
+        varlisp::detail::http::Environment2ss1x_header(request_header, env, *p_request_header);
     }
 
     ss1x::http::Headers headers;
@@ -75,14 +87,16 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
                                      std::placeholders::_2,
                                      p_proxy->to_string(), *p_port,
                                      std::placeholders::_3,
-                                     varlisp::detail::CookieMgr_t::getCookie);
+                                     varlisp::detail::CookieMgr_t::getCookie,
+                                     request_header);
         }
         else {
             downloadFunc = std::bind(ss1x::asio::redirectHttpGetCookie,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
                                      std::placeholders::_3,
-                                     varlisp::detail::CookieMgr_t::getCookie);
+                                     varlisp::detail::CookieMgr_t::getCookie,
+                                     request_header);
         }
     }
     else {
@@ -91,10 +105,15 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
                                      std::placeholders::_1,
                                      std::placeholders::_2,
                                      p_proxy->to_string(), *p_port,
-                                     std::placeholders::_3);
+                                     std::placeholders::_3,
+                                     request_header);
         }
         else {
-            downloadFunc = ss1x::asio::redirectHttpGet;
+            downloadFunc = std::bind(ss1x::asio::redirectHttpGet,
+                                     std::placeholders::_1,
+                                     std::placeholders::_2,
+                                     std::placeholders::_3,
+                                     request_header);
         }
     }
 
