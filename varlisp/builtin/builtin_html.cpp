@@ -573,7 +573,7 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string output_dir = sss::path::dirname(detail::file::get_fname_from_fd(*p_fd));
-    COLOG_ERROR(output_dir);
+    COLOG_DEBUG(SSS_VALUE_MSG(output_dir));
 
     ss1x::http::Headers request_header;
 
