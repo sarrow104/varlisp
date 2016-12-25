@@ -1,11 +1,34 @@
 #include "http.hpp"
 
+#include <array>
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
+
+#include "../builtin_helper.hpp"
+#include "../string.h"
 
 namespace varlisp {
 namespace detail {
 namespace http {
+
+void Environment2ss1x_header(ss1x::http::Headers& header,
+                             varlisp::Environment& env,
+                             const varlisp::Environment& info)
+{
+    const char * funcName = __PRETTY_FUNCTION__;
+    std::array<Object, 1> objs;
+    int id = 0;
+    for (auto it = info.begin(); it != info.end(); ++it, ++id) {
+        if (it->first == "http_version") {
+            header.http_version =
+                requireTypedValue<varlisp::string_t>(env, it->second.first, objs[0], funcName, id, DEBUG_INFO)->to_string();
+        }
+        else {
+            header[it->first] =
+                requireTypedValue<varlisp::string_t>(env, it->second.first, objs[0], funcName, id, DEBUG_INFO)->to_string();
+        }
+    }
+}
 
 void downloadUrl(
     const std::string& url, std::string& max_content,
