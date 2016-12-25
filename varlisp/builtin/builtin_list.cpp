@@ -77,10 +77,7 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
     const int64_t * p_nth =
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     const varlisp::List* p_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
-    if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": 2nd argument must be an S-list");
-    }
+    varlisp::requireOnFaild<QuoteList>(p_list, funcName, 1, DEBUG_INFO);
     int index = *p_nth >= 0 ? *p_nth : p_list->length() + *p_nth;
     if (index < 0) {
         SSS_POSITION_THROW(std::runtime_error,
@@ -236,18 +233,52 @@ Object eval_append(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need s-List as the 2nd argument)");
     }
-    varlisp::List ret = varlisp::List::makeSQuoteList();
+    varlisp::List ret = varlisp::List();
 
-    auto back_it = detail::list_back_inserter<Object>(ret);
-    // FIXME delete！ list_object_const_iterator_t
-    for (auto read_it = p_list1->begin(); read_it != p_list1->end();) {
-        *back_it++ = *read_it++;
-    }
-    for (auto read_it = p_list2->begin(); read_it != p_list2->end();) {
-        *back_it++ = *read_it++;
-    }
+    ret.append_list(*p_list1);
+    ret.append_list(*p_list2);
 
-    return ret;
+    return varlisp::List::makeSQuoteObj(ret);
+}
+
+namespace detail {
+
+void append_flat(varlisp::List& out, const varlisp::List& ref)
+{
+    for (size_t i = 0; i < ref.length(); ++i) {
+        if (const auto * p_inner = boost::get<varlisp::List>(&ref.nth(i))) {
+            // NOTE 内部的quote，当做单一元素，也就不必检查到底是'(list...)还是
+            // 'symbol
+            if (p_inner->is_quoted()) {
+                out.append(ref.nth(i));
+            }
+            else {
+                detail::append_flat(out, *p_inner);
+            }
+        }
+        else {
+            out.append(ref.nth(i));
+        }
+    }
+}
+} // namespace detail
+
+REGIST_BUILTIN("flat", 1, 1, eval_flat,
+               "; flat 将quote列表，平坦化\n"
+               "(flat '(list...)) -> '(list...)");
+
+Object eval_flat(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "flat";
+    std::array<Object, 1> objs;
+    const varlisp::List * p_list = getQuotedList(env, args.nth(0), objs[0]);
+    varlisp::requireOnFaild<varlisp::QuoteList>(p_list, funcName, 0, DEBUG_INFO);
+
+    varlisp::List ret = varlisp::List();
+
+    detail::append_flat(ret, *p_list);
+
+    return varlisp::List::makeSQuoteObj(ret);
 }
 
 }  // namespace varlisp
