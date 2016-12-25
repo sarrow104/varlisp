@@ -30,7 +30,7 @@ std::string findCfgPath(const std::string& cookie_path, const std::string& domai
     std::string possible_cookie_path;
     while (gp.fetch()) {
         if (fd.is_normal_file()) {
-            COLOG_ERROR(fd.get_path());
+            COLOG_DEBUG(fd.get_path());
             if (fd.get_name() && sss::is_end_with(domain, sss::path::no_suffix(fd.get_name()))) {
                 if (fd.get_path().size() > possible_cookie_path.size()) {
                     possible_cookie_path = fd.get_path();
