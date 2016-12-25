@@ -22,6 +22,7 @@
 #include "../detail/car.hpp"
 #include "../detail/list_iterator.hpp"
 #include "../detail/html.hpp"
+#include "../detail/http.hpp"
 #include "../detail/file.hpp"
 #include "../detail/io.hpp"
 
@@ -560,7 +561,9 @@ REGIST_BUILTIN("gumbo-rewrite", 2,  -1,  eval_gumbo_rewrite,
                "gumbo-rewrite 重写gumbo-node到指定文件描述符中\n"
                "注意，链接等会被改写\n"
                "文件名，如何确定？\n"
-               "(gumbo-rewrite int-fd '(gq-node) "") -> nil");
+               "(gumbo-rewrite int-fd '(gq-node) "") -> nil\n"
+               "(gumbo-rewrite int-fd {request_header} '(gq-node) "") -> nil"
+               );
 
 Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 {
@@ -571,6 +574,8 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 
     std::string output_dir = sss::path::dirname(detail::file::get_fname_from_fd(*p_fd));
     COLOG_ERROR(output_dir);
+
+    ss1x::http::Headers request_header;
 
     // NOTE html正文其他部分，由调用本方法的过程来完成！这里，最多还需要考虑的是
     // ，1. 输出路径；2. 输出的时候，初始缩进；3. 枚举子节点的深度，仅文本？(信
@@ -583,6 +588,12 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 
     for (size_t i = 1; i < args.length(); ++i) {
         auto& secondRef = varlisp::getAtomicValue(env, args.nth(i), objs[1]);
+        if (i == 1) {
+            if (auto * p_request_header = boost::get<varlisp::Environment>(&secondRef)) {
+                varlisp::detail::http::Environment2ss1x_header(request_header, env, *p_request_header);
+                continue;
+            }
+        }
 
         Object gpNodeList;
         Object gpNodeObj;
@@ -596,12 +607,12 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
                     detail::writestring(*p_fd, oss.str());
                 }
                 else {
-                    detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr);
+                    detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr, request_header);
                 }
             }
         }
         else if (auto * p_gp = varlisp::getTypedValue<gumboNode>(env, secondRef, gpNodeObj)) {
-            detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr);
+            detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr, request_header);
         }
         else {
             std::ostringstream oss;
