@@ -142,7 +142,8 @@ std::string getResourceAuto(const std::string& output_dir, const std::string& ur
 void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                               CQueryUtil::CIndenter& ind,
                               const std::string& output_dir,
-                              resource_manager_t& rs_mgr)
+                              resource_manager_t& rs_mgr,
+                              bool pre_mode = false)
 {
     switch (apNode->type)
     {
@@ -163,17 +164,21 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                 const std::string tagName = CQueryUtil::tagName(apNode);
 
                 bool is_self_close = CQueryUtil::isSelfCloseTag(apNode);
-                bool is_neat_print = tagName == "pre" || (CQueryUtil::childNum(apNode) == 1 &&
-                                                          CQueryUtil::childNum(CQueryUtil::nthChild(apNode, 0)) == 0);
+                bool is_neat_print = pre_mode || tagName == "pre" ||
+                                     (CQueryUtil::childNum(apNode) == 1 &&
+                                      CQueryUtil::childNum(CQueryUtil::nthChild(
+                                          apNode, 0)) == 0);
 
-                // COLOG_ERROR(tagName);
+                if (tagName == "pre") {
+                    pre_mode = true;
+                }
+
                 o << ind << "<" << tagName;
                 for (size_t i = 0; i < CQueryUtil::attrNum(apNode); ++i) {
                     std::string attrName = CQueryUtil::nthAttr(apNode, i)->name;
                     if (attrName == "href" || attrName == "src") {
                         // a.href 外链
                         // img.src 内部资源
-                        // COLOG_ERROR(CQueryUtil::nthAttr(apNode, i)->value);
                         // NOTE 链接的重写，需要如下信息：
                         // 1. 目标链接；
                         // 2. 目标链接如果是相对，则需要a.base; b. 原始url分析；
@@ -224,19 +229,16 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                     CQueryUtil::CIndentHelper ih(ind);
                     for (size_t i = 0; i < CQueryUtil::childNum(apNode); ++i)
                     {
-                        if (CQueryUtil::isGumboType(CQueryUtil::nthChild(apNode, i), GUMBO_NODE_WHITESPACE)) {
-                            continue;
-                        }
                         if (is_neat_print) {
                             CQueryUtil::CIndenter indInner(ind.get().c_str());
                             gumbo_rewrite_outterHtml(
                                 o, CQueryUtil::nthChild(apNode, i), indInner,
-                                output_dir, rs_mgr);
+                                output_dir, rs_mgr, pre_mode);
                         }
                         else {
                             gumbo_rewrite_outterHtml(
                                 o, CQueryUtil::nthChild(apNode, i), ind,
-                                output_dir, rs_mgr);
+                                output_dir, rs_mgr, pre_mode);
                             o << "\n";
                         }
                     }
@@ -281,6 +283,9 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
             break;
 
         case GUMBO_NODE_WHITESPACE:
+            if (pre_mode) {
+                o << CQueryUtil::getText(apNode);
+            }
             //o << ind << " ";
             break;
 
@@ -293,12 +298,6 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
             break;
     }
 }
-
-// NOTE TODO 非递归版本；另外，注意pre标签节点。
-// void gumbo_rewrite_outterHtml_stack(std::ostream& o, GumboNode* apNode,
-//                                     CQueryUtil::CIndenter& ind,
-//                                     const std::string& output_dir,
-//                                     resource_manager_t& rs_mgr)
 
 void gumbo_rewrite_impl(int fd, const gumboNode& g,
                         const std::string& output_dir, resource_manager_t& rs_mgr)
