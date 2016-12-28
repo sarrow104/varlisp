@@ -94,16 +94,8 @@ REGIST_BUILTIN("ifdef", 1, 1, eval_ifdef, "(ifdef symbol) -> boolean");
 Object eval_ifdef(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ifdef";
-    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&detail::car(args));
-    if (!p_sym) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": 1st must be a symbol)");
-    }
-    if (varlisp::keywords_t::is_keyword(p_sym->name())) {
-        return true;
-    }
-    Object* it = env.deep_find(p_sym->name());
-    return bool(it);
+    Object tmp;
+    return bool(varlisp::findSymbolDeep(env, args.nth(0), tmp, funcName));
 }
 
 REGIST_BUILTIN("var-list", 0, 1, eval_var_list,
