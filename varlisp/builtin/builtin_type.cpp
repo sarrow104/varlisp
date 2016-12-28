@@ -24,7 +24,7 @@ Object eval_typeid(varlisp::Environment &env, const varlisp::List &args)
     // const char * funcName = "typeid";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
-    return varlisp::typedid(env, obj_ref);
+    return varlisp::type_id(env, obj_ref);
 }
 
 template<typename T>
@@ -55,9 +55,9 @@ Object eval_number_q(varlisp::Environment &env, const varlisp::List &args)
     // const char * funcName = "number?";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
-    return between_cc_range<int>(varlisp::typedid(env, obj_ref),
-                                 varlisp::typedid(env, varlisp::Object{int64_t(1)}),
-                                 varlisp::typedid(env, varlisp::Object{1.0}));
+    return between_cc_range<int>(varlisp::type_id(env, obj_ref),
+                                 varlisp::type_id(env, varlisp::Object{int64_t(1)}),
+                                 varlisp::type_id(env, varlisp::Object{1.0}));
 }
 
 REGIST_BUILTIN("boolean?", 1, 1, eval_boolean_q, "(boolean? expr) -> boolean");
@@ -76,8 +76,8 @@ Object eval_boolean_q(varlisp::Environment &env, const varlisp::List &args)
     // const char * funcName = "boolean?";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
-    return varlisp::typedid(env, obj_ref) ==
-           varlisp::typedid(env, Object{true});
+    return varlisp::type_id(env, obj_ref) ==
+           varlisp::type_id(env, Object{true});
 }
 
 REGIST_BUILTIN("string?",         1,  1,  eval_string_q, "(string? expr) -> boolean");
@@ -96,8 +96,8 @@ Object eval_string_q(varlisp::Environment &env, const varlisp::List &args)
     // const char * funcName = "string?";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
-    return varlisp::typedid(env, obj_ref) ==
-           varlisp::typedid(env, Object{varlisp::string_t{}});
+    return varlisp::type_id(env, obj_ref) ==
+           varlisp::type_id(env, Object{varlisp::string_t{}});
 }
 
 REGIST_BUILTIN("slist?", 1, 1, eval_slist_q, "(slist? expr) -> boolean");
