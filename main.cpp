@@ -280,10 +280,12 @@ int main(int argc, char* argv[])
     (void)argc;
     (void)argv;
 
-    sss::colog::set_log_elements(sss::colog::ls_TIME_NANO |
-                                 sss::colog::ls_FILE_VIM |
-                                 sss::colog::ls_FUNC |
-                                 sss::colog::ls_LINE);
+    // sss::colog::set_log_elements(sss::colog::ls_TIME_NANO |
+    //                              sss::colog::ls_FILE_VIM |
+    //                              sss::colog::ls_FUNC |
+    //                              sss::colog::ls_LINE);
+
+    sss::colog::set_log_elements(sss::colog::ls_LEVEL_SHORT | sss::colog::ls_FUNC | sss::colog::ls_LINE);
 
     sss::colog::set_log_levels(sss::colog::ll_INFO |
                                // sss::colog::ll_DEBUG |
