@@ -257,12 +257,12 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
     return ::close(*p_fd) == -1 ? int64_t(errno) : int64_t(0);
 }
 
-REGIST_BUILTIN("read-line", 1, 1, eval_read_line,
-               "(read-line file_descriptor) -> string | nill");
+REGIST_BUILTIN("read-line", 0, 1, eval_read_line,
+               "; read-line 从stdin，或者文件描述符中读取一行数据，并返回字符串；如果遇到流结尾，返回nil\n"
+               "(read-line) -> \"string\" | nil\n"
+               "(read-line file-descriptor) -> \"string\" | nil");
 
 /**
- * @brief (read-line file_descriptor) -> string | nill
- *
  * @param[in] env
  * @param[in] args
  *
@@ -271,23 +271,24 @@ REGIST_BUILTIN("read-line", 1, 1, eval_read_line,
 Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "read-line";
-    Object obj;
-    const int64_t* p_fd =
-        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+    std::array<Object, 1> objs;
+    int fd = 0; // 默认是stdin
+    if (args.length()) {
+        fd = int(*requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO));
+    }
 
-    std::string line = detail::readline(*p_fd);
+    std::string line = detail::readline(fd);
     if (line.empty() && errno) {
         return varlisp::Nill{};
     }
     return varlisp::string_t{std::move(line)};
 }
 
-REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
+REGIST_BUILTIN("read-char", 0, 1, eval_read_char,
+               "(read-char) -> int64_t | nill\n"
                "(read-char file_descriptor) -> int64_t | nill");
 
 /**
- * @brief (read-char file_descriptor) -> int64_t | nill
- *
  * @param[in] env
  * @param[in] args
  *
@@ -296,11 +297,42 @@ REGIST_BUILTIN("read-char", 1, 1, eval_read_char,
 Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "read-char";
-    Object obj;
-    const int64_t* p_fd =
-        requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
+    std::array<Object, 1> objs;
 
-    int64_t ch = detail::readchar(*p_fd);
+    int fd = 0;
+    if (args.length()) {
+        fd = int(*requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO));
+    }
+
+    int64_t ch = detail::readchar(fd);
+    if (ch == -1 || errno) {
+        return varlisp::Nill{};
+    }
+
+    return ch;
+}
+
+REGIST_BUILTIN("read-byte", 0, 1, eval_read_byte,
+               "(read-byte) -> int64_t | nill\n"
+               "(read-byte file_descriptor) -> int64_t | nill");
+
+/**
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_read_byte(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "read-byte";
+    std::array<Object, 1> objs;
+
+    int fd = 0;
+    if (args.length()) {
+        fd = int(*requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO));
+    }
+
+    int64_t ch = detail::readbyte(fd);
     if (ch == -1 || errno) {
         return varlisp::Nill{};
     }
@@ -330,6 +362,31 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
         requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     int64_t ec = detail::writechar(*p_fd, *p_ch);
+    return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
+}
+
+REGIST_BUILTIN("write-byte", 2, 2, eval_write_byte,
+               "(write-byte file_descriptor int64_t) -> int64_t | nill");
+
+/**
+ * @brief (write-byte file_descriptor int64_t) -> int64_t | nill
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_write_byte(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "write-byte";
+    std::array<Object, 2> objs;
+    const int64_t* p_fd =
+        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const int64_t* p_ch =
+        requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    int64_t ec = detail::writebyte(*p_fd, *p_ch);
     return (ec == -1) ? Object{varlisp::Nill{}} : Object{ec};
 }
 
@@ -376,6 +433,115 @@ Object eval_get_fd_fname(varlisp::Environment& env, const varlisp::List& args)
         return Nill{};
     }
 }
+
+// 交互
+// 从文件描述符，读入一行数据。read(fd, buf, size)
+// 如果从终端读入，默认行为是一行读取一次。
+// 或者，因为signal，而终止读取，或者遇到了错误；
+// 此时，有如下方式：
+// 1. read(), byte-by-byte，然后判断是否换行符。
+// 2. 利用gun-stl的非公开模式，将fd转化为std::istream来读取；
+// 3. 按buffer读取——如果是终端，则默认读取到一行，或者超过了遇到signal，或者
+//    超出了terminal行缓冲，或者超出了用户提供的buffer长度，都会返回。
+//    当然，文件结尾，也会返回。
+//    不过，上述方式，就无法处理从文件读取的行为了。
+//! 从fd创建stream
+//! http://stackoverflow.com/questions/2746168/how-to-construct-a-c-fstream-from-a-posix-file-descriptor
+//
+/// gnu-linux version
+// int posix_handle = fileno(::fopen("test.txt", "r"));
+//
+// __gnu_cxx::stdio_filebuf<char> filebuf(posix_handle, std::ios::in); // 1
+// istream is(&filebuf); // 2
+//
+// string line;
+// getline(is, line);
+// cout << "line: " << line << std::endl;
+//
+/// ms-vc version
+// int posix_handle = ::_fileno(::fopen("test.txt", "r"));
+//
+// ifstream ifs(::_fdopen(posix_handle, "r")); // 1
+//
+// 更通用的方案，使用
+// Another alternative would be to use a boost::iostreams::file_descriptor
+// device, which you could wrap in a boost::iostreams::stream if you want to
+// have an std::stream interface to it.
+// #include <stdlib.h>
+// #include <string.h>
+// #include <assert.h>
+// #include <string>
+// #include <iostream>
+// #include <boost/filesystem.hpp>
+// #include <boost/iostreams/device/file_descriptor.hpp>
+// #include <boost/iostreams/stream.hpp>
+// 
+// using boost::iostreams::stream;
+// using boost::iostreams::file_descriptor_sink;
+// using boost::filesystem::path;
+// using boost::filesystem::exists;
+// using boost::filesystem::status;
+// using boost::filesystem::remove;
+// 
+// int main(int argc, const char *argv[]) {
+//   char tmpTemplate[13];
+//   strncpy(tmpTemplate, "/tmp/XXXXXX", 13);
+//   stream<file_descriptor_sink> tmp(mkstemp(tmpTemplate));
+//   assert(tmp.is_open());
+//   tmp << "Hello mkstemp!" << std::endl;
+//   tmp.close();
+//   path tmpPath(tmpTemplate);
+//   if (exists(status(tmpPath))) {
+//     std::cout << "Output is in " << tmpPath.file_string() << std::endl;
+//     std::string cmd("cat ");
+//     cmd += tmpPath.file_string();
+//     system(cmd.c_str());
+//     std::cout << "Removing " << tmpPath.file_string() << std::endl;
+//     remove(tmpPath);
+//   }
+// }
+//
+/// gnu version2
+// #include <fstream>
+// #include <string>
+// #include <ext/stdio_filebuf.h>
+// #include <type_traits>
+// 
+// bool OpenFileForSequentialInput(ifstream& ifs, const string& fname)
+// {
+//     ifs.open(fname.c_str(), ios::in);
+//     if (! ifs.is_open()) {
+//         return false;
+//     }
+// 
+//     using FilebufType = __gnu_cxx::stdio_filebuf<std::ifstream::char_type>;
+//     static_assert(  std::is_base_of<ifstream::__filebuf_type, FilebufType>::value &&
+//                     (sizeof(FilebufType) == sizeof(ifstream::__filebuf_type)),
+//             "The filebuf type appears to have extra data members, the cast might be unsafe");
+// 
+//     const int fd = static_cast<FilebufType*>(ifs.rdbuf())->fd();
+//     assert(fd >= 0);
+//     if (0 != posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL)) {
+//         ifs.close();
+//         return false;
+//     }
+// 
+//     return true;
+// }
+/// stl 将fd封装为streambuf 的例子
+//! http://stackoverflow.com/questions/13541313/handle-socket-descriptors-like-file-descriptor-fstream-c-linux
+//
+// std::stdio_filebuf<char> inbuf(fd, std::ios::in);
+// std::istream istream(&inbuf);
+// 
+// std::stdio_filebuf<char> outbuf(fd, std::ios::out);
+// std::ostream ostream(&outbuf);
+//
+// 另外，将fd封装后，有一个问题，那就是，我面向用户，提供的是fd接口，而内部读取就创建一个
+// 自带buffer的stream，这显然是不行的。
+//
+// 除非我内部管理所有的fd，然后通过fd来检索，这样才能服用buffer，而不会发生错乱。
+//
 
 REGIST_BUILTIN("list-opend-fd", 0, 0, eval_list_opend_fd,
                "; list-opend-fd 枚举打开的文件描述符以及对应的文件名\n"
