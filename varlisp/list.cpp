@@ -140,7 +140,8 @@ Object List::eval(Environment& env) const
 {
     COLOG_DEBUG(*this);
     if (this->is_quoted()) {
-        return *this;
+        COLOG_DEBUG(*this, *this->unquote());
+        return *this->unquote();
     }
     // NOTE list.eval，需要非空，不然，都会抛出异常！
     if (this->empty()) {
