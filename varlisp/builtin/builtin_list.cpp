@@ -129,13 +129,12 @@ REGIST_BUILTIN("cons", 2, 2, eval_cons, "(cons 1 (cons 2 '())) -> '(1 2)");
  */
 Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
 {
-    Object obj;
-    const varlisp::List * p_list = varlisp::getQuotedList(env, detail::cadr(args), obj);
-    if (!p_list) {
-        SSS_POSITION_THROW(std::runtime_error, "(cons: need squote-List as the 2nd argument)");
-    }
-    Object tmp;
-    const Object& headRef = varlisp::getAtomicValue(env, detail::car(args), tmp);
+    const char * funcName = "cons";
+    std::array<Object, 2> objs;
+    const varlisp::List * p_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
+    requireOnFaild<varlisp::QuoteList>(p_list, funcName, 1, DEBUG_INFO);
+
+    const Object& headRef = varlisp::getAtomicValueUnquote(env, args.nth(0), objs[0]);
     if (p_list->empty()) {
         return varlisp::List::makeSQuoteList(headRef);
     }
@@ -146,6 +145,9 @@ Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
         return varlisp::List::makeCons(headRef, *p_list);
     }
 }
+// FIXME double quote
+// > (cons 1 '[2])
+// (1 quote (2))
 
 REGIST_BUILTIN("length", 1, 1, eval_length,
                "(length '(list)) -> quote-list-length");
