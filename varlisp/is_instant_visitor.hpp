@@ -16,6 +16,8 @@ struct Nill;
 struct Builtin;
 
 class gumboNode;
+// 判断是否是立即值；
+// NOTE 'symbol 也是立即值！
 struct is_instant_visitor : public boost::static_visitor<bool> {
     Environment& m_env;
     explicit is_instant_visitor(Environment& env) : m_env(env) {}
