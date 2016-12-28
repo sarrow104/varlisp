@@ -95,7 +95,7 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
                 COLOG_DEBUG(expr);
 
                 Object result;
-                const Object& res = varlisp::getAtomicValue(env, expr, result);
+                const Object& res = varlisp::getAtomicValueUnquote(env, expr, result);
                 if (!is_silent) {
                     boost::apply_visitor(print_visitor(std::cout), res);
                     std::cout << std::endl;
