@@ -9,6 +9,7 @@
 
 namespace varlisp {
 namespace detail {
+
 inline std::string readline(int64_t fd)
 {
     std::string line;
@@ -18,13 +19,14 @@ inline std::string readline(int64_t fd)
         if (ec == 0) {
             return line;
         }
-        line += ch;
         if (ch == '\n') {
             break;
         }
+        line += ch;
     }
     return line;
 }
+
 inline int64_t readchar(int64_t fd)
 {
     char buf[6];
@@ -49,6 +51,16 @@ inline int64_t readchar(int64_t fd)
     }
 }
 
+inline int64_t readbyte(int64_t fd)
+{
+    char buf[1];
+    int64_t ec = ::read(fd, buf, 1);
+    if (ec == -1) {
+        return -1;
+    }
+    return int64_t(uint8_t(buf[0]));
+}
+
 inline int64_t writechar(int64_t fd, int64_t ch)
 {
     char buf[6];
@@ -57,6 +69,16 @@ inline int64_t writechar(int64_t fd, int64_t ch)
         sss::util::utf8::dumpout2utf8(&ch, &ch + 1, buf);
         // 返回值包括-1状态！
         return ::write(fd, buf, len);;
+    }
+    return 0;
+}
+
+inline int64_t writebyte(int64_t fd, int64_t ch)
+{
+    char buf[1];
+    if (ch != -1) {
+        buf[0] = uint8_t(fd & 0xFFu);
+        return ::write(fd, buf, sizeof(buf));
     }
     return 0;
 }
