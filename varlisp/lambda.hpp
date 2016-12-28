@@ -19,7 +19,7 @@ private:
     std::vector<std::string>    m_args;       // 形式参数
     std::vector<Object>         m_body;       // 函数体
     varlisp::string_t           m_help_doc;   // 帮助信息
-    varlisp::Environment *      m_penv;     // 方法所述环境
+    varlisp::Environment *      m_penv;       // 方法所属环境
     // NOTE 如果要实现闭包的话，那么闭包所引用到的变量，以及其定义，应该如何序列
     // 化到外部文件？
 
@@ -44,6 +44,10 @@ public:
     Object eval(Environment& env, const varlisp::List& args) const;
 
     void print(std::ostream& o) const;
+    int  argument_count() const
+    {
+        return m_args.size();
+    }
     varlisp::string_t help_msg() const
     {
         return this->m_help_doc;
