@@ -10,8 +10,46 @@
 #include "../json_print_visitor.hpp"
 #include "../json/parser.hpp"
 #include "../detail/car.hpp"
+#include "../detail/buitin_info_t.hpp"
 
 namespace varlisp {
+
+REGIST_BUILTIN("signature", 1, 1, eval_signature,
+               "; signature 返回可调用对象的基本签名信息\n"
+               "; 如果对象不存在，或者不是可调用对象，则返回nil\n"
+               "(signature func-symbol) -> [min, max, \"help_msg\"] | nil");
+
+Object eval_signature(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "signature";
+    Object tmp;
+    Object * obj = varlisp::findSymbolDeep(env, args.nth(0), tmp, funcName);
+    if (!obj) {
+        return Nill{};
+    }
+
+    varlisp::List ret;
+    if (auto * p_b = boost::get<varlisp::Builtin>(obj)) {
+        ret.append(int64_t(varlisp::detail::get_builtin_infos()[p_b->type()].min));
+        ret.append(int64_t(varlisp::detail::get_builtin_infos()[p_b->type()].max));
+        ret.append(varlisp::detail::get_builtin_infos()[p_b->type()].help_msg);
+    }
+    else if (auto * p_l = boost::get<varlisp::Lambda>(obj)) {
+        ret.append(int64_t(p_l->argument_count()));
+        ret.append(int64_t(p_l->argument_count()));
+        auto help_msg = p_l->help_msg();
+        if (help_msg.empty()) {
+            std::ostringstream oss;
+            oss << args.nth(0);
+            help_msg = p_l->gen_help_msg(oss.str());
+        }
+        ret.append(help_msg);
+    }
+    else {
+        return Nill{};
+    }
+    return varlisp::List::makeSQuoteObj(ret);
+}
 
 REGIST_BUILTIN("apply", 2, 2, eval_apply,
                "; apply 将函数作用于参数列表上，并返回结果\n"
@@ -20,11 +58,12 @@ REGIST_BUILTIN("apply", 2, 2, eval_apply,
 Object eval_apply(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "apply";
-    std::array<Object, 1> objs;
-    const auto * p_list = getQuotedList(env, args.nth(1), objs[0]);
+    std::array<Object, 2> objs;
+    const auto& func = varlisp::getAtomicValue(env, args.nth(0), objs[0]);
+    const auto * p_list = getQuotedList(env, args.nth(1), objs[1]);
     varlisp::requireOnFaild<varlisp::QuoteList>(p_list, funcName, 1, DEBUG_INFO);
 
-    return varlisp::apply(env, args.nth(0), *p_list);
+    return varlisp::apply(env, func, *p_list);
 }
 
 REGIST_BUILTIN("curry", 1, -1, eval_curry,
@@ -76,7 +115,6 @@ REGIST_BUILTIN("partial", 1, -1, eval_partial,
 
 Object eval_partial(varlisp::Environment& env, const varlisp::List& args)
 {
-    
     static RE2 re("\\$\\d+");
 
     // 1. std::map<int, symbol> id-名字；
