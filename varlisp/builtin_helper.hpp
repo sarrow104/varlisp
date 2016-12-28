@@ -46,7 +46,21 @@ inline const Object& getAtomicValue(varlisp::Environment& env,
     return tmp;
 }
 
-inline int64_t typedid(varlisp::Environment&, const varlisp::Object& obj)
+inline const Object& getAtomicValueUnquote(varlisp::Environment& env,
+                                           const varlisp::Object& value, Object& tmp)
+{
+    const Object& resRef = varlisp::getAtomicValue(env, value, tmp);
+    if (auto * p_list = boost::get<varlisp::List>(&resRef)) {
+        if (!p_list->is_quoted()) {
+            SSS_POSITION_THROW(std::runtime_error,
+                               "require s-list but", resRef);
+        }
+        return *p_list->unquote();
+    }
+    return resRef;
+}
+
+inline int64_t type_id(varlisp::Environment&, const varlisp::Object& obj)
 {
     switch(obj.which()) {
         case 0:
@@ -179,4 +193,10 @@ inline bool is_true(varlisp::Environment& env, const varlisp::Object& obj)
 const varlisp::List* getQuotedList(varlisp::Environment& env,
                                    const varlisp::Object& obj,
                                    varlisp::Object& tmp);
+
+// NOTE 深度查询一个symbol——注意，该symbol，可以由cast等方法生成。
+Object * findSymbolDeep(varlisp::Environment& env,
+                        const varlisp::Object& value, Object& tmp,
+                        const char * funcName = nullptr);
+
 }  // namespace varlisp

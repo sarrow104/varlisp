@@ -34,4 +34,24 @@ const varlisp::List* getQuotedList(varlisp::Environment& env,
     }
     return p_list;
 }
+
+Object * findSymbolDeep(varlisp::Environment& env,
+                        const varlisp::Object& value, Object& tmp,
+                        const char * funcName)
+{
+    if (!funcName) {
+        funcName = __func__;
+    }
+    const Object * p_res = &value;
+    if (const auto * p_list = boost::get<varlisp::List>(&value)) {
+        tmp = p_list->eval(env);
+        p_res = &tmp;
+    }
+    const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(p_res);
+    if (!p_sym) {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": must require on a symbol, but ", value, ")");
+    }
+    return env.deep_find(p_sym->name());
+}
 }  // namespace varlisp
