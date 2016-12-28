@@ -47,10 +47,6 @@ REGIST_BUILTIN(
 Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "http-get";
-    if (args.length() == 2) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": need 1 or 3 parameters)");
-    }
     std::array<Object, 5> objs;
     const string_t* p_url =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
