@@ -117,7 +117,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
             std::string name = fd.get_name();
-            name += sss::path::sp_char;
+            // name += sss::path::sp_char;
             *ret_it++ = string_t(std::move(name));
         }
         else if (fd.is_normal_file()) {
@@ -145,7 +145,7 @@ Object eval_file_q(varlisp::Environment &env, const varlisp::List &args)
 }
 
 REGIST_BUILTIN(
-    "file?", 1, 1, eval_directory_q,
+    "directory?", 1, 1, eval_directory_q,
     "; directory? 询问路径指向的文件夹是否存在\n"
     "(directory? \"path/to/directory\") -> boolean");
 
