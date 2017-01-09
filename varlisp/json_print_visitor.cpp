@@ -63,42 +63,40 @@ void json_print_visitor::operator()(const varlisp::symbol& s) const
 
 void json_print_visitor::operator()(const varlisp::List& s) const
 {
+    const List * p_tail = &s;
     if (s.is_quoted()) {
-        const List * p_tail = nullptr;
         p_tail = boost::get<varlisp::List>(&s.nth(1));
-        if (p_tail) {
-            m_o << '[';
-            if (p_tail->size()) {
-                Indent inner(m_indent);
-                IndentHelper ind(inner);
-                bool is_first = true;
-                for (auto it = p_tail->begin(); it != p_tail->end(); ++it) {
-                    if (is_first) {
-                        is_first = false;
-                    }
-                    else {
-                        m_o << ",";
-                    }
-                    m_o << m_indent.endl() << inner;
-                    boost::apply_visitor(json_print_visitor(m_o, inner), *it);
-                }
-                m_o << m_indent.endl() << m_indent;
-            }
-            m_o << ']';
-        }
-        else {
+        if (!p_tail) {
             // (quote 字面值)
             boost::apply_visitor(json_print_visitor(m_o, m_indent), s.nth(1));
         }
     }
-    else {
-        // NOTE 针对无法与json格式一一对应的类型，全部转换为字符串。
-        std::ostringstream oss;
-        s.print(oss);
-        COLOG_ERROR(oss.str());
-        COLOG_ERROR(sss::raw_string(oss.str()));
-        m_o << sss::raw_string(oss.str());
+    if (p_tail) {
+        m_o << '[';
+        if (p_tail->size()) {
+            Indent inner(m_indent);
+            IndentHelper ind(inner);
+            bool is_first = true;
+            for (auto it = p_tail->begin(); it != p_tail->end(); ++it) {
+                if (is_first) {
+                    is_first = false;
+                }
+                else {
+                    m_o << ",";
+                }
+                m_o << m_indent.endl() << inner;
+                boost::apply_visitor(json_print_visitor(m_o, inner), *it);
+            }
+            m_o << m_indent.endl() << m_indent;
+        }
+        m_o << ']';
     }
+    // // NOTE 针对无法与json格式一一对应的类型，全部转换为字符串。
+    // std::ostringstream oss;
+    // s.print(oss);
+    // COLOG_ERROR(oss.str());
+    // COLOG_ERROR(sss::raw_string(oss.str()));
+    // m_o << sss::raw_string(oss.str());
 }
 
 void json_print_visitor::operator()(const varlisp::Environment& s) const
