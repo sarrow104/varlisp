@@ -1,18 +1,20 @@
 #include "html.hpp"
 
-#include <gumbo_query/QueryUtil.h>
-#include <gumbo_query/DocType.h>
+#include <gq/QueryUtil.h>
+#include <gq/DocType.h>
 
 #include <sss/string_view.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
 #include <sss/utlstring.hpp>
+#include <sss/algorithm.hpp>
 
 #include <ss1x/asio/headers.hpp>
 #include <ss1x/asio/utility.hpp>
 #include <ss1x/uuid/sha1.hpp>
 
 #include "http.hpp"
+#include "url.hpp"
 
 namespace varlisp {
 namespace detail {
@@ -61,6 +63,17 @@ struct htmlEntityEscape_t : public sss::string_view
     }
 };
 
+inline std::string getAttribute(GumboNode* apNode, const std::string& key)
+{
+    for (unsigned int i = 0; i < CQueryUtil::attrNum(apNode); i++) {
+        GumboAttribute* attr = CQueryUtil::nthAttr(apNode, i);
+        if (key == attr->name) {
+            return attr->value;
+        }
+    }
+    return "";
+}
+
 inline htmlEntityEscape_t htmlEntityEscape(sss::string_view s)
 {
     return htmlEntityEscape_t{s};
@@ -73,19 +86,40 @@ inline std::ostream& operator << (std::ostream&o, const htmlEntityEscape_t& h)
 }
 
 std::string getResourceAuto(const std::string& output_dir, const std::string& url,
-                            resource_manager_t& rs_mgr, const ss1x::http::Headers& request_header)
+                            resource_manager_t& rs_mgr, const ss1x::http::Headers& request_header,
+                            const std::string& proxy_domain, int proxy_port)
 {
     std::string max_content;
     ss1x::http::Headers headers;
+    std::string newUrl = url;
+    if (request_header.has("Referer")) {
+        varlisp::detail::url::full_of(newUrl, request_header.get("Referer"));
+    }
 
-    detail::http::downloadUrl(url, max_content, headers,
-                              std::bind(ss1x::asio::redirectHttpGet,
-                                        std::placeholders::_1,
-                                        std::placeholders::_2,
-                                        std::placeholders::_3,
-                                        request_header));
+    std::function<boost::system::error_code(
+        std::ostream&, ss1x::http::Headers&, const std::string& url)> downloadFunc;
+
+    if (!proxy_domain.empty() && proxy_port > 0) {
+        downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGet,
+                                 std::placeholders::_1,
+                                 std::placeholders::_2,
+                                 proxy_domain, proxy_port,
+                                 std::placeholders::_3,
+                                 request_header);
+    }
+    else {
+        downloadFunc = std::bind(ss1x::asio::redirectHttpGet,
+                                 std::placeholders::_1,
+                                 std::placeholders::_2,
+                                 std::placeholders::_3,
+                                 request_header);
+    }
+
+    detail::http::downloadUrl(newUrl, max_content, headers,
+                              downloadFunc);
 
     if (headers.status_code != 200) {
+        COLOG_ERROR(url);
         rs_mgr[url] = local_info_t{"", 0, fs_ERROR};
         return "";
     }
@@ -113,6 +147,10 @@ std::string getResourceAuto(const std::string& output_dir, const std::string& ur
     std::string fnameSuffix = sss::path::suffix(raw_url);
     if (headers.has("Content-Type")) {
         fnameSuffix = "." + sss::path::basename(headers["Content-Type"]);
+        auto semicolon = fnameSuffix.find(';');
+        if (semicolon != std::string::npos) {
+            fnameSuffix.resize(semicolon);
+        }
     }
 
     std::string output_path = output_dir;
@@ -144,11 +182,24 @@ std::string getResourceAuto(const std::string& output_dir, const std::string& ur
     return output_path;
 }
 
+template<typename Container, typename ValueT>
+bool contains(const Container& c, const ValueT& tar)
+{
+    for (const auto& i : c) {
+        if (tar == i) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                               CQueryUtil::CIndenter& ind,
                               const std::string& output_dir,
                               resource_manager_t& rs_mgr,
                               const ss1x::http::Headers& request_header,
+                              const std::string& proxy_domain,
+                              int proxy_port,
                               bool pre_mode = false)
 {
     switch (apNode->type)
@@ -167,10 +218,11 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
 
         case GUMBO_NODE_ELEMENT:
             {
+                static std::vector<std::string> neat_print_tag_list {"pre", "span", "a"};
                 const std::string tagName = CQueryUtil::tagName(apNode);
 
                 bool is_self_close = CQueryUtil::isSelfCloseTag(apNode);
-                bool is_neat_print = pre_mode || tagName == "pre" ||
+                bool is_neat_print = pre_mode || contains(neat_print_tag_list, tagName) ||
                                      (CQueryUtil::childNum(apNode) == 1 &&
                                       CQueryUtil::childNum(CQueryUtil::nthChild(
                                           apNode, 0)) == 0);
@@ -207,12 +259,14 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                         // 这种，附带版本号的东西了。
                         //
                     }
-                    if (tagName == "img" && attrName == "src") {
+                    if ((tagName == "img" && attrName == "src") ||
+                        tagName == "link" && attrName == "href" && detail::html::getAttribute(apNode, "rel") == "stylesheet")
+                    {
                         std::string url = CQueryUtil::nthAttr(apNode, i)->value;
-                        if (rs_mgr.find(url) == rs_mgr.end()) {
-                            std::string output_path = getResourceAuto(output_dir, url, rs_mgr, request_header);
+                        if (!url.empty() && rs_mgr.find(url) == rs_mgr.end()) {
+                            getResourceAuto(output_dir, url, rs_mgr, request_header, proxy_domain, proxy_port);
                         }
-                        if (rs_mgr[url].fsize && rs_mgr[url].is_ok()) {
+                        if (!url.empty() && rs_mgr[url].fsize && rs_mgr[url].is_ok()) {
                             o << " " << attrName << "=\""
                                 << htmlEntityEscape(sss::path::basename(rs_mgr[url].path)) << "\"";
                         }
@@ -239,12 +293,12 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                             CQueryUtil::CIndenter indInner(ind.get().c_str());
                             gumbo_rewrite_outterHtml(
                                 o, CQueryUtil::nthChild(apNode, i), indInner,
-                                output_dir, rs_mgr, request_header, pre_mode);
+                                output_dir, rs_mgr, request_header, proxy_domain, proxy_port, pre_mode);
                         }
                         else {
                             gumbo_rewrite_outterHtml(
                                 o, CQueryUtil::nthChild(apNode, i), ind,
-                                output_dir, rs_mgr, request_header, pre_mode);
+                                output_dir, rs_mgr, request_header, proxy_domain, proxy_port, pre_mode);
                             o << "\n";
                         }
                     }
@@ -283,8 +337,9 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
             o << ind << CDocType(&apNode->v.document) << std::endl;
             for (size_t i = 0; i < CQueryUtil::childNum(apNode); i++)
             {
-                gumbo_rewrite_outterHtml(o, CQueryUtil::nthChild(apNode, i),
-                                         ind, output_dir, rs_mgr, request_header);
+                gumbo_rewrite_outterHtml(
+                    o, CQueryUtil::nthChild(apNode, i), ind, output_dir, rs_mgr,
+                    request_header, proxy_domain, proxy_port);
             }
             break;
 
@@ -307,7 +362,9 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
 
 void gumbo_rewrite_impl(int fd, const gumboNode& g,
                         const std::string& output_dir, resource_manager_t& rs_mgr,
-                        const ss1x::http::Headers& request_header)
+                        const ss1x::http::Headers& request_header,
+                        const std::string& proxy_domain,
+                        int proxy_port)
 {
     CNode n = g.getCNode();
     if (!n.valid()) {
@@ -317,7 +374,8 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
     GumboNode * apNode = reinterpret_cast<GumboNode*>(n.get());
 
     CQueryUtil::CIndenter indent(get_gqnode_indent());
-    gumbo_rewrite_outterHtml(oss, apNode, indent, output_dir, rs_mgr, request_header);
+    gumbo_rewrite_outterHtml(oss, apNode, indent, output_dir, rs_mgr, request_header,
+                             proxy_domain, proxy_port);
     std::string content(oss.str());
     int ec = ::write(fd, content.c_str(), content.size());
     if (ec == -1) {
