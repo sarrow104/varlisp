@@ -17,6 +17,9 @@ Object eval_visitor::operator()(const varlisp::symbol& s) const
                           " not exsist");
     }
     COLOG_DEBUG(s, *it);
+    if (auto * p_list = boost::get<varlisp::List>(&*it)) {
+        COLOG_DEBUG(p_list->is_quoted());
+    }
     return *it;
 }
 
