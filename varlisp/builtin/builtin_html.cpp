@@ -3,8 +3,8 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
-#include <gumbo_query/QueryUtil.h>
-#include <gumbo_query/DocType.h>
+#include <gq/QueryUtil.h>
+#include <gq/DocType.h>
 
 #include <sss/utlstring.hpp>
 #include <sss/path.hpp>
@@ -57,7 +57,7 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
     if (p_content->empty()) {
         return Object{Nill{}};
     }
-    gumboNode doc{p_content->to_string()};
+    gumboNode doc{p_content->gen_shared()};
     if (doc.valid()) {
         if (p_query && p_query->length()) {
             std::vector<gumboNode> vec = doc.find(p_query->to_string());
@@ -563,16 +563,44 @@ REGIST_BUILTIN("gumbo-rewrite", 2,  -1,  eval_gumbo_rewrite,
                "文件名，如何确定？\n"
                "(gumbo-rewrite int-fd '(gq-node) "") -> nil\n"
                "(gumbo-rewrite int-fd {request_header} '(gq-node) "") -> nil"
+               "(gumbo-rewrite [int-fd proxy-domain proxy-port] '(gq-node) "") -> nil\n"
+               "(gumbo-rewrite [int-fd proxy-domain proxy-port] {request_header} '(gq-node) "") -> nil"
                );
 
 Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "gumbo-gumbo-rewrite";
     std::array<Object, 2> objs;
-    const int64_t * p_fd =
-        requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    std::array<Object, 3> proxy_tmp;
+    std::string proxy_domain;
+    int64_t proxy_port = 0;
 
-    std::string output_dir = sss::path::dirname(detail::file::get_fname_from_fd(*p_fd));
+    int64_t fd = -1;
+    if (auto * p_fd = varlisp::getTypedValue<int64_t>(env, args.nth(0), objs[0])) {
+        fd = *p_fd;
+    }
+    else if (auto * p_list = varlisp::getQuotedList(env, args.nth(0), objs[0])) {
+        fd = *requireTypedValue<int64_t>(
+            env, p_list->nth(0), proxy_tmp[0],
+            "(gumbo-rewrite [fd proxy-domain proxy-port] ...)", 0, DEBUG_INFO);
+
+        proxy_domain = requireTypedValue<varlisp::string_t>(
+                           env, p_list->nth(1), proxy_tmp[1],
+                           "(gumbo-rewrite [fd proxy-domain proxy-port] ...)",
+                           1, DEBUG_INFO)
+                           ->to_string();
+
+        proxy_port = *requireTypedValue<int64_t>(
+            env, p_list->nth(2), proxy_tmp[2],
+            "(gumbo-rewrite [fd proxy-domain proxy-port] ...)", 2, DEBUG_INFO);
+    }
+    else {
+        SSS_POSITION_THROW(
+            std::runtime_error, "(", funcName,
+            ": 1st argument must be fd or '(fd proxy_domain proxy_port) list");
+    }
+
+    std::string output_dir = sss::path::dirname(detail::file::get_fname_from_fd(fd));
     COLOG_DEBUG(SSS_VALUE_MSG(output_dir));
 
     ss1x::http::Headers request_header;
@@ -586,38 +614,48 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
     // 在重写的时候，如何处理重复的url？
     // 需要建立一个url与本地path的对应关系；同时，需要备注上下载状态；
 
+    detail::html::resource_manager_t rs_mgr;
     for (size_t i = 1; i < args.length(); ++i) {
         auto& secondRef = varlisp::getAtomicValue(env, args.nth(i), objs[1]);
         if (i == 1) {
             if (auto * p_request_header = boost::get<varlisp::Environment>(&secondRef)) {
-                varlisp::detail::http::Environment2ss1x_header(request_header, env, *p_request_header);
+                varlisp::detail::http::Environment2ss1x_header(
+                    request_header, env, *p_request_header);
                 continue;
             }
         }
 
         Object gpNodeList;
         Object gpNodeObj;
-        detail::html::resource_manager_t rs_mgr;
         if (auto * p_list = varlisp::getQuotedList(env, secondRef, gpNodeList)) {
             for (auto it = p_list->begin(); it != p_list->end(); ++it) {
                 auto * p_gp = varlisp::getTypedValue<gumboNode>(env, *it, gpNodeObj);
                 if (!p_gp) {
                     std::ostringstream oss;
                     boost::apply_visitor(raw_stream_visitor(oss, env), *it);
-                    detail::writestring(*p_fd, oss.str());
+                    detail::writestring(fd, oss.str());
                 }
                 else {
-                    detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr, request_header);
+                    detail::html::gumbo_rewrite_impl(fd, *p_gp, output_dir,
+                                                     rs_mgr, request_header,
+                                                     proxy_domain, proxy_port);
                 }
             }
         }
         else if (auto * p_gp = varlisp::getTypedValue<gumboNode>(env, secondRef, gpNodeObj)) {
-            detail::html::gumbo_rewrite_impl(*p_fd, *p_gp, output_dir, rs_mgr, request_header);
+            detail::html::gumbo_rewrite_impl(fd, *p_gp, output_dir, rs_mgr,
+                                             request_header,
+                                             proxy_domain, proxy_port);
         }
         else {
             std::ostringstream oss;
             boost::apply_visitor(raw_stream_visitor(oss, env), secondRef);
-            detail::writestring(*p_fd, oss.str());
+            detail::writestring(fd, oss.str());
+        }
+    }
+    for (const auto kv : rs_mgr) {
+        if (!kv.second.is_ok()) {
+            COLOG_ERROR(sss::raw_string(kv.first), kv.second);
         }
     }
 
