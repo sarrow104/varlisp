@@ -747,7 +747,9 @@ Object Parser::parseSpecialLambda()
     parseParamVector(m_toknizer, args);
 
     if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
-        SSS_POSITION_THROW(std::runtime_error, "expect ')'");
+        std::ostringstream oss;
+        this->m_toknizer.print_token_stack(oss);
+        SSS_POSITION_THROW(std::runtime_error, "expect ')' but ", this->m_toknizer.lookahead(0), oss.str());
     }
 
     varlisp::string_t help_msg;
