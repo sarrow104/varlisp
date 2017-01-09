@@ -18,22 +18,29 @@ Interpreter::Interpreter() : m_status(status_OK)
 
 Interpreter::status_t Interpreter::eval(const std::string& line, bool silent)
 {
-    SSS_LOG_EXPRESSION(sss::log::log_DEBUG, line);
-    status_t ret = status_OK;
+    try {
+        SSS_LOG_EXPRESSION(sss::log::log_DEBUG, line);
+        status_t ret = status_OK;
 
-    // varlisp::Parser parser(line);
-    int ec = m_parser.parse(this->m_env, line, silent);
-    if (!ec) {
-        ret = status_UNFINISHED;
-    }
-    else if (ec < 0) {
-        ret = status_ERROR;
-    }
+        // varlisp::Parser parser(line);
+        int ec = m_parser.parse(this->m_env, line, silent);
+        if (!ec) {
+            ret = status_UNFINISHED;
+        }
+        else if (ec < 0) {
+            ret = status_ERROR;
+        }
 
-    if (m_status != status_QUIT) {
-        m_status = ret;
+        if (m_status != status_QUIT) {
+            m_status = ret;
+        }
+        return m_status;
     }
-    return m_status;
+    catch (Object& exception) {
+        COLOG_ERROR("unhandled exception: ", exception);
+        m_status = status_ERROR;
+        return m_status;
+    }
 }
 
 Interpreter& Interpreter::get_instance()
