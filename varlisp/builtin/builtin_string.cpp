@@ -198,17 +198,37 @@ Object eval_substr_byte(varlisp::Environment &env, const varlisp::List &args)
         length = arithmetic2int(arithmetic_length);
     }
 
-
-    if (length < 0) {
-        return p_content->substr(offset_int);
-
+    if (offset_int < 0) {
+        int end_offset = int(p_content->length()) + offset_int;
+        if (end_offset < 0) {
+            return Nill{};
+        }
+        if (length < 0) {
+            return p_content->substr(end_offset);
+        }
+        else {
+            int start_offset = end_offset - length;
+            if (start_offset < 0) {
+                start_offset = 0;
+            }
+            return p_content->substr(start_offset, end_offset);
+        }
     }
     else {
-        return p_content->substr(offset_int, length);
+        if (length < 0) {
+            return p_content->substr(offset_int);
+
+        }
+        else {
+            return p_content->substr(offset_int, length);
+        }
     }
 }
 
 REGIST_BUILTIN("substr", 2, 3, eval_substr,
+               "; substr 返回目标串的子串\n"
+               "; offset 子串开始位置的下标；负数表示逆向；-1表示最后一个字符\n"
+               "; length 可选参数，子串的长度；\n"
                "(substr \"target-string\" offset)\n"
                "(substr \"target-string\" offset length) -> sub-str");
 
@@ -237,9 +257,6 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
     }
     int64_t offset_int = arithmetic2int(offset_number);
 
-    if (offset_int < 0) {
-        offset_int = 0;
-    }
     if (offset_int > int64_t(p_content->length())) {
         offset_int = p_content->length();
     }
@@ -258,27 +275,64 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
         length = arithmetic2int(arithmetic_length);
     }
 
-    if (length < 0) {
-        auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
-        if (!nth_ptr) {
+    if (offset_int < 0) {
+        // NOTE 负数，表示逆向查找；length，也是反向
+        // 如果只能循环一次的算法，就要求缓存偏移信息
+
+        // 记录每个u8字符，开始的偏移；
+        std::vector<uint32_t> u8_offset_vec;
+        u8_offset_vec.reserve(p_content->length() / 2);
+        uint32_t current_offset = 0u;
+        auto it = p_content->begin();
+        while (it != p_content->end()) {
+            auto len = sss::util::utf8::next_length(it, p_content->end());
+            if (!len) {
+                break;
+            }
+            u8_offset_vec.push_back(current_offset);
+            current_offset += len;
+            it += len;
+        }
+        int end_offset = int(u8_offset_vec.size()) + offset_int;
+        if (end_offset < 0) {
             return Nill{};
         }
+        if (length < 0) {
+            return p_content->substr(0, u8_offset_vec[end_offset]);
+        }
         else {
-            return p_content->substr(nth_ptr - p_content->begin());
+            int start_offset = end_offset - length;
+            
+            return p_content->substr(u8_offset_vec[start_offset],
+                                     u8_offset_vec[end_offset] -
+                                     u8_offset_vec[start_offset]);
         }
     }
     else {
-        auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
-        if (!nth_ptr) {
-            return Nill{};
+        if (length < 0) {
+            auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
+            if (!nth_ptr) {
+                return Nill{};
+            }
+            else {
+                return p_content->substr(nth_ptr - p_content->begin());
+            }
         }
-        auto end_ptr = detail::locateNthUtf8(nth_ptr, p_content->end(), length - offset_int + 1);
-        if (!nth_ptr) {
-            return Nill{};
-        }
+        else {
+            auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
+            if (!nth_ptr) {
+                return Nill{};
+            }
 
-        return p_content->substr(nth_ptr - p_content->begin(), end_ptr - nth_ptr);
+            auto end_ptr = detail::locateNthUtf8(nth_ptr, p_content->end(), length);
+            if (!nth_ptr) {
+                return Nill{};
+            }
+
+            return p_content->substr(nth_ptr - p_content->begin(), end_ptr - nth_ptr);
+        }
     }
+
 }
 
 REGIST_BUILTIN("ltrim", 1, 1, eval_ltrim,
@@ -521,11 +575,80 @@ Object eval_char_nth(varlisp::Environment &env, const varlisp::List &args)
     }
 }
 
-// TODO (string var) <- 变字符串
-// (u8-car str) <- 获取第一个字符
-// (u8-cdr str) <- 返回除第一个字符后的字符串
-// 字符 按照utf8计算；
-//
-// (strlen 分为ut8f和bytes，两个版本）
+REGIST_BUILTIN("strstr", 2, 2, eval_strstr,
+               "; strstr 查找子串位置\n"
+               "(strstr \"source\" \"needle\") -> offset-int | nil");
+
+Object eval_strstr(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "strstr";
+    std::array<Object, 2> objs;
+    const auto * p_source =
+        requireTypedValue<string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const auto * p_needle =
+        requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    auto pos = p_source->to_string_view().find(p_needle->to_string_view());
+
+    if (pos == sss::string_view::npos) {
+        return Nill{};
+    }
+    return int64_t(pos);
+}
+
+REGIST_BUILTIN("strrstr", 2, 2, eval_strrstr,
+               "; strrstr 逆向查找子串位置\n"
+               "(strrstr \"source\" \"needle\") -> offset-int | nil");
+
+Object eval_strrstr(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "strrstr";
+    std::array<Object, 2> objs;
+    const auto * p_source =
+        requireTypedValue<string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const auto * p_needle =
+        requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    auto pos = p_source->to_string_view().rfind(p_needle->to_string_view());
+
+    if (pos == sss::string_view::npos) {
+        return Nill{};
+    }
+    return int64_t(pos);
+}
+
+REGIST_BUILTIN("is-begin-with", 2, 2, eval_is_begin_with,
+               "(is-begin-with \"source\" \"needle\") -> boolean");
+
+Object eval_is_begin_with(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "is-begin-with";
+    std::array<Object, 2> objs;
+    const auto * p_source =
+        requireTypedValue<string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const auto * p_needle =
+        requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    return p_source->to_string_view().is_begin_with(p_needle->to_string_view());
+}
+
+REGIST_BUILTIN("is-end-with", 2, 2, eval_is_end_with,
+               "(is-end-with \"source\" \"needle\") -> boolean");
+
+Object eval_is_end_with(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "is-end-with";
+    std::array<Object, 2> objs;
+    const auto * p_source =
+        requireTypedValue<string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    const auto * p_needle =
+        requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+
+    return p_source->to_string_view().is_end_with(p_needle->to_string_view());
+}
 
 }  // namespace varlisp
