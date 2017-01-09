@@ -44,8 +44,11 @@ void downloadUrl(
     do {
         ec = func(oss, headers, url);
 
+        if (headers.status_code == 404) {
+            break;
+        }
         if (headers.status_code != 200) {
-            COLOG_ERROR("(: http-status code:", headers.status_code, ")");
+            COLOG_ERROR("(", sss::raw_string(url), ": http-status code:", headers.status_code, ")");
             for (const auto& item : headers) {
                 std::cerr << "header : " << item.first << ": " << item.second
                     << std::endl;
@@ -56,6 +59,9 @@ void downloadUrl(
             if (ec == boost::asio::error::eof) {
                 max_content = oss.str();
                 break;
+            }
+            else {
+                COLOG_ERROR(ec, "; loop = ", max_test);
             }
         }
         else {
