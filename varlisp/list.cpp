@@ -52,6 +52,11 @@ size_t List::length() const
     return this->m_length;
 }
 
+bool List::is_unique() const
+{
+    return this->m_refer && this->m_refer.unique();
+}
+
 void List::make_unique()
 {
     // FIXME 多线程安全
@@ -100,7 +105,57 @@ void List::append_list(const List& l)
 
 void List::append_list(List&& l)
 {
-    this->append_list(static_cast<const List&>(l));
+    if (l.is_unique()) {
+        this->make_unique();
+        m_refer->reserve(this->size() + l.size());
+        for (auto it = l.begin(); it != l.end(); ++it) {
+            m_refer->emplace_back(std::move(*it));
+        }
+        m_length += l.size();
+    }
+    else {
+        this->append_list(static_cast<const List&>(l));
+    }
+    l.clear();
+}
+
+void List::append(varlisp::Environment& env, const Object& o)
+{
+    Object tmp;
+    this->append(varlisp::getAtomicValue(env, o, tmp));
+}
+
+void List::append(varlisp::Environment& env, Object&& o)
+{
+    Object tmp;
+    this->append(std::move(varlisp::getAtomicValue(env, o, tmp)));
+}
+
+void List::append_list(varlisp::Environment& env, const List& l)
+{
+    this->make_unique();
+    m_refer->reserve(this->size() + l.size());
+    for (auto it = l.begin(); it != l.end(); ++it) {
+        Object tmp;
+        m_refer->push_back(varlisp::getAtomicValue(env, *it, tmp));
+    }
+    m_length += l.size();
+}
+
+void List::append_list(varlisp::Environment& env, List&& l)
+{
+    if (l.is_unique()) {
+        this->make_unique();
+        m_refer->reserve(this->size() + l.size());
+        for (auto it = l.begin(); it != l.end(); ++it) {
+            Object tmp;
+            m_refer->emplace_back(std::move(varlisp::getAtomicValue(env, *it, tmp)));
+        }
+        m_length += l.size();
+    }
+    else {
+        this->append_list(env, static_cast<const List&>(l));
+    }
     l.clear();
 }
 
@@ -141,7 +196,8 @@ Object List::eval(Environment& env) const
     COLOG_DEBUG(*this);
     if (this->is_quoted()) {
         COLOG_DEBUG(*this, *this->unquote());
-        return *this->unquote();
+        return *this;
+        // return *this->unquote();
     }
     // NOTE list.eval，需要非空，不然，都会抛出异常！
     if (this->empty()) {

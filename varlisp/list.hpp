@@ -211,13 +211,20 @@ public:
     void append(const Object& o);
     void append(Object&& o);
 
+    void append(varlisp::Environment& env, const Object& o);
+    void append(varlisp::Environment& env, Object&& o);
+
     void append_list(const List& l);
     void append_list(List&& l);
+
+    void append_list(varlisp::Environment& env, const List& l);
+    void append_list(varlisp::Environment& env, List&& l);
 
     void push_front(const Object& o);
     void swap(List& ref);
 
 protected:
+    bool is_unique() const;
     void make_unique();
 
 private:
