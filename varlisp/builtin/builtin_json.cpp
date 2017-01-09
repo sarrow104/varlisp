@@ -23,11 +23,6 @@ void json_object2stream(std::ostream& o, varlisp::Environment& env,
         // OK
     }
     else if (const varlisp::List* p_l = boost::get<varlisp::List>(&objRef)) {
-        if (!p_l->is_quoted()) {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": only s-list is valid; but ",
-                               objRef, ")");
-        }
         // OK
     }
     else {
