@@ -53,6 +53,8 @@ protected:
     }
 
 public:
+    std::shared_ptr<std::string> gen_shared() const;
+
     bool own_text() const {
         if (this->m_refer) {
             const char * buf = this->m_refer->data();
@@ -64,6 +66,8 @@ public:
     const char * c_str() const {
         return this->data();
     }
+    const char * safe_c_str() const;
+
     void print(std::ostream& o) const;
     void clear()
     {
