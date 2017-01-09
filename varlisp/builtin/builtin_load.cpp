@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <set>
+#include <list>
 
 #include <sss/colorlog.hpp>
 #include <sss/path.hpp>
@@ -16,6 +17,32 @@
 #include "../detail/varlisp_env.hpp"
 
 namespace varlisp {
+
+namespace detail {
+typedef std::list<varlisp::string_t> script_stack_t;
+script_stack_t& get_script_stack()
+{
+    static script_stack_t script_stack;
+    return script_stack;
+}
+
+struct load_guard_t
+{
+    script_stack_t &m_st;
+    explicit load_guard_t(script_stack_t& st, const varlisp::string_t& path)
+        : m_st(st)
+    {
+        // COLOG_ERROR(path);
+        st.push_back(path);
+    }
+    ~load_guard_t()
+    {
+        // COLOG_ERROR(m_st.back());
+        m_st.pop_back();
+    }
+};
+
+} // namespace detail
 
 REGIST_BUILTIN("load", 1, 1, eval_load, "(load \"path/to/lisp\") -> nil");
 
@@ -53,7 +80,18 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string full_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    auto full_path = varlisp::detail::envmgr::expand(p_path->to_string());
+    if (sss::path::is_relative(full_path) && !detail::get_script_stack().empty()) {
+        full_path =
+            sss::path::append_copy(sss::path::dirname(detail::get_script_stack().back().to_string()), p_path->to_string());
+    }
+    else {
+        full_path = sss::path::full_of_copy(full_path);
+    }
+
+    if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE && sss::path::suffix(full_path) != ".lsp") {
+        full_path += ".lsp";
+    }
 
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
@@ -62,11 +100,19 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 
     std::string content;
     sss::path::file2string(full_path, content);
-
-    varlisp::Parser& parser = varlisp::Interpreter::get_instance().get_parser();
-    parser.parse(env, content, true);
-    COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
-    return Object{Nill{}};
+    detail::load_guard_t guard(detail::get_script_stack(), varlisp::string_t(full_path));
+    try {
+        // NOTE FIXME 我这里的困境在于，我都是从一个地方，获取的parser实例。而parser在内部，完成的eval（传入了env，content）
+        // 同一个stack。这就导致了，内部load的时候，实际也是往一个stack里面加东西——嵌套。
+        // 所以，最终的 detail::load_guard_t 执行结果，不如人意。
+        varlisp::Parser& parser = varlisp::Interpreter::get_instance().get_parser();
+        parser.parse(env, content, true);
+        COLOG_INFO("(", funcName, sss::raw_string(*p_path), " complete)");
+        return Object{Nill{}};
+    }
+    catch (...) {
+        throw;
+    }
 }
 
 REGIST_BUILTIN("save", 1, 1, eval_save,
@@ -105,6 +151,44 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
         }
     }
     return item_cnt;
+}
+
+// NOTE FIXME 完蛋！
+// (script) 没用！
+// 因为载入与运行时，不是一块！
+// (load)
+REGIST_BUILTIN("script", 0, 1, eval_script,
+               "; script 脚本状态\n"
+               "(script) -> 当前脚本\n"
+               "(script index) -> 父级脚本");
+
+Object eval_script(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "script";
+    int64_t index = 0;
+    if (args.size()) {
+        Object tmp;
+        index =
+            *requireTypedValue<int64_t>(env, args.nth(0), tmp, funcName, 0, DEBUG_INFO);
+    }
+    auto& st = detail::get_script_stack();
+    auto it = st.rbegin();
+    Object ret = Nill{};
+    for (auto i = index; i >= 0 && it != st.rend(); --i, ++it) {
+        if (i == 0) {
+            ret = *it;
+        }
+    }
+    return ret;
+}
+
+REGIST_BUILTIN("script-depth", 0, 0, eval_depth,
+               "; script-depth 脚本状态\n"
+               "(script-depth) -> int64_t");
+
+Object eval_depth(varlisp::Environment& env, const varlisp::List& args)
+{
+    return int64_t(detail::get_script_stack().size());
 }
 
 REGIST_BUILTIN("clear", 0, 1, eval_clear,
