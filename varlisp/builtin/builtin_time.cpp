@@ -1,6 +1,8 @@
 #include <sstream>
 #include <chrono>
 
+#include <time.h>
+
 #include <sss/colorlog.hpp>
 
 #include "../object.hpp"
@@ -130,6 +132,28 @@ Object eval_time_format(varlisp::Environment &env, const varlisp::List &args)
     size_t cnt = std::strftime(const_cast<char*>(&buf[0]), buf.size(), fmt.c_str(), &tm);
     buf.resize(cnt);
     return string_t(std::move(buf));
+}
+
+REGIST_BUILTIN("time-strparse", 2, 2, eval_time_strparse,
+               "; time-strparse 解析\n"
+               "(time-strparse \"27 December 2016, at 13:17\" \"%d %h %Y, at %H:%M\") -> '(time-list)");
+
+Object eval_time_strparse(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "time-strparse";
+    std::array<Object, 2> objs;
+    auto source =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO)->to_string();
+    auto fmt =
+        requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO)->to_string();
+
+    std::tm tm{0,0,0,0,0,0,0,0,0,0,0};
+
+    // "27 December 2016, at 13:17"
+    // %d %h %Y, at %H:%M
+    strptime(source.c_str(), fmt.c_str(), &tm);
+    return varlisp::List::makeSQuoteList(int64_t(tm.tm_year + 1900), int64_t(tm.tm_mon + 1), int64_t(tm.tm_mday),
+                                         int64_t(tm.tm_hour), int64_t(tm.tm_min), int64_t(tm.tm_sec));
 }
 
 } // namespace varlisp
