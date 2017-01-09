@@ -109,8 +109,8 @@ void Tokenizer::init(const std::string& data)
     // NOTE 符号分为两类，一种是操作符字符组成的符号，比如大于小于这些；
     // 一种是变量名，主要是下划线，$,字母、数字这些；
     this->Symbol_p =
-        ((+(ss1x::parser::punct_p - ss1x::parser::char_set_p("#()[]{}$\"'_")) |
-          (ss1x::parser::utf8_range_p("一", "龥") | ss1x::parser::alpha_p | ss1x::parser::char_p('$')) >>
+        ((+(ss1x::parser::punct_p - ss1x::parser::char_set_p("@#()[]{}$\"'_")) |
+          (ss1x::parser::utf8_range_p("一", "龥") | ss1x::parser::alpha_p | ss1x::parser::char_p('@') | ss1x::parser::char_p('$')) >>
               *((ss1x::parser::utf8_range_p("一", "龥") | ss1x::parser::alnum_p) || ss1x::parser::char_p('_') ||
                 ss1x::parser::char_p('-') || ss1x::parser::char_p('?') ||
                 ss1x::parser::char_p(':') || ss1x::parser::char_p('!')) >
@@ -547,23 +547,21 @@ void Tokenizer::print(std::ostream& o) const
 
 void Tokenizer::print_token_stack(std::ostream& o) const
 {
-#ifdef DEBUG
     if (!this->m_tokens.empty()) {
-        COLOG_DEBUG("m_data = ", this->m_data.back());
-        COLOG_DEBUG("offset = ",
+        COLOG_INFO("m_data = ", this->m_data.back());
+        COLOG_INFO("offset = ",
                     std::distance(this->m_data.back().cbegin(), m_beg.back()));
-        COLOG_DEBUG("length = ", this->m_data.back().length());
-        COLOG_DEBUG("(std::ostream&) ", this->m_tokens.size(),
+        COLOG_INFO("length = ", this->m_data.back().length());
+        COLOG_INFO("(std::ostream&) ", this->m_tokens.size(),
                     this->m_tokens.back().size());
 
         int i = 0;
         for (const auto& tok : this->m_tokens.back()) {
-            COLOG_DEBUG("\t[ ", i++, "] = ", tok);
+            COLOG_INFO("\t[ ", i++, "] = ", tok);
         }
     }
     else {
-        COLOG_DEBUG("(std::ostream&) empty stack");
+        COLOG_INFO("(std::ostream&) empty stack");
     }
-#endif
 }
 }  // namespace varlisp
