@@ -108,6 +108,11 @@ Object eval_curry(varlisp::Environment& env, const varlisp::List& args)
                            std::move(lambda_body));
 }
 
+// NOTE 如果 $1这样的占位符，出现在参数列表的一部分中呢？
+// 比如 (partial write "fname.json" (json-string $1 #t))
+// 目的是创建一个临时lambda，该lambda作用是讲对象序列化为规则样式的json字符串，然后写入到外部文件fname.json中
+// 虽然逻辑上可行，但是，这好像离原本的定义式，有有些远！
+// 我需要对每个参数，进行重建——替换$1，。。。。
 REGIST_BUILTIN("partial", 1, -1, eval_partial,
                "; partial binding\n"
                "; var... 这些参数的求值时机是？\n"
