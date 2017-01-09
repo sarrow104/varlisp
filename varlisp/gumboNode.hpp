@@ -23,8 +23,10 @@
 
 #include <vector>
 
-#include <gumbo_query/Document.h>
-#include <gumbo_query/Node.h>
+#include <gq/Document.h>
+#include <gq/Node.h>
+
+#include "String.hpp"
 
 namespace varlisp {
 
@@ -35,8 +37,12 @@ class gumboNode
 {
 public:
     gumboNode();
-    gumboNode(const CNode& n, const std::shared_ptr<CDocument>& d);
-    explicit gumboNode(const std::string& html);
+    gumboNode(const CNode& n,
+              const std::shared_ptr<CDocument>& d,
+              const std::shared_ptr<std::string>& r);
+    // explicit gumboNode(const std::string& html);
+    explicit gumboNode(std::string&& html);
+    explicit gumboNode(std::shared_ptr<std::string> html);
     ~gumboNode() = default;
 
 public:
@@ -48,6 +54,7 @@ public:
     gumboNode& operator = (const gumboNode& ) = default;
 
 public:
+    void reset(std::shared_ptr<std::string> html);
     void print(std::ostream& ) const;
 
     std::string attribute(const std::string& key) const;
@@ -90,6 +97,7 @@ public:
 private:
     CNode mNode;
     std::shared_ptr<CDocument> mDocument;
+    std::shared_ptr<std::string> mRefer;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const gumboNode& g)

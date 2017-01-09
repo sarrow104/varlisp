@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include <gumbo_query/QueryUtil.h>
+#include <gq/QueryUtil.h>
 
 #include "detail/html.hpp"
 
@@ -10,19 +10,37 @@ namespace varlisp {
 
 gumboNode::gumboNode() {}
 
-gumboNode::gumboNode(const CNode& n, const std::shared_ptr<CDocument>& d)
-    : mNode(n), mDocument(d)
+gumboNode::gumboNode(const CNode& n,
+                     const std::shared_ptr<CDocument>& d,
+                     const std::shared_ptr<std::string>& r)
+    : mNode(n), mDocument(d), mRefer(r)
 {
 }
 
-gumboNode::gumboNode(const std::string& html)
+gumboNode::gumboNode(std::string&& html)
 {
-    mDocument.reset(new CDocument);
-    mDocument->parse(html);
-    if (mDocument->isOK()) {
-        CSelection s = mDocument->find("html");
+    this->reset(std::make_shared<std::string>(std::move(html)));
+}
+
+gumboNode::gumboNode(std::shared_ptr<std::string> html)
+{
+    this->reset(html);
+}
+
+void gumboNode::reset(std::shared_ptr<std::string> html)
+{
+    if (!html) {
+        return;
+    }
+    auto document = std::make_shared<CDocument>();
+    document->parse(html->c_str());
+
+    if (document->isOK()) {
+        CSelection s = document->find("html");
         if (s.nodeNum()) {
             mNode = s.nodeAt(0);
+            mRefer = html;
+            mDocument = document;
         }
     }
 }
@@ -127,7 +145,7 @@ std::vector<gumboNode> gumboNode::find(const std::string& query) const
         if (this->valid()) {
             CSelection s = mNode.find(query);
             for (size_t i = 0; i < s.nodeNum(); ++i) {
-                ret.emplace_back(s.nodeAt(i), mDocument);
+                ret.emplace_back(s.nodeAt(i), mDocument, mRefer);
             }
         }
         return ret;
@@ -143,7 +161,7 @@ std::vector<gumboNode> gumboNode::children() const
     std::vector<gumboNode> ret;
     if (this->valid()) {
         for (size_t i = 0; i != mNode.childNum(); ++i) {
-            ret.emplace_back(mNode.childAt(i), mDocument);
+            ret.emplace_back(mNode.childAt(i), mDocument, mRefer);
         }
     }
     return ret;
