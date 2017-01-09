@@ -15,6 +15,7 @@
 #include "../json_print_visitor.hpp"
 #include "../json/parser.hpp"
 #include "../detail/car.hpp"
+#include "../detail/url.hpp"
 #include "../raw_stream_visitor.hpp"
 
 namespace varlisp {
@@ -130,33 +131,10 @@ Object eval_url_full(varlisp::Environment& env, const varlisp::List& args)
     auto * p_maping_url =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);  
 
-    auto targets = ss1x::util::url::split_port_auto(p_target_string->to_string());
-    auto mappings = ss1x::util::url::split_port_auto(p_maping_url->to_string());
-    COLOG_ERROR(targets);
-    COLOG_ERROR(mappings);
-    bool is_modified = false;
-    if (std::get<0>(targets).empty() && !std::get<0>(mappings).empty()) {
-        std::get<0>(targets) = std::get<0>(mappings);
-        is_modified = true;
-    }
-    if (std::get<1>(targets).empty() && !std::get<1>(mappings).empty()) {
-        std::get<1>(targets) = std::get<1>(mappings);
-        is_modified = true;
-    }
-    if (std::get<2>(targets) != std::get<2>(mappings) && std::get<2>(mappings)) {
-        std::get<2>(targets) = std::get<2>(mappings);
-        is_modified = true;
-    }
-    if (std::get<3>(targets).empty()) {
-        SSS_POSITION_THROW(std::runtime_error,
-                           "(", funcName, ": empty path)");
-    }
-    if (std::get<3>(targets).front() != '/' && !std::get<1>(mappings).empty()) {
-        std::get<3>(targets) = sss::path::append_copy(sss::path::dirname(std::get<3>(mappings)), std::get<3>(targets));
-        is_modified = true;
-    }
+    auto target = p_target_string->to_string();
+    bool is_modified = varlisp::detail::url::full_of(target, p_maping_url->to_string());
     if (is_modified) {
-        return string_t(std::move(ss1x::util::url::join(targets)));
+        return string_t(std::move(target));
     }
     else {
         return *p_target_string;
