@@ -129,6 +129,56 @@ struct arithmetic_div_visitor : public boost::static_visitor<arithmetic_t> {
     }
 };
 
+// NOTE 这里的求余数运算规律，同C/C++。
+// 就是说 1/5 == 0
+struct arithmetic_mod_visitor : public boost::static_visitor<arithmetic_t> {
+    template <typename T2>
+    arithmetic_t operator()(const Empty&, const T2&) const
+    {
+        return arithmetic_t{};
+    }
+
+    template <typename T1>
+    arithmetic_t operator()(const T1&, const Empty&) const
+    {
+        return arithmetic_t{};
+    }
+
+    arithmetic_t operator()(const Empty&, const Empty&) const
+    {
+        return arithmetic_t{};
+    }
+
+    arithmetic_t operator()(int64_t v1, int64_t v2) const
+    {
+        if (v2 == 0) {
+            SSS_POSITION_THROW(std::runtime_error, v1, "remaind by Zero");
+        }
+        return v1 % v2;
+    }
+    arithmetic_t operator()(double v1, int64_t v2) const
+    {
+        if (v2 == 0) {
+            SSS_POSITION_THROW(std::runtime_error, v1, "remaind by Zero");
+        }
+        return int64_t(v1) % v2;
+    }
+    arithmetic_t operator()(int64_t v1, double v2) const
+    {
+        if (v2 == 0) {
+            SSS_POSITION_THROW(std::runtime_error, v1, "remaind by Zero");
+        }
+        return std::fmod(double(v1), v2);
+    }
+    arithmetic_t operator()(double v1, double v2) const
+    {
+        if (v2 == 0) {
+            SSS_POSITION_THROW(std::runtime_error, v1, "remaind by Zero");
+        }
+        return std::fmod(v1, v2);
+    }
+};
+
 REGIST_BUILTIN("+", 0, -1, eval_add, "(+ ...) -> number");
 
 // DrRachet + 支持0个参数；-需要至少一个参数；
@@ -208,6 +258,16 @@ Object eval_div(varlisp::Environment& env, const varlisp::List& args)
 
         return arithmetic2object(mul);
     }
+}
+
+REGIST_BUILTIN("%", 2, 2, eval_mod, "(%" " arg1 arg2) -> number");
+
+Object eval_mod(varlisp::Environment& env, const varlisp::List& args)
+{
+    arithmetic_t lhs = boost::apply_visitor(arithmetic_cast_visitor(env), args.nth(0));
+    arithmetic_t rhs = boost::apply_visitor(arithmetic_cast_visitor(env), args.nth(1));
+
+    return arithmetic2object(boost::apply_visitor(arithmetic_mod_visitor(), lhs, rhs));
 }
 
 REGIST_BUILTIN("power", 2, 2, eval_pow, "(power arg1 arg2) -> number");
