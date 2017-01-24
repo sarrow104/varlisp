@@ -66,6 +66,8 @@ public:
 
     List tail(size_t offset = 0) const;
 
+    List sublist(size_t offset, size_t len) const;
+
     iterator begin() {
         return m_refer ? m_refer->begin() + m_start : shared_t::iterator();
     }

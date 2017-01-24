@@ -427,6 +427,18 @@ List List::tail(size_t offset) const
     }
 }
 
+List List::sublist(size_t offset, size_t len) const
+{
+    if (!m_length && len) {
+        SSS_POSITION_THROW(std::runtime_error, "none-empty sublist from an empty list");
+    }
+    if (offset >= m_length) {
+        SSS_POSITION_THROW(std::runtime_error,
+                           "require ", offset, "th tail; but only ", m_length, "element(s).");
+    }
+    return List(m_refer, m_start + offset , std::min(m_length - offset, len));
+}
+
 // 注意，这是lisp语义的car！
 Object List::car(size_t n) const
 {
