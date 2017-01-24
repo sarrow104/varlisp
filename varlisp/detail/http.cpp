@@ -74,7 +74,7 @@ void downloadUrl(
                 sss::string_cast<unsigned int>(content_length_str);
             COLOG_DEBUG(SSS_VALUE_MSG(oss.str().length()));
             size_t actual_recieved = oss.tellp();
-            if (actual_recieved > content_length) {
+            if (actual_recieved > content_length && !headers.has("Content-Encoding")) { //  "gzip"
                 COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '>',
                             SSS_VALUE_MSG(content_length));
                 break;
@@ -85,11 +85,11 @@ void downloadUrl(
                 // retry
             }
             if (actual_recieved > max_content.length() &&
-                actual_recieved <= content_length) {
+                (actual_recieved <= content_length || headers.has("Content-Encoding"))) {
                 max_content = oss.str();
                 oss.str("");
             }
-            if (max_content.length() == content_length) {
+            if (max_content.length() == content_length || (actual_recieved > content_length && headers.has("Content-Encoding"))) {
                 break;
             }
         }
