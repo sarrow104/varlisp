@@ -51,9 +51,9 @@ struct cast_visitor : public boost::static_visitor<Object>
             return res;
         }
         else if (auto p_string = boost::get<varlisp::string_t>(&res)) {
-            std::string name = p_string->to_string();
-            if (detail::is_symbol(name)) {
-                return symbol(name);
+            auto name = p_string->gen_shared();
+            if (detail::is_symbol(*name)) {
+                return symbol(*name);
             }
         }
         return Nill{};
@@ -75,9 +75,9 @@ struct cast_visitor : public boost::static_visitor<Object>
             return *p_int64;
         }
         else if (auto * p_string = boost::get<varlisp::string_t>(&res)) {
-            std::string s = p_string->to_string();
+            auto s = p_string->gen_shared();
             try {
-                return sss::string_cast<int64_t>(s);
+                return sss::string_cast<int64_t>(*s);
             }
             catch(...) {
                 return Nill{};
@@ -100,9 +100,9 @@ struct cast_visitor : public boost::static_visitor<Object>
             return double(*p_int64);
         }
         else if (auto * p_string = boost::get<varlisp::string_t>(&res)) {
-            std::string s = p_string->to_string();
+            auto s = p_string->gen_shared();
             try {
-                return sss::string_cast<double>(s);
+                return sss::string_cast<double>(*s);
             }
             catch(...) {
                 return Nill{};
@@ -133,7 +133,7 @@ struct cast_visitor : public boost::static_visitor<Object>
     //NOTE cast到正则
     Object operator() (const varlisp::regex_t&, const varlisp::string_t& s) const
     {
-        return std::make_shared<RE2>(s.to_string_view().to_string());
+        return std::make_shared<RE2>(*s.gen_shared());
     }
     // NOTE
     // 并不准备支持cast到gumbo-node
