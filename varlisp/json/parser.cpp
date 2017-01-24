@@ -5,6 +5,7 @@
 
 #include <sss/util/PostionThrow.hpp>
 #include <sss/colorlog.hpp>
+#include <sss/util/utf8.hpp>
 
 #include "../detail/list_iterator.hpp"
 
@@ -212,7 +213,9 @@ struct JParser
                         break;
 
                     case 'u':   // 4hexadecimal digits
+                        // \"\u77e5\u4e4e\u7528\u6237\"
                         {
+                            int32_t code_point = 0u;
                             if (s.size() < 6) {
                                 SSS_POSITION_THROW(std::runtime_error,
                                                    "unfinished ascii unicode", s);
@@ -223,7 +226,10 @@ struct JParser
                                     SSS_POSITION_THROW(std::runtime_error,
                                                        "unfinished ascii unicode", s);
                                 }
+                                code_point *= 16;
+                                code_point += sss::hex2int(*it_hex);
                             }
+                            sss::util::utf8::dumpout2utf8(&code_point, &code_point + 1, std::back_inserter(ret));
                             s.remove_prefix(6);
                         }
                         break;
