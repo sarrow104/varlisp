@@ -56,7 +56,7 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_program =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    oss << p_program->to_string();
+    oss << *p_program->gen_shared();
 
     static sss::util::Escaper esp("\\ \"'[](){}?*$&");
     for (auto it = args.begin() + 1;
@@ -85,6 +85,56 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
     return Object(ret);
 }
 
+REGIST_BUILTIN("system", 1, -1,  eval_system,
+               "(system "") -> return-code\n"
+               "(system "" arg1 arg2 arg3) -> return-code");
+
+/**
+ * @brief
+ *
+ *  NOTE 不会对第一个参数进行转义！
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+
+Object eval_system(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char* funcName = "system";
+
+    std::array<Object, 1> objs;
+
+    const string_t* p_program =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+
+    std::ostringstream oss;
+    oss << *p_program->gen_shared();
+
+    static sss::util::Escaper esp("\\ \"'[](){}?*$&");
+    for (auto it = args.begin() + 1;
+        it != args.end(); ++it)
+    {
+        Object tmp;
+        const Object& current = getAtomicValue(env, *it, tmp);
+        std::ostringstream inner_oss;
+        boost::apply_visitor(raw_stream_visitor(inner_oss, env), current);
+        std::string param = inner_oss.str();
+        if (param.empty()) {
+            continue;
+        }
+        oss << " ";
+        esp.escapeToStream(oss, param);
+    }
+
+    std::string out, err;
+
+    COLOG_INFO("(", funcName, ": ", oss.str(), ')');
+    
+    return Object(static_cast<int64_t>(std::system(oss.str().c_str())));
+}
+
 REGIST_BUILTIN("shell-cd", 1, 1, eval_shell_cd,
                "(shell-cd \"path/to/go\") -> \"new-work-dir\"");
 
@@ -103,7 +153,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string target_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    std::string target_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
 
     bool is_ok = sss::path::chgcwd(target_path);
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
@@ -121,7 +171,7 @@ Object eval_shell_mkdir(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    bool is_ok = sss::path::mkpath(p_path->to_string());
+    bool is_ok = sss::path::mkpath(*p_path->gen_shared());
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
     if (is_ok) {
@@ -156,7 +206,7 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
             const string_t* p_ls_arg =
                 requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-            std::string ls_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_ls_arg->to_string()));
+            std::string ls_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_ls_arg->gen_shared()));
             switch (sss::path::file_exists(ls_path)) {
                 case sss::PATH_TO_FILE:
                     *ret_it++ = *p_ls_arg;
@@ -246,7 +296,7 @@ Object eval_shell_env(varlisp::Environment& env, const varlisp::List& args)
         const string_t* p_path =
             requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-        const char * p_value = ::getenv(p_path->to_string().c_str());
+        const char * p_value = ::getenv(p_path->gen_shared()->c_str());
         if (!p_value) {
             return Nill{};
         }
