@@ -45,7 +45,7 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
     if (args.length() == 2) {
         const string_t *p_sep =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
-        sep = p_sep->to_string();
+        sep = *p_sep->gen_shared();
     }
     varlisp::List ret = varlisp::List::makeSQuoteList();
     if (sep.length() == 1) {
@@ -92,7 +92,7 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     if (args.length() == 2) {
         const string_t *p_sep =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
-        sep = p_sep->to_string();
+        sep = *p_sep->gen_shared();
     }
 
     std::ostringstream oss;
