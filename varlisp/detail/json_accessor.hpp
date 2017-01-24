@@ -10,6 +10,19 @@ namespace varlisp {
 struct Environment;
 struct List;
 namespace detail {
+
+inline bool is_index(const std::string& stem)
+{
+    if (!stem.empty()) {
+        auto it_beg = stem.begin();
+        if (*it_beg == '-' && stem.length() >= 2) {
+            ++it_beg;
+        }
+        return sss::is_all(it_beg, stem.end(), static_cast<int(*)(int)>(std::isdigit));
+    }
+    return false;
+}
+
 class json_accessor
 {
     const std::string&          m_jstyle_name;
@@ -47,15 +60,21 @@ public:
 
     const varlisp::Object * access(const varlisp::Environment& env) const;
     varlisp::Object *       access(varlisp::Environment& env) const;
+    varlisp::Object&        query_location(varlisp::Environment& env) const;
 
     static std::pair<const varlisp::Object*, const varlisp::Environment*> locate(const varlisp::Environment& env, const varlisp::symbol& sym);
     static std::pair<varlisp::Object*, varlisp::Environment*> locate(varlisp::Environment& env, const varlisp::symbol& sym);
 
 private:
+    Object& query_field(Object& obj, size_t id) const;
+    Object& query_index(Object& obj, size_t id) const;
     const Object * find_name(const Object* obj, size_t id) const;
     const Object * find_index(const Object* list, size_t id) const;
     Object * find_name(Object* obj, size_t id) const;
     Object * find_index(Object* list, size_t id) const;
 };
+
+// TODO eval_locate的代码，也与access，这部分代码，重复了，应该合并。
+// 说白了，就是更改access内部接口。提供更方便的——
 } // namespace detail
 } // namespace varlisp
