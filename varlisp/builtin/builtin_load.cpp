@@ -80,10 +80,10 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    auto full_path = varlisp::detail::envmgr::expand(p_path->to_string());
+    auto full_path = varlisp::detail::envmgr::expand(*p_path->gen_shared());
     if (sss::path::is_relative(full_path) && !detail::get_script_stack().empty()) {
         full_path =
-            sss::path::append_copy(sss::path::dirname(detail::get_script_stack().back().to_string()), p_path->to_string());
+            sss::path::append_copy(sss::path::dirname(*detail::get_script_stack().back().gen_shared()), *p_path->gen_shared());
     }
     else {
         full_path = sss::path::full_of_copy(full_path);
@@ -126,7 +126,7 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string full_path = sss::path::full_of_copy(p_path->to_string());
+    std::string full_path = sss::path::full_of_copy(*p_path->gen_shared());
     if (sss::path::file_exists(full_path) == sss::PATH_TO_DIRECTORY) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName, "`", *p_path,
                           "` is a dir! cannot write context into a dir!)");
@@ -141,6 +141,9 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
             if (dumped_obj_set.find(it->first) == dumped_obj_set.end()) {
                 dumped_obj_set.insert(it->first);
                 if (boost::get<varlisp::Builtin>(&it->second.first)) {
+                    continue;
+                }
+                if (it->second.second.is_const) {
                     continue;
                 }
                 ofs << "(define " << it->first << " ";
