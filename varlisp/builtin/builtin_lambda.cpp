@@ -14,6 +14,31 @@
 
 namespace varlisp {
 
+REGIST_BUILTIN("call?", 1, 1, eval_call_q,
+               "; call? 检测对象是否可调用，并返回boolean；如果对象不存在，返回nil\n"
+               "(call? symbol) -> boolean");
+
+Object eval_call_q(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "call?";
+    Object tmp;
+    Object * obj = varlisp::findSymbolDeep(env, args.nth(0), tmp, funcName);
+    if (!obj) {
+        return Nill{};
+    }
+
+    varlisp::List ret;
+    if (boost::get<varlisp::Builtin>(obj)) {
+        return true;
+    }
+    else if (boost::get<varlisp::Lambda>(obj)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 REGIST_BUILTIN("signature", 1, 1, eval_signature,
                "; signature 返回可调用对象的基本签名信息\n"
                "; 如果对象不存在，或者不是可调用对象，则返回nil\n"
