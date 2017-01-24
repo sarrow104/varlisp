@@ -6,6 +6,7 @@
 #include <sss/util/Memory.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/algorithm.hpp>
+#include <sss/debug/value_msg.hpp>
 
 #include "eval_visitor.hpp"
 #include "detail/json_accessor.hpp"
@@ -63,9 +64,17 @@ void   Environment::print(std::ostream& o) const
     o << '}';
 }
 
+// FIXME 改名！
+// deep_find 1. 考虑paent，2.考虑了json_accessor ； 而类似名称的find()仅考虑了当前层
+//
+// 也就是说，函数命名不规范。最好更换API名字。
+// local_find,deep_find,json_access等等
+// 从逻辑上，find应该也支持json_access，只不过只针对当前环境。
+// 这样，deep_find，就可以写得简单。
 const Object* Environment::deep_find(const std::string& name) const
 {
     detail::json_accessor jc(name);
+    COLOG_DEBUG(SSS_VALUE_MSG(name), SSS_VALUE_MSG(jc.has_sub()));
     if (!jc.has_sub()) {
         const Environment* pe = this;
         const Object* ret = 0;
@@ -104,6 +113,8 @@ Object* Environment::find(const std::string& name)
     return const_cast<Object*>(const_cast<const Environment*>(this)->find(name));
 }
 
+// TODO erase 这里，也有些不合适。undef函数内部，使用json_accessor完成深度定位方式的删除。
+// 这部分逻辑，应该添加到Environment这里。或者额外添加一个visitor类。
 bool Environment::erase(const std::string& name)
 {
     // FIXME 貌似不能erase子对象，只能整个删除
@@ -135,6 +146,13 @@ Environment * Environment::ceiling(){
 
 // TODO 增加一个wrapper class；
 // 当完成赋值动作的时候，重建链接关系；
+//
+// FIXME 对下标的支持；
+//
+// 逻辑上更好的现实，是分别使用SList的数字下标和Environment()的symbol下标
+// 递归循环来处理，而不是一股脑，用本函数，完成处理。
+//
+// 这样考虑的话，内部逻辑，应该在json_accessor里面来完成处理。
 Object& Environment::operator [](const std::string& name)
 {
     detail::json_accessor jc(name);
@@ -142,25 +160,29 @@ Object& Environment::operator [](const std::string& name)
         return this->BaseT::operator[](name).first;
     }
     else {
-        std::string env_name = jc.prefix();
-        auto it = this->BaseT::find(env_name);
-        if (it == this->BaseT::end()) {
-            it = this->BaseT::emplace_hint(it,
-                                           std::move(env_name),
-                                           std::make_pair(std::move(Environment(this)), std::move(varlisp::property_t(false)))); 
-            if (it == this->BaseT::end()) {
-                SSS_POSITION_THROW(std::runtime_error, "insert errror!");
-            }
-        }
-        Environment * p_inner = boost::get<Environment>(&it->second.first);
-        if (!p_inner) {
-            it->second.first = Environment(this);
-            p_inner = boost::get<Environment>(&it->second.first);
-            if (!p_inner) {
-                SSS_POSITION_THROW(std::runtime_error, "assignment error null");
-            }
-        }
-        return p_inner->operator[](jc.tail());
+        return jc.query_location(*this);
+        // std::string env_name = jc.prefix();
+        // auto it = this->BaseT::find(env_name);
+        // if (it == this->BaseT::end()) {
+        //     // FIXME 这里，提前假定类型是Environment()——
+        //     // 要知道，也有可能是list!
+        //     // 因此，应该通过下一层"下标"的具体值，来决定如何插入。
+        //     it = this->BaseT::emplace_hint(it,
+        //                                    std::move(env_name),
+        //                                    std::make_pair(std::move(Environment(this)), std::move(varlisp::property_t(false)))); 
+        //     if (it == this->BaseT::end()) {
+        //         SSS_POSITION_THROW(std::runtime_error, "insert errror!");
+        //     }
+        // }
+        // Environment * p_inner = boost::get<Environment>(&it->second.first);
+        // if (!p_inner) {
+        //     it->second.first = Environment(this);
+        //     p_inner = boost::get<Environment>(&it->second.first);
+        //     if (!p_inner) {
+        //         SSS_POSITION_THROW(std::runtime_error, "assignment error null");
+        //     }
+        // }
+        // return p_inner->operator[](jc.tail());
     }
 }
 

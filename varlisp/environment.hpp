@@ -22,8 +22,12 @@ struct property_t
 struct Environment : private std::map<std::string, std::pair<Object, property_t>> {
     explicit Environment(Environment* parent = 0);
     ~Environment();
-    // Environment(const Environment& ref);
-    // Environment& operator = (const Environment& ref);
+
+    Environment(const Environment& ref) = default;
+    Environment& operator = (const Environment& ref) = default;
+
+    Environment(Environment&&) = default;
+    Environment& operator =(Environment&&) = default;
 
 public:
     typedef std::map<std::string, std::pair<Object, property_t> > BaseT;
