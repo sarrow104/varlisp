@@ -23,7 +23,7 @@ Object eval_digest_sha1_file(varlisp::Environment& env,
     const auto* p_fname = varlisp::requireTypedValue<varlisp::string_t>(
         env, detail::car(args), tmp, funcName, 0, DEBUG_INFO);
     try {
-        std::string path = sss::path::full_of_copy(p_fname->to_string());
+        std::string path = sss::path::full_of_copy(*p_fname->gen_shared());
         return string_t(ss1x::uuid::sha1::fromFile(path));
     }
     catch (...) {
@@ -59,7 +59,7 @@ Object eval_digest_hex_string(varlisp::Environment& env,
     const auto* p_string = varlisp::requireTypedValue<varlisp::string_t>(
         env, detail::car(args), tmp, funcName, 0, DEBUG_INFO);
 
-    return string_t(sss::to_hex(p_string->to_string()));
+    return string_t(sss::to_hex(*p_string->gen_shared()));
 }
 
 }  // namespace varlisp
