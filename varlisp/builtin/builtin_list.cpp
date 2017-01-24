@@ -7,6 +7,7 @@
 #include "../object.hpp"
 #include "../builtin_helper.hpp"
 #include "../eval_visitor.hpp"
+#include "../strict_equal_visitor.hpp"
 
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
@@ -81,7 +82,7 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
     int index = *p_nth >= 0 ? *p_nth : p_list->length() + *p_nth;
     if (index < 0) {
         SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": 2nd argument too small");
+                          "(", funcName, ": 2nd argument too small; query ", *p_nth, " from ", p_list->size());
     }
     return p_list->nth(index);
 }
@@ -253,7 +254,13 @@ void append_flat(varlisp::List& out, const varlisp::List& ref)
             // NOTE 内部的quote，当做单一元素，也就不必检查到底是'(list...)还是
             // 'symbol
             if (p_inner->is_quoted()) {
-                out.append(ref.nth(i));
+                const auto * p_list = p_inner->get_slist();
+                if (p_list) {
+                    detail::append_flat(out, *p_list);
+                }
+                else {
+                    out.append(ref.nth(i));
+                }
             }
             else {
                 detail::append_flat(out, *p_inner);
@@ -390,6 +397,42 @@ Object eval_range(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::List::makeSQuoteObj(ret);
 }
 
+REGIST_BUILTIN("find", 2, 3, eval_find,
+               ": find 查找元素；nil表示未找到；其他整数，表示下标\n"
+               "(find item '(list)) -> index | nil\n"
+               "(find item '(list) operation) -> index | nil\n");
+
+Object eval_find(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "find";
+
+    std::array<Object, 3> objs;
+    const auto & item = getAtomicValue(env, args.nth(0), objs[0]);
+    const auto * p_list = getQuotedList(env, args.nth(1), objs[1]);
+    const Object * p_callAble = nullptr;
+    varlisp::requireOnFaild<varlisp::QuoteList>(p_list, funcName, 1, DEBUG_INFO);
+    if (args.length() >= 3) {
+        p_callAble = &getAtomicValue(env, args.nth(2), objs[2]);
+    }
+
+    if (p_callAble) {
+        for (size_t i = 0; i != p_list->size(); ++i) {
+            Object result = varlisp::apply(env, *p_callAble, p_list->sublist(i, 1));
+            if (boost::apply_visitor(strict_equal_visitor(env), item, result)) {
+                return int64_t(i);
+            }
+        }
+    }
+    else {
+        for (size_t i = 0; i != p_list->size(); ++i) {
+            if (boost::apply_visitor(strict_equal_visitor(env), item, p_list->nth(i))) {
+                return int64_t(i);
+            }
+        }
+    }
+    return Nill{};
+}
+    
 // TODO reverse reverse也可以用for来实现……
 // (define (reverse l)
 //  (letn ((ret-l []))
