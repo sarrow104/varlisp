@@ -10,14 +10,20 @@ struct Environment;
 struct Define {
     varlisp::symbol name;
     Object value;
+    Object force_rewrite;
 
     Define() = default;
     Define(const Define&) = default;
     Define& operator=(const Define&) = default;
 
     Define(const varlisp::symbol& n, const Object& v) : name(n), value(v) {}
+    Define(const varlisp::symbol& n, const Object& v, const Object& f) : name(n), value(v), force_rewrite(f) {}
     Define(varlisp::symbol&& n, Object&& v)
         : name(std::move(n)), value(std::move(v))
+    {
+    }
+    Define(varlisp::symbol&& n, Object&& v, Object&& f)
+        : name(std::move(n)), value(std::move(v)), force_rewrite(std::move(f))
     {
     }
 
