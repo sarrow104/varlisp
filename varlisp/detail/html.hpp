@@ -64,6 +64,9 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
 void         set_gqnode_indent(const std::string& ind);
 std::string& get_gqnode_indent();
 
+void         set_rewrite_original(bool o);
+bool&        get_rewrite_original();
+
 } // namespace html
 } // namespace detail
 } // namespace varlisp
