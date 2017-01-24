@@ -662,7 +662,7 @@ int parseParamVector(varlisp::Tokenizer& toknizer,
     return args.size() - old_len;
 }
 
-// (define symbol expr)
+// (define symbol expr boolean-expr)
 // (define (symbol arg-list) "doc" (expr-list))
 Object Parser::parseSpecialDefine()
 {
@@ -677,12 +677,21 @@ Object Parser::parseSpecialDefine()
         this->m_toknizer.consume();
         varlisp::Object value = this->parseExpression();
 
+        varlisp::Object force;
+        if (this->m_toknizer.lookahead(0) != Token(varlisp::right_parenthese)) {
+            force = this->parseExpression();
+        }
+
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
             SSS_POSITION_THROW(std::runtime_error, "expect ')'; but",
                                this->m_toknizer.lookahead(0));
         }
-
-        return Define(*p_name, value);
+        if (force.which()) {
+            return Define(*p_name, value, force);
+        }
+        else {
+            return Define(*p_name, value);
+        }
     }
     else if (const varlisp::parenthese_t* p_v =
              boost::get<varlisp::parenthese_t>(&tok)) {
