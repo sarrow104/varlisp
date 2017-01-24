@@ -34,6 +34,12 @@ REGIST_BUILTIN("undef", 1, 1, eval_undef, "(undef symbol) -> boolean");
  *
  * @return
  */
+// TODO 删除slist中，特定index原始。
+// 当前是通过json_accessor::locate()->std::pair<> 方法来完成的。
+// 但是，当前并不支持slist；
+// 麻烦在于，我无法提供一个统一的接口。
+// 因为，整数index和字符串的field，是不同的类型，不方便用统一的类型来表示；
+// 最好，全部用Object来表示——不管是index，symbol还是env……当然，这也有问题——我不想拷贝……
 Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "undef";
@@ -54,14 +60,14 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
                            "(", funcName, ": tobe delete symbol ", p_sym->name(), " not exist)");
     }
     if (jc.has_sub()) {
-        if (!sss::is_all(jc.stems().back(), static_cast<int(*)(int)>(std::isdigit))) {
+        if (!detail::is_index(jc.stems().back())) {
             location.second->erase(jc.stems().back());
             ret = true;
         }
         else {
             std::vector<int> indexer;
             for (size_t i = jc.stems().size(); i != 0; --i) {
-                if (!sss::is_all(jc.stems()[i - 1], static_cast<int(*)(int)>(std::isdigit))) {
+                if (!detail::is_index(jc.stems()[i - 1])) {
                     break;
                 }
                 indexer.push_back(sss::string_cast<int>(jc.stems()[i - 1]));
@@ -304,7 +310,10 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
                                *p_sym, " not exist!)");
         }
         Object res;
-        *p_value = varlisp::getAtomicValue(env, args.nth(i + 1), res);
+        // FIXME
+        auto & x = varlisp::getAtomicValue(env, args.nth(i + 1), res);
+        COLOG_DEBUG(*p_value, x);
+        *p_value = std::move(x);
     }
     if (!p_value) {
         SSS_POSITION_THROW(std::runtime_error,
@@ -314,7 +323,7 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("setf", 2, 2, eval_setf,
-               "; setf 是使用了setq的宏；暂时不支持！\n"
+               "; setf 在clisp等，里面是使用了setq的宏；这里是在当前环境，定义或者修改一个变量\n"
                "(setf \"varname\" expr) -> nil");
 
 /**
@@ -332,10 +341,18 @@ Object eval_setf(varlisp::Environment& env, const varlisp::List& args)
 {
     // TODO FIXME
     const char * funcName = "setf";
-    SSS_POSITION_THROW(std::runtime_error,
-                       "(",funcName,": not support yet!)");
 
-    return varlisp::Nill{};
+    const varlisp::symbol* p_sym =
+        boost::get<varlisp::symbol>(&args.nth(0));
+    varlisp::requireOnFaild<varlisp::symbol>(p_sym, funcName, 0, DEBUG_INFO);
+
+    Object value;
+    const Object& result = varlisp::getAtomicValue(env,
+                                                   args.nth(1),
+                                                   value);
+    env[p_sym->name()] = result;
+
+    return result;
 }
 
 REGIST_BUILTIN("swap", 2, 2, eval_swap,
@@ -388,7 +405,7 @@ Object eval_swap(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN("locate", 2, 2, eval_locate,
                "; locate 在某{}或者[]，按照json-accessor的语法，返回子对象的值\n"
                "; 允许字面值\n"
-               "(locate {}-or-[]-value '(symbol-or-int...)) -> sub-value");
+               "(locate {}-or-[]-value '(string-or-int...)) -> sub-value");
 
 // TODO 如何用类似的语法，进行更改值呢？
 Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
@@ -407,7 +424,9 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
     auto * p_obj = &objRef;
     auto * p_env = &env;
     for (auto stem_it = p_stem_list->begin(); stem_it != p_stem_list->end(); ++stem_it) {
-        if (auto * p_index = boost::get<int64_t>(&*stem_it)) {
+        Object tmp2;
+        const auto & locator = getAtomicValue(env, *stem_it, tmp2);
+        if (auto * p_index = boost::get<int64_t>(&locator)) {
             auto * p_list = boost::get<varlisp::List>(p_obj);
             if (!p_list) {
                 SSS_POSITION_THROW(std::runtime_error,
@@ -421,11 +440,29 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
 
             p_obj = const_cast<varlisp::Object*>(&p_list->nth(*p_index));
             if (!p_obj) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                   *p_index, "th element not exist! only ", p_list->length(), " element(s).");
+                SSS_POSITION_THROW(std::runtime_error, *p_index,
+                                   "th element not exist! only ",
+                                   p_list->length(), " element(s).");
             }
         }
-        else if (auto * p_sym = boost::get<varlisp::symbol>(&*stem_it)) {
+        else if (auto * p_str = boost::get<string_t>(&locator)) {
+            p_env = const_cast<varlisp::Environment*>(boost::get<varlisp::Environment>(p_obj));
+            if (!p_env) {
+                SSS_POSITION_THROW(std::runtime_error,
+                                   "need an Environment here , but ", *stem_it);
+            }
+            std::string name = *p_str->gen_shared();
+            p_obj = p_env->find(name);
+            if (!p_obj) {
+                SSS_POSITION_THROW(std::runtime_error, "field ", name,
+                                   " not exist! use (symbol ...) to check");
+            }
+        }
+        else if (auto * p_slist = boost::get<varlisp::List>(&locator)) {
+            if (!p_slist->is_quoted()) {
+                SSS_POSITION_THROW(std::runtime_error, "slist required!");
+            }
+            auto * p_sym = p_slist->unquoteType<varlisp::symbol>();
             p_env = const_cast<varlisp::Environment*>(boost::get<varlisp::Environment>(p_obj));
             if (!p_env) {
                 SSS_POSITION_THROW(std::runtime_error,
@@ -433,13 +470,14 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
             }
             p_obj = p_env->find(p_sym->name());
             if (!p_obj) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                   "field ", p_sym->name(), " not exist! use (symbol ...) to check");
+                SSS_POSITION_THROW(std::runtime_error, "field ", p_sym->name(),
+                                   " not exist! use (symbol ...) to check");
             }
         }
         else {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "(", funcName, ": type error; ", p_obj->which(), " )");
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                               ": type error; ", stem_it->which(), " at ",
+                               stem_it - p_stem_list->begin(), " )");
         }
     }
 
