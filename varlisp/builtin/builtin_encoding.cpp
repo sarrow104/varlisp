@@ -196,12 +196,12 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
     while (sp.fetch_next(encoding)) {
         detail::trim(encoding);
         try {
-            std::string encoding_str = encoding.to_string();
+            auto encoding_str = encoding.to_string();
             sss::iConv ic(encoding_str, encoding_str);
             if (!ic.is_ok()) {
                 continue;
             }
-            if (ic.convert(out, p_content->to_string())) {
+            if (ic.convert(out, *p_content->gen_shared())) {
                 has_found = true;
                 break;
             }
@@ -244,8 +244,8 @@ Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
         requireTypedValue<varlisp::string_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
 
     std::string out;
-    sss::iConv ic(p_enc_to->to_string(), p_enc_from->to_string());
-    if (!ic.convert(out, p_content->to_string())) {
+    sss::iConv ic(*p_enc_to->gen_shared(), *p_enc_from->gen_shared());
+    if (!ic.convert(out, *p_content->gen_shared())) {
         COLOG_ERROR("(iconv: error occurs while convert from", *p_enc_from, "to", *p_enc_to);
         return Object{Nill{}};
     }
@@ -282,20 +282,25 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     std::string encodings;
     std::string to_encoding = "utf8";
     if (p_encodings) {
-        encodings = p_encodings->to_string();
+        encodings = *p_encodings->gen_shared();
     }
     std::string from_encoding;
-    std::string content = p_content->to_string();
+    auto content = p_content->gen_shared();
+
     if (encodings.empty()) {
-        from_encoding = sss::Encoding::detect(content);
+        from_encoding = sss::Encoding::detect(*content);
     }
     else {
-        from_encoding = sss::Encoding::encodings(content, encodings);
+        from_encoding = sss::Encoding::encodings(*content, encodings);
     }
-    if (!sss::Encoding::isCompatibleWith(from_encoding, to_encoding)) {
+
+    if (sss::Encoding::isCompatibleWith(from_encoding, to_encoding)) {
+        return *p_content;
+    }
+    else {
         std::string out;
         sss::iConv ic(to_encoding, from_encoding);
-        if (ic.convert(out, content)) {
+        if (ic.convert(out, *content)) {
             return string_t(std::move(out));
         }
         else {
@@ -303,7 +308,6 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
             return Object{Nill{}};
         }
     }
-    return *p_content;
 }
 
 } // namespace varlisp
