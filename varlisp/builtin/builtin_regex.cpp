@@ -30,7 +30,7 @@ Object eval_regex(varlisp::Environment &env, const varlisp::List &args)
     std::array<Object, 1> objs;
     const string_t *p_regstr =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-    return std::make_shared<RE2>(p_regstr->to_string());
+    return std::make_shared<RE2>(*p_regstr);
 }
 
 REGIST_BUILTIN("regex-match", 2, 2, eval_regex_match,
@@ -140,7 +140,7 @@ Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
         fmt = *p_fmt;
     }
 
-    std::string out = p_target->to_string();
+    std::string out = *p_target->gen_shared();
     RE2::GlobalReplace(&out, *(*p_regobj), fmt);
     return string_t(std::move(out));
 }
