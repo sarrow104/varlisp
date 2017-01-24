@@ -141,8 +141,8 @@ Object eval_cookie_get_value(varlisp::Environment& env,
     const auto* p_path = varlisp::requireTypedValue<varlisp::string_t>(
         env, args.nth(1), tmp2, funcName, 1, DEBUG_INFO);
 
-    std::string cookie = detail::CookieMgr_t::getCookie(p_domain->to_string(),
-                                                        p_path->to_string());
+    std::string cookie = detail::CookieMgr_t::getCookie(*p_domain->gen_shared(),
+                                                        *p_path->gen_shared());
     if (cookie.empty()) {
         return Nill{};
     }
@@ -168,7 +168,7 @@ Object eval_cookie_set_value(varlisp::Environment& env,
         env, args.nth(2), tmp3, funcName, 2, DEBUG_INFO);
 
     return detail::CookieMgr_t::setCookie(
-        p_domain->to_string(), p_path->to_string(), p_cookie->to_string());
+        *p_domain->gen_shared(), *p_path->gen_shared(), *p_cookie->gen_shared());
 }
 
 }  // namespace varllisp
