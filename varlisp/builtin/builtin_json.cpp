@@ -99,7 +99,7 @@ Object eval_json_indent(varlisp::Environment& env, const varlisp::List& args)
         std::array<Object, 1> objs;
         const auto * p_indent =
             requireTypedValue<string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-        varlisp::detail::json::set_json_indent(p_indent->to_string());
+        varlisp::detail::json::set_json_indent(*p_indent->gen_shared());
     }
     return string_t(varlisp::detail::json::get_json_indent());
 }
