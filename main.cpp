@@ -20,6 +20,33 @@
 #include "varlisp/tokenizer.hpp"
 #include "varlisp/String.hpp"
 
+//http://stackoverflow.com/questions/6364681/how-to-handle-control-c-in-a-boost-tcp-udp-server
+#include <signal.h> // or <csignal> in C++
+
+volatile int WE_MUST_STOP = 0;
+void ctrlchandler(int v) {
+    std::cout << __PRETTY_FUNCTION__ << v << std::endl;
+    /*...*/ WE_MUST_STOP = 1;
+}
+void killhandler(int v) {
+    std::cout << __PRETTY_FUNCTION__ << v << std::endl;
+    /*...*/ WE_MUST_STOP = 1;
+    /*...*/ WE_MUST_STOP = 2;
+}
+ 
+// 
+// int main() {
+//   signal(SIGINT, ctrlchandler);
+//   signal(SIGTERM, killhandler);
+//   /* ... */
+// 
+//   // e.g. main loop like this:
+//   while(pump_loop() && 0 == WE_MUST_STOP) { }
+// 
+// }
+//
+// http://www.boost.org/doc/libs/1_47_0/doc/html/boost_asio/overview/signals.html
+
 // TODO FIXME
 // 这里需要和tokenizer同步修改！
 // 功能应该独立出来！
@@ -280,6 +307,12 @@ int main(int argc, char* argv[])
     (void)argc;
     (void)argv;
 
+    // NOTE 注册了ctrlc-handler之后，ctrl-c，就不会终止执行总的Interpret::eval()函数了。
+    // 但是，这与我停止内部的asio的需求，也不符——
+    // 我实际的需求是，停止当前，正在执行中的varlisp函数，然后提示符，开始下一句提示。
+    // signal(SIGINT, ctrlchandler);
+    // signal(SIGTERM, killhandler);
+
     // sss::colog::set_log_elements(sss::colog::ls_TIME_NANO |
     //                              sss::colog::ls_FILE_VIM |
     //                              sss::colog::ls_FUNC |
@@ -295,7 +328,7 @@ int main(int argc, char* argv[])
 
     bool echo_in_load = false;
     bool quit_on_load_complete = false;
-    bool load_init_script = false;
+    bool load_init_script = true;
     int i = 1;
     while (i < argc) {
         if (has_match(argv[i], {"--echo", "-e"})) {
@@ -311,6 +344,9 @@ int main(int argc, char* argv[])
         }
         else if (has_match(argv[i], {"--init", "-i"})) {
             load_init_script = true;
+        }
+        else if (has_match(argv[i], {"--no-init", "-n"})) {
+            load_init_script = false;
         }
         else if (has_match(argv[i], {"--help", "-h"})) {
             help_msg();
