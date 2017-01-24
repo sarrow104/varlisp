@@ -56,7 +56,7 @@ Object eval_path_fnamemodify(varlisp::Environment &env, const varlisp::List &arg
     const string_t *p_modifier =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
-    std::string mod_name = sss::path::modify_copy(p_path->to_string(), p_modifier->to_string());
+    std::string mod_name = sss::path::modify_copy(*p_path->gen_shared(), *p_modifier->gen_shared());
     return Object(string_t(std::move(mod_name)));
 }
 
@@ -74,8 +74,8 @@ Object eval_path_append(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_toAppend =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
-    std::string out_name = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
-    sss::path::append(out_name, p_toAppend->to_string());
+    std::string out_name = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    sss::path::append(out_name, *p_toAppend->gen_shared());
     return string_t(std::move(out_name));
 }
 
@@ -105,14 +105,14 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     if (args.length() > 1) {
         const string_t *p_filter =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
-        f.reset(new sss::path::name_filter_t(p_filter->to_string()));
+        f.reset(new sss::path::name_filter_t(*p_filter->gen_shared()));
     }
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto ret_it = detail::list_back_inserter<Object>(ret);
     
     sss::path::file_descriptor fd;
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
     sss::path::glob_path gp(path, fd, f.get());
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
@@ -140,7 +140,7 @@ Object eval_file_q(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
     return sss::path::file_exists(path) == sss::PATH_TO_FILE;
 }
 
@@ -156,7 +156,7 @@ Object eval_directory_q(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
     return sss::path::file_exists(path) == sss::PATH_TO_DIRECTORY;
 }
 
@@ -190,7 +190,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
         Object filter;
         const string_t *p_filter =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
-        f.reset(new sss::path::name_filter_t(p_filter->to_string()));
+        f.reset(new sss::path::name_filter_t(*p_filter->gen_shared()));
     }
 
     int depth = 0;
@@ -205,7 +205,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     auto ret_it = detail::list_back_inserter<Object>(ret);
 
     sss::path::file_descriptor fd;
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(p_path->to_string()));
+    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
     sss::path::glob_path_recursive gp(path, fd, f.get(), false);
     gp.max_depth(depth);
     while (gp.fetch()) {
@@ -226,9 +226,7 @@ Object eval_expand(varlisp::Environment &env, const varlisp::List &args)
     std::array<Object, 1> objs;
     const string_t *p_path = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-    return string_t(varlisp::detail::envmgr::expand(p_path->to_string()));
-    // return string_t(
-    //     std::move(varlisp::detail::envmgr::expand(p_path->to_string())));
+    return string_t(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
 }
 
 }  // namespace varlisp
