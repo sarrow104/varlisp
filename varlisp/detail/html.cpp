@@ -205,7 +205,7 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
     switch (apNode->type)
     {
         case GUMBO_NODE_TEXT:
-            if (CQueryUtil::childNum(apNode->parent) >= 2) {
+            if (!pre_mode && CQueryUtil::childNum(apNode->parent) >= 2) {
                 o << ind;
             }
             if (CQueryUtil::eleTagID(apNode->parent) == GUMBO_TAG_SCRIPT) {
@@ -231,7 +231,10 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                     pre_mode = true;
                 }
 
-                o << ind << "<" << tagName;
+                if (!pre_mode) {
+                    o << ind;
+                }
+                o << "<" << tagName;
                 for (size_t i = 0; i < CQueryUtil::attrNum(apNode); ++i) {
                     std::string attrName = CQueryUtil::nthAttr(apNode, i)->name;
                     if (attrName == "href" || attrName == "src") {
@@ -322,24 +325,36 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
             break;
 
         case GUMBO_NODE_CDATA:
-            o << ind << "<!CDATA[" << CQueryUtil::getText(apNode) << "]]>";
+            if (!pre_mode) {
+                o << ind;
+            }
+            o << "<!CDATA[" << CQueryUtil::getText(apNode) << "]]>";
             break;
 
         case GUMBO_NODE_COMMENT:
-            o << ind << "<!--" << CQueryUtil::getText(apNode) << "-->";
+            if (!pre_mode) {
+                o << ind;
+            }
+            o << "<!--" << CQueryUtil::getText(apNode) << "-->";
             break;
 
         case GUMBO_NODE_TEMPLATE:
-            o << ind << "<!-- GUMBO_NODE_TEMPLATE not implement -->";
+            if (!pre_mode) {
+                o << ind;
+            }
+            o << "<!-- GUMBO_NODE_TEMPLATE not implement -->";
             break;
 
         case GUMBO_NODE_DOCUMENT:
-            o << ind << CDocType(&apNode->v.document) << std::endl;
+            if (!pre_mode) {
+                o << ind;
+            }
+            o << CDocType(&apNode->v.document) << std::endl;
             for (size_t i = 0; i < CQueryUtil::childNum(apNode); i++)
             {
                 gumbo_rewrite_outterHtml(
                     o, CQueryUtil::nthChild(apNode, i), ind, output_dir, rs_mgr,
-                    request_header, proxy_domain, proxy_port);
+                    request_header, proxy_domain, proxy_port, pre_mode);
             }
             break;
 
@@ -347,7 +362,6 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
             if (pre_mode) {
                 o << CQueryUtil::getText(apNode);
             }
-            //o << ind << " ";
             break;
 
         default:
@@ -374,8 +388,11 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
     GumboNode * apNode = reinterpret_cast<GumboNode*>(n.get());
 
     CQueryUtil::CIndenter indent(get_gqnode_indent());
+
+    // NOTE 如果开启了 rewrite_original，则相当于一开始，就使用pre-mode——不添加缩进
+    // ，不添加额外的空格；并且保留空白符号
     gumbo_rewrite_outterHtml(oss, apNode, indent, output_dir, rs_mgr, request_header,
-                             proxy_domain, proxy_port);
+                             proxy_domain, proxy_port, detail::html::get_rewrite_original());
     std::string content(oss.str());
     int ec = ::write(fd, content.c_str(), content.size());
     if (ec == -1) {
@@ -397,6 +414,17 @@ std::string& get_gqnode_indent()
 {
     static std::string indent = " ";
     return indent;
+}
+
+void         set_rewrite_original(bool o)
+{
+    get_rewrite_original() = o;
+}
+
+bool&        get_rewrite_original()
+{
+    static bool rewrite_original = false;
+    return rewrite_original;
 }
 
 } // namespace html
