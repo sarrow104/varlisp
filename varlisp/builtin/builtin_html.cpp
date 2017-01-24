@@ -60,7 +60,7 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
     gumboNode doc{p_content->gen_shared()};
     if (doc.valid()) {
         if (p_query && p_query->length()) {
-            std::vector<gumboNode> vec = doc.find(p_query->to_string());
+            std::vector<gumboNode> vec = doc.find(*p_query->gen_shared());
             varlisp::List ret_nodes = varlisp::List::makeSQuoteList();
             auto back_it = detail::list_back_inserter<Object>(ret_nodes);
             for (auto& item : vec) {
@@ -168,7 +168,7 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
 
     varlisp::List ret_nodes = varlisp::List::makeSQuoteList();
     if (p_node->valid() && p_query && p_query->length()) {
-        std::vector<gumboNode> vec = p_node->find(p_query->to_string());
+        std::vector<gumboNode> vec = p_node->find(*p_query->gen_shared());
         auto back_it = detail::list_back_inserter<Object>(ret_nodes);
         for (auto& item : vec) {
             *back_it++ = item;
@@ -212,7 +212,7 @@ Object eval_gqnode_indent(varlisp::Environment& env, const varlisp::List& args)
     if (args.size()) {
         Object tmp;
         const auto * p_indent =requireTypedValue<varlisp::string_t>(env, args.nth(0), tmp, funcName, 0, DEBUG_INFO);
-        detail::html::set_gqnode_indent(p_indent->to_string());
+        detail::html::set_gqnode_indent(*p_indent->gen_shared());
     }
     return string_t(detail::html::get_gqnode_indent());
 }
@@ -241,7 +241,7 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     if (p_gqnode->valid()) {
-        std::string attribute = p_gqnode->attribute(p_attrib_name->to_string());
+        std::string attribute = p_gqnode->attribute(*p_attrib_name->gen_shared());
         if (!attribute.empty()) {
             return string_t{std::move(attribute)};
         }
@@ -273,7 +273,7 @@ Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     if (p_gqnode->valid()) {
-        return p_gqnode->hasAttr(p_attrib_name->to_string());
+        return p_gqnode->hasAttr(*p_attrib_name->gen_shared());
     }
     return Object{Nill{}};
 }
@@ -552,9 +552,28 @@ Object eval_gumbo_query_text(varlisp::Environment& env,
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     std::ostringstream oss;
-    ss1x::util::html::queryText(oss, p_content->to_string(), p_query->to_string());
+    ss1x::util::html::queryText(oss, *p_content->gen_shared(), *p_query->gen_shared());
 
     return string_t(std::move(oss.str()));
+}
+
+REGIST_BUILTIN("gumbo-original-rewrite", 0, 1, eval_gumbo_original_rewrite,
+               "; gumbo-original-rewrite 是否按原始格式，重写html文本\n"
+               "; 获取该设定值，或者修改该值；默认否(#f)\n"
+               "(gumbo-original-rewrite) -> boolean\n"
+               "(gumbo-original-rewrite boolean) -> boolean\n");
+
+Object eval_gumbo_original_rewrite(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "gumbo-original-rewrite";
+    if (args.length()) {
+        std::array<Object, 1> objs;
+        const auto* p_bool =
+            requireTypedValue<bool>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+        detail::html::set_rewrite_original(*p_bool);
+    }
+
+    return detail::html::get_rewrite_original();
 }
 
 REGIST_BUILTIN("gumbo-rewrite", 2,  -1,  eval_gumbo_rewrite,
@@ -584,11 +603,11 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
             env, p_list->nth(0), proxy_tmp[0],
             "(gumbo-rewrite [fd proxy-domain proxy-port] ...)", 0, DEBUG_INFO);
 
-        proxy_domain = requireTypedValue<varlisp::string_t>(
+        proxy_domain = *requireTypedValue<varlisp::string_t>(
                            env, p_list->nth(1), proxy_tmp[1],
                            "(gumbo-rewrite [fd proxy-domain proxy-port] ...)",
                            1, DEBUG_INFO)
-                           ->to_string();
+                           ->gen_shared();
 
         proxy_port = *requireTypedValue<int64_t>(
             env, p_list->nth(2), proxy_tmp[2],
