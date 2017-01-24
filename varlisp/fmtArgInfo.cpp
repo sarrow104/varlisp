@@ -165,7 +165,7 @@ void parseFmt(const string_t* p_fmt, std::vector<fmtArgInfo>& fmts,
 
 void fmtArgInfo::fillN(std::ostream& o, char fill, size_t n) const
 {
-    COLOG_DEBUG(SSS_VALUE_MSG(n));
+    COLOG_DEBUG(sss::raw_char(fill), SSS_VALUE_MSG(n));
     for (size_t i = 0; i < n; ++i) {
         o.put(fill);
     }

@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <sss/string_view.hpp>
+#include <sss/raw_print.hpp>
 
 namespace varlisp {
 // place holder syntax "{1}{2}{3}
@@ -139,8 +140,9 @@ struct fmtArgInfo {
 
 inline std::ostream& operator << (std::ostream& o, const fmtArgInfo& f)
 {
-    o << '(' << f.index << ", " << f.fill << ", " << f.sign << ", " << f.type
-      << ", " << f.width << ", " << f.precision << ')';
+    o << '(' << f.index << ", " << sss::raw_char(f.fill) << ", "
+      << sss::raw_char(f.sign) << ", " << sss::raw_char(f.type) << ", "
+      << f.width << ", " << f.precision << ')';
     return o;
 }
 
