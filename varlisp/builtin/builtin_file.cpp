@@ -44,7 +44,7 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
         env, args.nth(0), path, funcName, 0, DEBUG_INFO);
 
     std::string full_path = sss::path::full_of_copy(
-        varlisp::detail::envmgr::expand(p_path->to_string()));
+        varlisp::detail::envmgr::expand(*p_path->gen_shared()));
 
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSITION_THROW(std::runtime_error, "(path `", *p_path,
@@ -81,7 +81,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string full_path = sss::path::full_of_copy(p_path->to_string());
+    std::string full_path = sss::path::full_of_copy(*p_path->gen_shared());
     sss::path::mkpath(sss::path::dirname(full_path));
     auto bit_op = std::ios_base::out | std::ios_base::binary;
     if (append) {
@@ -161,7 +161,7 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string std_path = p_path->to_string();
+    auto std_path = p_path->gen_shared();
     int64_t flag = O_RDONLY;
     if (args.length() >= 2) {
         flag = *requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName,
@@ -178,7 +178,7 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
     // 00400 user has read permission
     // 00200 user has write permission
 
-    int64_t fd = ::open(std_path.c_str(), flag, S_IRUSR | S_IWUSR);
+    int64_t fd = ::open(std_path->c_str(), flag, S_IRUSR | S_IWUSR);
     COLOG_DEBUG(SSS_VALUE_MSG(fd));
     if (fd == -1) {
         COLOG_ERROR(std::strerror(errno));
