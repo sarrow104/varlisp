@@ -81,7 +81,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
             downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGetCookie,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
-                                     p_proxy->to_string(), *p_port,
+                                     *p_proxy->gen_shared(), *p_port,
                                      std::placeholders::_3,
                                      varlisp::detail::CookieMgr_t::getCookie,
                                      request_header);
@@ -100,7 +100,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
             downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGet,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
-                                     p_proxy->to_string(), *p_port,
+                                     *p_proxy->gen_shared(), *p_port,
                                      std::placeholders::_3,
                                      request_header);
         }
@@ -113,7 +113,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
         }
     }
 
-    varlisp::detail::http::downloadUrl(p_url->to_string(), max_content, headers, downloadFunc);
+    varlisp::detail::http::downloadUrl(*p_url->gen_shared(), max_content, headers, downloadFunc);
 
     // COLOG_INFO(headers.status_code, headers.http_version);
     Environment ret;
