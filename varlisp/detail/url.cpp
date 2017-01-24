@@ -22,7 +22,8 @@ bool full_of(std::string& target, const std::string& mapping)
         std::get<1>(targets) = std::get<1>(mappings);
         is_modified = true;
     }
-    if (std::get<2>(targets) != std::get<2>(mappings) && std::get<2>(mappings)) {
+    if (std::get<2>(targets) != std::get<2>(mappings) &&
+        !std::get<2>(targets) && std::get<2>(mappings)) {
         std::get<2>(targets) = std::get<2>(mappings);
         is_modified = true;
     }
