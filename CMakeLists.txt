@@ -17,7 +17,7 @@ endif()
 project(${target_name})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Boost COMPONENTS date_time filesystem system thread)
+find_package(Boost COMPONENTS date_time filesystem system thread iostreams)
 find_package(Threads REQUIRED)
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}")
 #set(LIBRARY_OUTPUT_PATH "${CMAKE_SOURCE_DIR}")
@@ -37,5 +37,5 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 #include_directories(~/extra/sss/include)
 #link_directories(~/extra/sss/lib/)
-target_link_libraries(${target_name} ss1x sss uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ssl crypto re2) # must below the bin target definition!
+target_link_libraries(${target_name} ss1x sss uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ssl crypto re2 z) # must below the bin target definition!
 
