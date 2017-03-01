@@ -347,4 +347,64 @@ Object eval_silent(varlisp::Environment& env, const varlisp::List& args)
     return Nill{};
 }
 
+// REGIST_BUILTIN("while", 1, -1, eval_while,
+//                "; while 循环执行\n"
+//                "(for condition expr...) -> result-of-last-expr");
+// 
+// Object eval_while(varlisp::Environment& env, const varlisp::List& args)
+// {
+//     
+// }
+
+REGIST_BUILTIN("tie", 2, 2, eval_tie,
+               "; tie 拆分\n"
+               "; 类似python; 如果两遍，符号和list长度不匹配：\n"
+               "; 名字多，则多余的取nil; 如果list多，则多余的取tail，赋值给最后一个元素\n"
+               "(tie ('var-list...) [list...])");
+
+Object eval_tie(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "tie";
+    std::array<Object, 2> objs;
+    auto * p_var_list = boost::get<varlisp::List>(&args.nth(0));
+    varlisp::requireOnFaild<varlisp::List>(p_var_list, funcName, 0, DEBUG_INFO);
+    auto * p_value_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
+    varlisp::requireOnFaild<varlisp::QuoteList>(p_value_list, funcName, 1, DEBUG_INFO);
+
+    varlisp::List tmp_list;
+    tmp_list.append_list(env, *p_value_list);
+
+    const varlisp::symbol * p_sym = nullptr;
+    for (size_t i = 0; i < p_var_list->size(); ++i) {
+        p_sym = boost::get<varlisp::symbol>(&p_var_list->nth(i));
+        varlisp::requireOnFaild<varlisp::symbol>(p_sym, funcName, i, DEBUG_INFO);
+
+        if (i >= tmp_list.size()) {
+            env[p_sym->name()] = varlisp::Nill{};
+            continue;
+        }
+
+        if (i != p_var_list->size() - 1 || p_var_list->size() == tmp_list.size()) {
+            env[p_sym->name()] = tmp_list.nth(i);
+        }
+        else {
+            if (p_var_list->size() < tmp_list.size()) {
+                if (i == 0) {
+                    env[p_sym->name()] = varlisp::List::makeSQuoteObj(std::move(tmp_list));
+                }
+                else {
+                    env[p_sym->name()] = varlisp::List::makeSQuoteObj(std::move(tmp_list.tail(i - 1)));
+                }
+            }
+        }
+    }
+
+    if (p_sym) {
+        return env[p_sym->name()];
+    }
+    else {
+        return varlisp::List::makeSQuoteObj(std::move(tmp_list));
+    }
+}
+
 } // namespace varlisp
