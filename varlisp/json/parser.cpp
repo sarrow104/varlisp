@@ -6,14 +6,161 @@
 #include <sss/util/PostionThrow.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/util/utf8.hpp>
+#include <sss/jsonpp/parser.hpp>
 
 #include "../detail/list_iterator.hpp"
 
 namespace varlisp {
 namespace json {
 
+struct LispHandle
+{
+    Object& m_result;
+    std::vector<Object*> m_stack_obj;
+    Object* m_kv_value;
+    varlisp::List* m_list;
+    explicit LispHandle(Object& result)
+        : m_result(result), m_kv_value(nullptr), m_list(nullptr)
+    {}
+    bool Null()
+    {
+        if (m_kv_value) {
+            *m_kv_value = Nill{};
+            m_kv_value = nullptr;
+        }
+        else if (m_list){
+            m_list->append(Nill{});
+        }
+        else {
+            SSS_POSITION_THROW(std::runtime_error, "wrong");
+        }
+        return true;
+    }
+    bool Bool(bool v)
+    {
+        if (m_kv_value) {
+            *m_kv_value = v;
+            m_kv_value = nullptr;
+        }
+        else if (m_list){
+            m_list->append(v);
+        }
+        else {
+            SSS_POSITION_THROW(std::runtime_error, "wrong");
+        }
+        return true;
+    }
+    bool Int64(int64_t v)
+    {
+        if (m_kv_value) {
+            *m_kv_value = v;
+            m_kv_value = nullptr;
+        }
+        else if (m_list){
+            m_list->append(v);
+        }
+        else {
+            SSS_POSITION_THROW(std::runtime_error, "wrong");
+        }
+        return true;
+    }
+    bool Double(double v)
+    {
+        if (m_kv_value) {
+            *m_kv_value = v;
+            m_kv_value = nullptr;
+        }
+        else if (m_list){
+            m_list->append(v);
+        }
+        else {
+            SSS_POSITION_THROW(std::runtime_error, "wrong");
+        }
+        return true;
+    }
+    // bool RawNumber(const Ch* str, SizeType length, bool copy);
+    bool String(sss::string_view v)
+    {
+        if (m_kv_value) {
+            *m_kv_value = varlisp::string_t(v.to_string());
+            m_kv_value = nullptr;
+        }
+        else if (m_list){
+            m_list->append(varlisp::string_t(v.to_string()));
+        }
+        else {
+            SSS_POSITION_THROW(std::runtime_error, "wrong");
+        }
+        return true;
+    }
+    bool StartObject()
+    {
+        if (m_stack_obj.empty()) {
+            m_stack_obj.push_back(&m_result);
+            (*m_stack_obj.back()) = varlisp::Environment();
+        }
+        else {
+            if (m_kv_value) {
+                *m_kv_value = varlisp::Environment();
+                m_stack_obj.push_back(m_kv_value);
+                m_kv_value = nullptr;
+            }
+            else if (m_list){
+                m_list->append(varlisp::Environment());
+                m_stack_obj.push_back(&m_list->nth(m_list->size() - 1));
+            }
+            else {
+                SSS_POSITION_THROW(std::runtime_error, "wrong");
+            }
+        }
+        return true;
+    }
+    bool Key(sss::string_view s)
+    {
+        std::string name = s.to_string();
+        auto p_env = boost::get<varlisp::Environment>(m_stack_obj.back());
+        p_env->operator[](name) = Nill{};
+        m_kv_value = &p_env->operator[](name);
+        return true;
+    }
+    bool EndObject(int )
+    {
+        m_stack_obj.pop_back();
+        return true;
+    }
+    bool StartArray()
+    {
+        if (m_stack_obj.empty()) {
+            m_stack_obj.push_back(&m_result);
+            (*m_stack_obj.back()) = varlisp::List::makeSQuoteList();
+        }
+        else {
+            if (m_kv_value) {
+                *m_kv_value = varlisp::List::makeSQuoteList();
+                m_stack_obj.push_back(m_kv_value);
+                m_kv_value = nullptr;
+            }
+            else if (m_list){
+                m_list->append(varlisp::List::makeSQuoteList());
+                m_stack_obj.push_back(&m_list->nth(m_list->size() - 1));
+            }
+            else {
+                SSS_POSITION_THROW(std::runtime_error, "wrong");
+            }
+            m_list = boost::get<varlisp::List>(m_stack_obj.back())->get_slist();
+        }
+        return true;
+    }
+    bool EndArray(int )
+    {
+        m_stack_obj.pop_back();
+        return false;
+    }
+};
+
 struct JParser
 {
+    sss::json::Parser m_p;
     JParser(sss::string_view s, Object& ret)
     {
         sss::string_view s_bak = s;
@@ -44,12 +191,12 @@ struct JParser
         if (s.empty()) {
             SSS_POSITION_THROW(std::runtime_error, "empty string");
         }
-        switch(s.front()) {
-            case '{':
+        switch(m_p.peekType(s)) {
+            case sss::json::Parser::kJE_OBJECT_START:
                 parse_object(s, ret);
                 return true;
 
-            case '[':
+            case sss::json::Parser::kJE_ARRAY_START:
                 parse_array(s, ret);
                 return true;
 
@@ -66,8 +213,8 @@ struct JParser
         }
         else {
             COLOG_DEBUG(s);
-            switch (s.front()) {
-                case '"':
+            switch (m_p.peekType(s)) {
+                case sss::json::Parser::kJE_STRING:
                     {
                         std::string str;
                         this->parse_string(s, str);
@@ -75,25 +222,17 @@ struct JParser
                     }
                     break;
 
-                case '-':
-                case '0': case '1': case '2': case '3': case '4':
-                case '5': case '6': case '7': case '8': case '9':
-                    {
-                        this->parse_number(s, ret);
-                    }
+                case sss::json::Parser::kJE_NUMBER:
+                    this->parse_number(s, ret);
                     break;
 
-                case 't': case 'f':
-                    {
-                        this->parse_bool(s, ret);
-                    }
+                case sss::json::Parser::kJE_TRUE:
+                case sss::json::Parser::kJE_FALSE:
+                    this->parse_bool(s, ret);
                     break;
 
-                case 'n':
-                    {
-                        COLOG_DEBUG(s);
-                        this->parse_null(s, ret);
-                    }
+                case sss::json::Parser::kJE_NULL:
+                    this->parse_null(s, ret);
                     break;
 
                 default:
@@ -105,9 +244,7 @@ struct JParser
     }
     void skip_white_space(sss::string_view& s)
     {
-        while(!s.empty() && std::isspace(s.front())) {
-            s.pop_front();
-        }
+        m_p.consumeWhiteSpace(s);
     }
 
     void parse_object(sss::string_view& s, Object& ret)
@@ -164,179 +301,33 @@ struct JParser
 
     void parse_string(sss::string_view& s, std::string& ret)
     {
-        this->consume_or_throw(s, '"', "expect '\"'");
-        ret.resize(0);
-
-        while (!s.empty() && s.front() != '"') {
-            switch (s.front()) {
-            case '\\':
-                {
-                    if (s.size() < 2) {
-                        SSS_POSITION_THROW(std::runtime_error,
-                                           "unfinished escape char", s);
-                    }
-                    const char * it_b2 = s.begin();
-                    ++it_b2;
-                    switch (*it_b2) {
-                    case '"':   // quotation mark
-                        ret.push_back('"');
-                        s.remove_prefix(2);
-                        break;
-                    case '\\':  // reverse solidus
-                        ret.push_back('\\');
-                        s.remove_prefix(2);
-                        break;
-                    case '/':   // solidus
-                        ret.push_back('/');
-                        s.remove_prefix(2);
-                        break;
-                    case 'b':   // backspace
-                        ret.push_back('\b');
-                        s.remove_prefix(2);
-                        break;
-                    case 'f':   // formfeed
-                        ret.push_back('\f');
-                        s.remove_prefix(2);
-                        break;
-                    case 'n':   // newline
-                        ret.push_back('\n');
-                        s.remove_prefix(2);
-                        break;
-                    case 'r':   // carriage return
-                        ret.push_back('\r');
-                        s.remove_prefix(2);
-                        break;
-
-                    case 't':   // horizontal tab
-                        ret.push_back('\t');
-                        s.remove_prefix(2);
-                        break;
-
-                    case 'u':   // 4hexadecimal digits
-                        // \"\u77e5\u4e4e\u7528\u6237\"
-                        {
-                            int32_t code_point = 0u;
-                            if (s.size() < 6) {
-                                SSS_POSITION_THROW(std::runtime_error,
-                                                   "unfinished ascii unicode", s);
-                            }
-                            const char * it_hex = s.begin() + 2;
-                            for (int i = 0; i < 4; ++i, ++it_hex) {
-                                if (!std::isxdigit(*it_hex)) {
-                                    SSS_POSITION_THROW(std::runtime_error,
-                                                       "unfinished ascii unicode", s);
-                                }
-                                code_point *= 16;
-                                code_point += sss::hex2int(*it_hex);
-                            }
-                            sss::util::utf8::dumpout2utf8(&code_point, &code_point + 1, std::back_inserter(ret));
-                            s.remove_prefix(6);
-                        }
-                        break;
-
-                    default:
-                        SSS_POSITION_THROW(std::runtime_error,
-                                           "unkown escape sequence", s);
-                    }
-                }
-                break;
-
-            default:
-                if (std::iscntrl(s.front())) {
-                    SSS_POSITION_THROW(std::runtime_error,
-                                       "unkonw control char", sss::raw_char(s.front()));
-                }
-                else {
-                    ret.push_back(s.front());
-                    s.pop_front();
-                }
-                break;
-            }
-        }
-        this->consume_or_throw(s, '"', "expect '\"'");
+        m_p.consumeString(s, ret);
     }
 
     void parse_number(sss::string_view& s, Object& ret)
     {
-        sss::string_view s_saved = s;
-        bool is_double = false;
-        switch (s.front()) {
-        case '-':
-        case '0': case '1': case '2': case '3': case '4':
-        case '5': case '6': case '7': case '8': case '9':
-            break;
-
-        default:
-            SSS_POSITION_THROW(std::runtime_error,
-                               "unkonw char", sss::raw_char(s.front()));
-        }
-        // 先跳过负号
-        if (s.front() == '-') {
-            s.pop_front();
-            if (s.empty()) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                   "unfinished -number");
-            }
+        std::tuple<double, int64_t> number;
+        int index;
+        if (!m_p.consumeNumber(s, number, index)) {
+            return;
         }
 
-        // 整数部分
-        if (s.front() == '0' && (s.size() >= 2 && !std::isdigit(s[1]))) {
-            s.pop_front();
-        }
-        else if ('1' <= s.front() && s.front() <= '9') {
-            while (!s.empty() && std::isdigit(s.front())) {
-                s.pop_front();
-            }
+        if (index == 0)
+        {
+            ret = std::get<0>(number);
         }
         else {
-            SSS_POSITION_THROW(std::runtime_error,
-                               "unfinished number", s);
-        }
-
-        // 小数部分
-        if (s.size() >= 2 && s[0] == '.' && std::isdigit(s[1]))
-        {
-            is_double = true;
-            s.remove_prefix(2);
-            while (!s.empty() && std::isdigit(s.front())) {
-                s.pop_front();
-            }
-        }
-
-        // e指数部分
-        if (!s.empty() && std::toupper(s[0]) == 'E') {
-            s.pop_front();
-            is_double = true;
-            this->consume(s, '+') ||this->consume(s, '-');
-            int e_cnt = 0;
-            while (!s.empty() && std::isdigit(s.front())) {
-                s.pop_front();
-                e_cnt++;
-            }
-            if (!e_cnt) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                   "unfinished e-number", s);
-            }
-        }
-
-        if (is_double)
-        {
-            ret = sss::string_cast<double>(std::string(s_saved.begin(), s.begin()));
-        }
-        else {
-            ret = sss::string_cast<int64_t>(std::string(s_saved.begin(), s.begin()));
+            ret = std::get<1>(number);
         }
     }
 
     void parse_bool(sss::string_view& s, Object& ret)
     {
-        if (s.substr(0, 4) == sss::string_view("true")) {
+        if (m_p.consumeTrue(s)) {
             ret = true;
-            s.remove_prefix(4);
         }
-        else if (s.substr(0, 5) == sss::string_view("false")) {
+        else if (m_p.consumeFalse(s)) {
             ret = false;
-            s.remove_prefix(5);
         }
         else {
             SSS_POSITION_THROW(std::runtime_error,
@@ -346,9 +337,8 @@ struct JParser
 
     void parse_null(sss::string_view& s, Object& ret)
     {
-        if (s.substr(0, 4) == sss::string_view("null")) {
+        if (m_p.consumeNull(s)) {
             ret = varlisp::Nill{};
-            s.remove_prefix(4);
         }
     }
 
