@@ -16,7 +16,7 @@ TARGET=varLisp
 TARGET_D = $(TARGET)D
 TARGET_G = $(TARGET)G
 
-# usage: make -verbose=1
+# usage: make verbose=1
 ifeq ($(verbose),1)
 	CMAKE_FLAGS+=-DCMAKE_VERBOSE_MAKEFILE=on
 else
