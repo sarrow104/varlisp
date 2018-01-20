@@ -251,6 +251,9 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete,
             }
         }
         if (st == varlisp::Interpreter::status_ERROR) {
+            // NOTE 插入错误的历史，是便于之后修改……
+            linenoise::AddHistory(line.c_str());
+            linenoise::SaveHistory(hist_path.c_str());
             if (!last_command.empty()) {
                 last_command.resize(0);
             }
