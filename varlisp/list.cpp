@@ -195,8 +195,15 @@ Object List::eval(Environment& env) const
 {
     COLOG_DEBUG(*this);
     if (this->is_quoted()) {
+#if 1
         COLOG_DEBUG(*this, *this->unquote());
         return *this;
+#else
+        varlisp::List ret;
+        COLOG_ERROR(this->tail(0));
+        ret.append_list(env, this->tail(0));
+        return varlisp::List::makeSQuoteObj(std::move(ret));
+#endif
         // return *this->unquote();
     }
     // NOTE list.eval，需要非空，不然，都会抛出异常！
@@ -225,6 +232,7 @@ Object List::eval(Environment& env) const
 
     try {
         // return eval_impl(env, funcRef, this->tail());
+        // COLOG_ERROR(this->tail(0));
         return varlisp::apply(env, this->front(), this->tail());
     }
     catch (std::runtime_error& e) {
