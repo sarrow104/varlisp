@@ -431,6 +431,9 @@ Object Parser::parseList()
                 case keywords_t::kw_LAMBDA:
                     return this->parseSpecialLambda();
 
+                case keywords_t::kw_LIST:
+                    break;
+
                 default:
                     COLOG_INFO(p_k->name());
             }
@@ -583,8 +586,11 @@ Object Parser::parseSpecialCond()
         Object predict = this->parseExpression();
         Object expr = this->parseExpression();
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
+            std::ostringstream oss;
+            // this->m_toknizer.print(oss);
+            this->m_toknizer.print_token_stack(oss);
             SSS_POSITION_THROW(std::runtime_error, "expect ')'; but ",
-                               this->m_toknizer.lookahead(0));
+                               this->m_toknizer.lookahead(0), oss.str());
         }
         conditions.emplace_back(predict, expr);
         if (const auto* pv = boost::get<varlisp::keywords_t>(&predict)) {
