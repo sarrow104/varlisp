@@ -232,12 +232,12 @@ Object eval_regex_collect(varlisp::Environment &env, const varlisp::List &args)
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto back_it = detail::list_back_inserter<varlisp::string_t>(ret);
 
-    std::vector<re2::StringPiece> sub_matches;
     std::string fmt_error_msg;
     if (p_fmt && !(*p_regobj)->CheckRewriteString(*p_fmt, &fmt_error_msg)) {
         SSS_POSITION_THROW(std::runtime_error, fmt_error_msg);
     }
 
+    std::vector<re2::StringPiece> sub_matches;
     re2::StringPiece rewrite = p_fmt ? *p_fmt : re2::StringPiece("\\0");
     sub_matches.resize(RE2::MaxSubmatch(rewrite) + 1);
 
