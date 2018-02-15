@@ -42,6 +42,7 @@ void downloadUrl(
     std::ostringstream oss;
     
     do {
+        oss.str("");
         ec = func(oss, headers, url);
 
         if (headers.status_code == 404) {
@@ -87,7 +88,6 @@ void downloadUrl(
             if (actual_recieved > max_content.length() &&
                 (actual_recieved <= content_length || headers.has("Content-Encoding"))) {
                 max_content = oss.str();
-                oss.str("");
             }
             if (max_content.length() == content_length || (actual_recieved > content_length && headers.has("Content-Encoding"))) {
                 break;
