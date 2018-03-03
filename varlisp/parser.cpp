@@ -18,6 +18,36 @@
 #include "detail/list_iterator.hpp"
 #include "keyword_t.hpp"
 
+namespace detail {
+bool & parser_colog_switch()
+{
+    static bool is_open = false;
+    return is_open;
+}
+} // namespace detail
+
+#define COLOG_TRIGER_INFO(...) \
+    do {\
+        if (::detail::parser_colog_switch()) { \
+            COLOG_INFO(__VA_ARGS__); \
+        } \
+    } while(false);
+
+#define COLOG_TRIGER_ERROR(...) \
+    do {\
+        if (::detail::parser_colog_switch()) { \
+            COLOG_ERROR(__VA_ARGS__); \
+        } \
+    } while(false);
+
+#define COLOG_TRIGER_DEBUG(...) \
+    do {\
+        if (::detail::parser_colog_switch()) { \
+            COLOG_DEBUG(__VA_ARGS__); \
+        } \
+    } while(false);
+
+
 namespace varlisp {
 
 class Tokenizer_stat_wrapper {
@@ -92,7 +122,7 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
                 // 如果是其他的list或者是可执行的可eval()的类型，则求值。
                 // 也就是说，对于 (eval (list 1 2))
                 // 这个需求来说，我只需要特化eval_eval函数即可，不用特意修改。
-                COLOG_DEBUG(expr);
+                COLOG_TRIGER_DEBUG(expr);
 
                 Object result;
                 const Object& res = varlisp::getAtomicValueUnquote(env, expr, result);
@@ -157,14 +187,14 @@ bool Parser::balance_preread()
     const static std::tuple<int, int,int > pt_zero;
     std::vector<int> pt_types;
     pt_types.push_back(-1);
-    COLOG_DEBUG(SSS_VALUE_MSG(pt_zero));
+    COLOG_TRIGER_DEBUG(SSS_VALUE_MSG(pt_zero));
     // int parenthese_balance = 0;
     // int bracket_balance = 0;
     // int curly_balance = 0;
     for (varlisp::Token tok = this->m_toknizer.lookahead_nothrow(token_cnt);
          tok = this->m_toknizer.lookahead_nothrow(token_cnt), tok.which(); token_cnt++)
     {
-        COLOG_DEBUG(tok);
+        COLOG_TRIGER_DEBUG(tok);
         const varlisp::parenthese_t * p_parenthese = boost::get<varlisp::parenthese_t>(&tok);
         if (!p_parenthese) {
             continue;
@@ -183,7 +213,7 @@ bool Parser::balance_preread()
             pt_stack.push_back(std::make_tuple(0, 0, 0));
             pt_types.push_back(detail::parenthese_type(*p_parenthese));
         }
-        COLOG_DEBUG(SSS_VALUE_MSG(pt_stack.size()), pt_stack);
+        COLOG_TRIGER_DEBUG(SSS_VALUE_MSG(pt_stack.size()), pt_stack);
         switch (*p_parenthese) {
             case varlisp::left_parenthese:
                 std::get<0>(pt_stack.back()) ++;
@@ -244,7 +274,7 @@ Object Parser::parseExpression()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     varlisp::Token tok = this->m_toknizer.top();
-    COLOG_DEBUG(tok);
+    COLOG_TRIGER_DEBUG(tok);
 
     if (const varlisp::parenthese_t* p_v =
         boost::get<varlisp::parenthese_t>(&tok)) {
@@ -346,7 +376,7 @@ Object Parser::parseEnvironment()
 
     varlisp::Token tok;
     while (tok = m_toknizer.top(), tok.which()) {
-        COLOG_DEBUG(tok);
+        COLOG_TRIGER_DEBUG(tok);
         if (!this->m_toknizer.consume(varlisp::left_parenthese)) {
             break;
         }
@@ -372,7 +402,7 @@ Object Parser::parseQuote()
 {
     if (this->m_toknizer.consume(varlisp::quote_sign_t{})) {
         Object value = this->parseExpression();
-        COLOG_DEBUG(value);
+        COLOG_TRIGER_DEBUG(value);
         return varlisp::List::makeSQuoteObj(std::move(value));
     }
     else if (this->m_toknizer.consume(varlisp::left_parenthese)) {
@@ -380,7 +410,7 @@ Object Parser::parseQuote()
             SSS_POSITION_THROW(std::runtime_error, "expect (quote ..., but only ", this->m_toknizer.top(), " after (");
         }
         Object value = this->parseExpression();
-        COLOG_DEBUG(value);
+        COLOG_TRIGER_DEBUG(value);
         if (!this->m_toknizer.consume(varlisp::right_parenthese)) {
             SSS_POSITION_THROW(std::runtime_error, "expect ) but ", this->m_toknizer.top());
         }
@@ -402,7 +432,7 @@ Object Parser::parseQuote()
 // NOTE quote 和list等效；区别只是……
 Object Parser::parseList()
 {
-    COLOG_DEBUG(this->m_toknizer.top());
+    COLOG_TRIGER_DEBUG(this->m_toknizer.top());
     varlisp::parenthese_t end_pt = varlisp::none_parenthese;
     if (this->m_toknizer.consume(varlisp::left_parenthese)) {
         end_pt = varlisp::right_parenthese;
@@ -435,7 +465,7 @@ Object Parser::parseList()
                     break;
 
                 default:
-                    COLOG_INFO(p_k->name());
+                    COLOG_TRIGER_INFO(p_k->name());
             }
         }
     }
@@ -458,10 +488,10 @@ Object Parser::parseList()
 
     bool is_quote_list = this->m_toknizer.consume(varlisp::keywords_t::kw_LIST);
 
-    COLOG_DEBUG(SSS_VALUE_MSG(is_quote_list));
+    COLOG_TRIGER_DEBUG(SSS_VALUE_MSG(is_quote_list));
 
     while (tok = m_toknizer.top(), tok.which()) {
-        COLOG_DEBUG(current);
+        COLOG_TRIGER_DEBUG(current);
         switch (tok.which()) {
             case 0:
                 break;
@@ -510,7 +540,7 @@ Object Parser::parseList()
 
             case 6:
                 {
-                    COLOG_DEBUG(SSS_VALUE_MSG(tok));
+                    COLOG_TRIGER_DEBUG(SSS_VALUE_MSG(tok));
                     const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&tok);
                     *inserter++ = *p_sym;
                 }
