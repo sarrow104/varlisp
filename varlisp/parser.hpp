@@ -7,6 +7,10 @@
 #include "tokenizer.hpp"
 #include "object.hpp"
 
+namespace detail {
+bool & parser_colog_switch();
+} // namespace detail
+
 namespace varlisp {
 
 typedef std::string::const_iterator StrIterator;
