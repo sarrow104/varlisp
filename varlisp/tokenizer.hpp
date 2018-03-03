@@ -18,6 +18,10 @@
 #include "symbol.hpp"
 #include "keyword_t.hpp"
 
+namespace detail {
+bool & tokenizer_colog_switch();
+} // namespace detail
+
 namespace varlisp {
 
 struct empty{

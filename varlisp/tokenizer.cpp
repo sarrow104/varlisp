@@ -12,6 +12,35 @@
 #define SSS_COLOG_TURNOFF
 #endif
 
+namespace detail {
+bool & tokenizer_colog_switch()
+{
+    static bool is_open = false;
+    return is_open;
+}
+} // namespace detail
+
+#define COLOG_TRIGER_INFO(...) \
+    do {\
+        if (::detail::tokenizer_colog_switch()) { \
+            COLOG_INFO(__VA_ARGS__); \
+        } \
+    } while(false);
+
+#define COLOG_TRIGER_ERROR(...) \
+    do {\
+        if (::detail::tokenizer_colog_switch()) { \
+            COLOG_ERROR(__VA_ARGS__); \
+        } \
+    } while(false);
+
+#define COLOG_TRIGER_DEBUG(...) \
+    do {\
+        if (::detail::tokenizer_colog_switch()) { \
+            COLOG_DEBUG(__VA_ARGS__); \
+        } \
+    } while(false);
+
 #include <sss/colorlog.hpp>
 
 #include <ss1x/parser/oparser.hpp>
@@ -295,7 +324,7 @@ void Tokenizer::init(const std::string& data)
              StrIterator beg, StrIterator end,
              ss1x::parser::rule::matched_value_t) {
 
-               COLOG_ERROR(m_tokens, sss::raw_string(std::string(beg, end)));
+               COLOG_TRIGER_ERROR(m_tokens, sss::raw_string(std::string(beg, end)));
             SSS_POSITION_THROW(std::runtime_error, "Un-recongnise string `",
                               std::string(beg, end), "`");
         })]).name("FallthrowError_p");
@@ -375,7 +404,7 @@ bool Tokenizer::consume()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     if (!this->empty()) {
-        COLOG_DEBUG('`', this->m_tokens.back().front(), "`; left = ",
+        COLOG_TRIGER_DEBUG('`', this->m_tokens.back().front(), "`; left = ",
                     sss::raw_string(
                         std::string(this->m_beg.back(), this->m_end.back())));
         this->m_tokens.back().erase(this->m_tokens.back().begin());
@@ -442,11 +471,11 @@ void Tokenizer::append(const std::string& scripts)
             std::distance(this->m_data.back().cbegin(), m_beg.back());
 
         if (offset) {
-            COLOG_DEBUG("erase(",
+            COLOG_TRIGER_DEBUG("erase(",
                         sss::raw_string(this->m_data.back().substr(0, offset)),
                         ");");
             this->m_data.back().erase(0, offset);
-            COLOG_DEBUG("left(", sss::raw_string(this->m_data.back()), "); @",
+            COLOG_TRIGER_DEBUG("left(", sss::raw_string(this->m_data.back()), "); @",
                         &this->m_data.back());
         }
     }
@@ -457,7 +486,7 @@ void Tokenizer::append(const std::string& scripts)
     this->m_data.back().append(scripts);
     m_beg.back() = this->m_data.back().cbegin();
     m_end.back() = this->m_data.back().cend();
-    COLOG_DEBUG("distance = ", std::distance(m_beg.back(), m_end.back()));
+    COLOG_TRIGER_DEBUG("distance = ", std::distance(m_beg.back(), m_end.back()));
 }
 
 size_t Tokenizer::tokens_size() const { return this->m_tokens.back().size(); }
@@ -468,9 +497,9 @@ bool Tokenizer::is_eof() const
 
 void Tokenizer::push(const std::string& data)
 {
-    COLOG_DEBUG(sss::raw_string(data));
+    COLOG_TRIGER_DEBUG(sss::raw_string(data));
     if (!this->m_consumed.empty()) {
-        COLOG_DEBUG("left = ", sss::raw_string(std::string(
+        COLOG_TRIGER_DEBUG("left = ", sss::raw_string(std::string(
                                    this->m_beg.back(), this->m_end.back())));
     }
     // this->print_token_stack(std::cout);
@@ -484,7 +513,7 @@ void Tokenizer::push(const std::string& data)
 
 void Tokenizer::pop()
 {
-    COLOG_DEBUG("");
+    COLOG_TRIGER_DEBUG("");
     this->m_consumed.pop_back();
     this->m_data.pop_back();
     this->m_beg.pop_back();
@@ -512,7 +541,7 @@ bool Tokenizer::parse()
     if (Token_p.match(this->m_beg.back(), this->m_end.back()) &&
         this->tok.which()) {
         SSS_LOG_EXPRESSION(sss::log::log_DEBUG, this->tok);
-        COLOG_DEBUG(".push_back(", this->tok, ") from ",
+        COLOG_TRIGER_DEBUG(".push_back(", this->tok, ") from ",
                     sss::raw_string(std::string(beg_sv, this->m_beg.back())));
         this->m_tokens.back().push_back(this->tok);
         this->tok = varlisp::empty();
@@ -548,20 +577,20 @@ void Tokenizer::print(std::ostream& o) const
 void Tokenizer::print_token_stack(std::ostream& o) const
 {
     if (!this->m_tokens.empty()) {
-        COLOG_INFO("m_data = ", this->m_data.back());
-        COLOG_INFO("offset = ",
+        COLOG_TRIGER_INFO("m_data = ", this->m_data.back());
+        COLOG_TRIGER_INFO("offset = ",
                     std::distance(this->m_data.back().cbegin(), m_beg.back()));
-        COLOG_INFO("length = ", this->m_data.back().length());
-        COLOG_INFO("(std::ostream&) ", this->m_tokens.size(),
+        COLOG_TRIGER_INFO("length = ", this->m_data.back().length());
+        COLOG_TRIGER_INFO("(std::ostream&) ", this->m_tokens.size(),
                     this->m_tokens.back().size());
 
         int i = 0;
         for (const auto& tok : this->m_tokens.back()) {
-            COLOG_INFO("\t[ ", i++, "] = ", tok);
+            COLOG_TRIGER_INFO("\t[ ", i++, "] = ", tok);
         }
     }
     else {
-        COLOG_INFO("(std::ostream&) empty stack");
+        COLOG_TRIGER_INFO("(std::ostream&) empty stack");
     }
 }
 }  // namespace varlisp
