@@ -15,6 +15,7 @@
 #include <sss/string_view.hpp>
 #include <sss/utlstring.hpp>
 #include <sss/Terminal.hpp>
+#include <sss/CMLParser.hpp>
 
 #include "varlisp/interpreter.hpp"
 #include "varlisp/tokenizer.hpp"
@@ -33,16 +34,16 @@ void killhandler(int v) {
     /*...*/ WE_MUST_STOP = 1;
     /*...*/ WE_MUST_STOP = 2;
 }
- 
-// 
+
+//
 // int main() {
 //   signal(SIGINT, ctrlchandler);
 //   signal(SIGTERM, killhandler);
 //   /* ... */
-// 
+//
 //   // e.g. main loop like this:
 //   while(pump_loop() && 0 == WE_MUST_STOP) { }
-// 
+//
 // }
 //
 // http://www.boost.org/doc/libs/1_47_0/doc/html/boost_asio/overview/signals.html
@@ -316,57 +317,80 @@ int main(int argc, char* argv[])
     // signal(SIGINT, ctrlchandler);
     // signal(SIGTERM, killhandler);
 
-    // sss::colog::set_log_elements(sss::colog::ls_TIME_NANO |
-    //                              sss::colog::ls_FILE_VIM |
-    //                              sss::colog::ls_FUNC |
-    //                              sss::colog::ls_LINE);
+    sss::log::parse_command_line(argc, argv);
+    if (!sss::colog::parse_command_line(argc, argv)) {
+        sss::colog::set_log_elements(sss::colog::ls_LEVEL_SHORT |
+                                     sss::colog::ls_FILE_VIM |
+                                     sss::colog::ls_FUNC |
+                                     sss::colog::ls_LINE);
 
-    sss::colog::set_log_elements(sss::colog::ls_LEVEL_SHORT | sss::colog::ls_FUNC | sss::colog::ls_LINE);
-
-    sss::colog::set_log_levels(sss::colog::ll_INFO |
-                               // sss::colog::ll_DEBUG |
-                               sss::colog::ll_ERROR |
-                               sss::colog::ll_WARN |
-                               sss::colog::ll_FATAL);
-
-    bool echo_in_load = false;
-    bool quit_on_load_complete = false;
-    bool load_init_script = true;
-    int i = 1;
-    while (i < argc) {
-        if (has_match(argv[i], {"--echo", "-e"})) {
-            if (++i >= argc) {
-                SSS_POSITION_THROW(std::runtime_error,
-                                   "need one parameter after",
-                                   sss::raw_string(argv[i]));
-            }
-            echo_in_load = bool(sss::string_cast<int>(argv[i]));
-        }
-        else if (has_match(argv[i], {"--quit", "-q"})) {
-            quit_on_load_complete = true;
-        }
-        else if (has_match(argv[i], {"--init", "-i"})) {
-            load_init_script = true;
-        }
-        else if (has_match(argv[i], {"--no-init", "-n"})) {
-            load_init_script = false;
-        }
-        else if (has_match(argv[i], {"--help", "-h"})) {
-            help_msg();
-            return EXIT_SUCCESS;
-        }
-        else {
-            break;
-        }
-        ++i;
+        sss::colog::set_log_levels(sss::colog::ll_INFO |
+                                   // sss::colog::ll_DEBUG |
+                                   sss::colog::ll_ERROR |
+                                   sss::colog::ll_WARN |
+                                   sss::colog::ll_FATAL);
     }
+
+    sss::CMLParser::RuleSingleValue cp_echo;
+    sss::CMLParser::RuleSingleValue cp_quit;
+    sss::CMLParser::RuleSingleValue cp_init;
+    sss::CMLParser::RuleSingleValue cp_no_init;
+    sss::CMLParser::RuleSingleValue cp_help;
+
+    sss::CMLParser::Exclude cmlparser;
+
+    cmlparser.add_rule("--echo",    sss::CMLParser::ParseBase::r_parameter, cp_echo);
+    cmlparser.add_rule("-e",        sss::CMLParser::ParseBase::r_parameter, cp_echo);
+
+    cmlparser.add_rule("--quit",    sss::CMLParser::ParseBase::r_option, cp_quit);
+    cmlparser.add_rule("-q",        sss::CMLParser::ParseBase::r_option, cp_quit);
+
+    cmlparser.add_rule("--init",    sss::CMLParser::ParseBase::r_option, cp_init);
+    cmlparser.add_rule("-i",        sss::CMLParser::ParseBase::r_option, cp_init);
+
+    cmlparser.add_rule("--no-init", sss::CMLParser::ParseBase::r_option, cp_no_init);
+    cmlparser.add_rule("-n",        sss::CMLParser::ParseBase::r_option, cp_no_init);
+
+    cmlparser.add_rule("--help",    sss::CMLParser::ParseBase::r_option, cp_help);
+    cmlparser.add_rule("-h",        sss::CMLParser::ParseBase::r_option, cp_help);
+
+    cmlparser.parse(argc, argv);
+
+    bool echo_in_load          = false;
+    bool quit_on_load_complete = false;
+    bool load_init_script      = true;
+
+    if (cp_echo.size()) {
+        echo_in_load = bool(sss::string_cast<int>(cp_echo.get(0)));
+    }
+
+    if (cp_quit.size()) {
+        quit_on_load_complete = true;
+    }
+
+    if (cp_init.size()) {
+        load_init_script = true;
+    }
+
+    if (cp_no_init.size()) {
+        load_init_script = false;
+    }
+
+    if (cp_help.size()) {
+        help_msg();
+        return EXIT_SUCCESS;
+    }
+
 #if 1
-    return Interpret(echo_in_load, quit_on_load_complete, load_init_script, argc - i, argv + i);
+    return Interpret(echo_in_load,
+                     quit_on_load_complete,
+                     load_init_script,
+                     argc - 1, argv + 1);
 #else
     return test_construct();
 #endif
 }
-
+// varLisp --sss-colog-level INFO,ERROR,WARN,FATAL --sss-colog-style LEVEL_SHORT,FUNC,LINE
 // (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))
 // (define x (fib 20))
 // (define radius 10)
