@@ -3,7 +3,7 @@
 .PHONY: clean clean-debug clean-release clean-gprof
 .PHONY: gprof gprof-view perf-view
 .PHONY: memcheck-valgrind
-CMAKE_FLAGS=
+CMAKE_FLAGS= -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 RUN_PARAMS=
 
 ifeq ($(OS),Windows_NT)
@@ -27,10 +27,12 @@ all: release
 release:
 	@mkdir -p Release
 	cd Release && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/bin .. && make
+	ln -f -s Release/compile_commands.json
 
 debug:
 	@mkdir -p Debug
 	@cd Debug && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug .. && make
+	ln -f -s Debug/compile_commands.json
 
 gprof:
 	@mkdir -p Gprof
