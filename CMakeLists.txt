@@ -20,6 +20,10 @@ project(${target_name})
 
 find_package(Boost COMPONENTS date_time filesystem system thread iostreams)
 find_package(Threads REQUIRED)
+
+find_library(libbrotlidec NAMES brotlidec PATHS /usr/lib/brotli NO_DEFAULT_PATH)
+
+message(${libbrotlidec})
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}")
 #set(LIBRARY_OUTPUT_PATH "${CMAKE_SOURCE_DIR}")
 #file(GLOB_RECURSE SRC "**/*.cpp")
@@ -38,5 +42,5 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 #include_directories(~/extra/sss/include)
 #link_directories(~/extra/sss/lib/)
-target_link_libraries(${target_name} re2 ss1x sss uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ssl crypto z) # must below the bin target definition!
+target_link_libraries(${target_name} re2 ss1x sss uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ssl crypto z ${libbrotlidec}) # must below the bin target definition!
 
