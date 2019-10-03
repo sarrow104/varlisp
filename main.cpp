@@ -60,8 +60,10 @@ const char* find_identifier(const char* buf)
     if (std::isspace(*(ret - 1))) {
         return 0;
     }
-    while (std::distance(buf, ret - 1) >= 0 &&
-           (std::isalnum(*(ret - 1)) || *(ret - 1) == '-') || *(ret - 1) == '_') {
+    while ((std::distance(buf, ret - 1) >= 0 &&
+           (std::isalnum(*(ret - 1)) || *(ret - 1) == '-'))
+           ||
+           *(ret - 1) == '_') {
         ret--;
     }
     return ret;
