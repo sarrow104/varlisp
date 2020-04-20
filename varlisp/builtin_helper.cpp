@@ -8,7 +8,7 @@ namespace varlisp {
 /**
  * @brief getQuotedList 
  *
- * 讲args的第一个参数，获取为一个squot-list；如果是可执行的序列，则求值后再判断
+ * 将args的第一个参数，获取为一个squot-list；如果是可执行的序列，则求值后再判断
  * 如果无法获得一个squot-list，则返回0；
  *
  * @param[in] env
