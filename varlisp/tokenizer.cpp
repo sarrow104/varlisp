@@ -559,6 +559,7 @@ int Tokenizer::retrieve_symbols(std::vector<std::string>& symbols,
             }
         }
     }
+    return 0;
 }
 
 void Tokenizer::clear()
