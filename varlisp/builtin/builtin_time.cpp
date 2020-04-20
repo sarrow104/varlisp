@@ -58,11 +58,29 @@ Object eval_date(varlisp::Environment &env, const varlisp::List &args)
     return varlisp::List::makeSQuoteList(int64_t(tm.tm_year + 1900), int64_t(tm.tm_mon + 1), int64_t(tm.tm_mday));
 }
 
-REGIST_BUILTIN("date-time", 0, 0, eval_date_time, "(date-time) -> [year month day HH MM SS]");
+REGIST_BUILTIN(
+    "date-time",
+    0, 1,
+    eval_date_time,
+    "(date-time) -> [year month day HH MM SS]\n"
+    "(date-time seconds-since-Epoch) -> [year month day HH MM SS]");
 
 Object eval_date_time(varlisp::Environment &env, const varlisp::List &args)
 {
-    std::tm tm = detail::get_std_tm(::std::chrono::system_clock::now());// 这个得到一个 time_point
+    const char * funcName = "date-time";
+    std::tm tm;
+    if (args.length() == 1)
+    {
+        Object tmp;
+        std::time_t t
+            = *varlisp::requireTypedValue<int64_t>(env, args.nth(0), tmp, funcName, 0, DEBUG_INFO);
+        tm = *std::localtime(&t);
+    }
+    else
+    {
+        tm = detail::get_std_tm(::std::chrono::system_clock::now());// 这个得到一个 time_point
+    }
+
     return varlisp::List::makeSQuoteList(int64_t(tm.tm_year + 1900), int64_t(tm.tm_mon + 1), int64_t(tm.tm_mday),
                                          int64_t(tm.tm_hour), int64_t(tm.tm_min), int64_t(tm.tm_sec));
 }
