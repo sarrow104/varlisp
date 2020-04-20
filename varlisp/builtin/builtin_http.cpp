@@ -132,7 +132,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     std::string max_content;
 
     std::function<boost::system::error_code(
-        std::ostream&, ss1x::http::Headers&, const std::string& url)> downloadFunc;
+        std::ostream&, ss1x::http::Headers&, const std::string&, const ss1x::http::Headers&)> downloadFunc;
 
     if (detail::CookieMgr_t::get_cookie_enable_status()) {
         if (p_proxy) {
@@ -142,7 +142,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
                                      *p_proxy->gen_shared(), *p_port,
                                      std::placeholders::_3,
                                      ss1x::cookie::get,
-                                     request_header);
+                                     std::placeholders::_4);
         }
         else {
             downloadFunc = std::bind(ss1x::asio::redirectHttpGetCookie,
@@ -150,7 +150,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
                                      std::placeholders::_2,
                                      std::placeholders::_3,
                                      ss1x::cookie::get,
-                                     request_header);
+                                     std::placeholders::_4);
         }
     }
     else {
@@ -160,18 +160,18 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
                                      std::placeholders::_2,
                                      *p_proxy->gen_shared(), *p_port,
                                      std::placeholders::_3,
-                                     request_header);
+                                     std::placeholders::_4);
         }
         else {
             downloadFunc = std::bind(ss1x::asio::redirectHttpGet,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
                                      std::placeholders::_3,
-                                     request_header);
+                                     std::placeholders::_4);
         }
     }
 
-    varlisp::detail::http::downloadUrl(*p_url->gen_shared(), max_content, headers, downloadFunc);
+    varlisp::detail::http::downloadUrl(*p_url->gen_shared(), max_content, headers, downloadFunc, request_header);
 
     // COLOG_INFO(headers.status_code, headers.http_version);
     Environment ret;
@@ -240,38 +240,38 @@ Object eval_http_post(varlisp::Environment& env, const varlisp::List& args)
     std::string max_content;
 
     std::function<boost::system::error_code(
-        std::ostream&, ss1x::http::Headers&, const std::string& url)> downloadFunc;
+        std::ostream&, ss1x::http::Headers&, const std::string&, const ss1x::http::Headers&)> downloadFunc;
 
     if (detail::CookieMgr_t::get_cookie_enable_status()) {
         if (p_proxy) {
-            // FIXME
-            downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGetCookie,
+            downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpPostCookie,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
                                      *p_proxy->gen_shared(), *p_port,
                                      std::placeholders::_3,
+                                     *p_content->gen_shared(),
                                      ss1x::cookie::get,
-                                     request_header);
+                                     std::placeholders::_4);
         }
         else {
-            // FIXME
-            downloadFunc = std::bind(ss1x::asio::redirectHttpGetCookie,
+            downloadFunc = std::bind(ss1x::asio::redirectHttpPostCookie,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
                                      std::placeholders::_3,
+                                     *p_content->gen_shared(),
                                      ss1x::cookie::get,
-                                     request_header);
+                                     std::placeholders::_4);
         }
     }
     else {
         if (p_proxy) {
-            // FIXME
-            downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGet,
+            downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpPost,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
                                      *p_proxy->gen_shared(), *p_port,
                                      std::placeholders::_3,
-                                     request_header);
+                                     *p_content->gen_shared(),
+                                     std::placeholders::_4);
         }
         else {
             downloadFunc = std::bind(ss1x::asio::redirectHttpPost,
@@ -279,11 +279,11 @@ Object eval_http_post(varlisp::Environment& env, const varlisp::List& args)
                                      std::placeholders::_2,
                                      std::placeholders::_3,
                                      *p_content->gen_shared(),
-                                     request_header);
+                                     std::placeholders::_4);
         }
     }
 
-    varlisp::detail::http::downloadUrl(*p_url->gen_shared(), max_content, headers, downloadFunc);
+    varlisp::detail::http::downloadUrl(*p_url->gen_shared(), max_content, headers, downloadFunc, request_header);
 
     // COLOG_INFO(headers.status_code, headers.http_version);
     Environment ret;
