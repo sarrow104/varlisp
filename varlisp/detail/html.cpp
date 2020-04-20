@@ -85,6 +85,30 @@ inline std::ostream& operator << (std::ostream&o, const htmlEntityEscape_t& h)
     return o;
 }
 
+bool is_url_same_origin(sss::string_view left, sss::string_view right)
+{
+    sss::string_view::const_reverse_iterator rit_l = left.rbegin();
+    sss::string_view::const_reverse_iterator rit_r = right.rbegin();
+
+    sss::string_view::const_reverse_iterator rend_l = left.rend();
+    sss::string_view::const_reverse_iterator rend_r = right.rend();
+
+    size_t matched_dot_cnt = 0;
+    for (; rit_l != rend_l && rit_r != rend_r; ++rit_l, ++rit_r)
+    {
+        if (*rit_l != *rit_r)
+        {
+            break;
+        }
+        if (*rit_l == '.')
+        {
+            ++matched_dot_cnt;
+        }
+    }
+
+    return matched_dot_cnt >= 2;
+}
+
 std::string getResourceAuto(const std::string& output_dir, const std::string& url,
                             resource_manager_t& rs_mgr, const ss1x::http::Headers& request_header,
                             const std::string& proxy_domain, int proxy_port)
@@ -97,7 +121,10 @@ std::string getResourceAuto(const std::string& output_dir, const std::string& ur
     }
 
     std::function<boost::system::error_code(
-        std::ostream&, ss1x::http::Headers&, const std::string& url)> downloadFunc;
+        std::ostream&,
+        ss1x::http::Headers&,
+        const std::string& url,
+        const ss1x::http::Headers&)> downloadFunc;
 
     if (!proxy_domain.empty() && proxy_port > 0) {
         downloadFunc = std::bind(ss1x::asio::proxyRedirectHttpGet,
@@ -105,18 +132,18 @@ std::string getResourceAuto(const std::string& output_dir, const std::string& ur
                                  std::placeholders::_2,
                                  proxy_domain, proxy_port,
                                  std::placeholders::_3,
-                                 request_header);
+                                 std::placeholders::_4);
     }
     else {
         downloadFunc = std::bind(ss1x::asio::redirectHttpGet,
                                  std::placeholders::_1,
                                  std::placeholders::_2,
                                  std::placeholders::_3,
-                                 request_header);
+                                 std::placeholders::_4);
     }
 
     detail::http::downloadUrl(newUrl, max_content, headers,
-                              downloadFunc);
+                              downloadFunc, request_header);
 
     if (headers.status_code != 200) {
         COLOG_ERROR(url);
@@ -266,10 +293,19 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                         (tagName == "link" && attrName == "href" && detail::html::getAttribute(apNode, "rel") == "stylesheet"))
                     {
                         std::string url = CQueryUtil::nthAttr(apNode, i)->value;
-                        if (!url.empty() && rs_mgr.find(url) == rs_mgr.end()) {
+
+                        bool is_inline_href = sss::is_begin_with(url, "data:");
+
+                        // NOTE https://www.jb51.net/css/41981.html
+                        // date:,data:image/png,data:image/jpeg!
+                        if (!is_inline_href &&
+                            !url.empty() && rs_mgr.find(url) == rs_mgr.end()) {
+                            //std::cout << url.substr(0,6) << std::endl;
+                            std::cout << url << std::endl;
                             getResourceAuto(output_dir, url, rs_mgr, request_header, proxy_domain, proxy_port);
                         }
-                        if (!url.empty() && rs_mgr[url].fsize && rs_mgr[url].is_ok()) {
+
+                        if (!is_inline_href && !url.empty() && rs_mgr[url].fsize && rs_mgr[url].is_ok()) {
                             o << " " << attrName << "=\""
                                 << htmlEntityEscape(sss::path::basename(rs_mgr[url].path)) << "\"";
                         }
