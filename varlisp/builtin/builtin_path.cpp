@@ -117,6 +117,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
             std::string name = fd.get_name();
+            //COLOG_INFO(name);
             // name += sss::path::sp_char;
             *ret_it++ = string_t(std::move(name));
         }
