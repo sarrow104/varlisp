@@ -34,27 +34,45 @@ void downloadUrl(
     const std::string& url, std::string& max_content,
     ss1x::http::Headers& headers,
     const std::function<boost::system::error_code(
-        std::ostream&, ss1x::http::Headers&, const std::string& url)>& func,
+        std::ostream&, ss1x::http::Headers&, const std::string& url, const ss1x::http::Headers&)>& func,
+    const ss1x::http::Headers& request_header,
     int max_test)
 {
     boost::system::error_code ec;
+    std::string cur_url = url;
 
     std::ostringstream oss;
-    
+
+    ss1x::http::Headers request_header2;
+    ss1x::http::Headers* p_req = const_cast<ss1x::http::Headers*>(&request_header);
+
     do {
         oss.str("");
-        ec = func(oss, headers, url);
+        COLOG_DEBUG(SSS_VALUE_MSG(cur_url), *p_req);
+        ec = func(oss, headers, cur_url, *p_req);
 
         if (headers.status_code == 404) {
             break;
         }
         if (headers.status_code != 200) {
-            COLOG_ERROR("(", sss::raw_string(url), ": http-status code:", headers.status_code, ")");
+            COLOG_ERROR("(", sss::raw_string(cur_url), ": http-status code:", headers.status_code, ")");
             for (const auto& item : headers) {
                 std::cerr << "header : " << item.first << ": " << item.second
                     << std::endl;
             }
-            continue;
+
+            if ((headers.status_code == 301 || headers.status_code == 302) && headers.has("Location"))
+            {
+                cur_url = headers["Location"];
+                continue;
+            }
+            else if (headers.status_code == 403 && p_req->has("Referer")) {
+                request_header2 = request_header;
+                request_header2.unset("Referer");
+                p_req = &request_header2;
+                continue;
+            }
+            break;
         }
         if (!headers.has("Content-Length")) {
             if (ec == boost::asio::error::eof) {

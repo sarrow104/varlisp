@@ -23,7 +23,8 @@ void downloadUrl(
     const std::string& url, std::string& max_content,
     ss1x::http::Headers& headers,
     const std::function<boost::system::error_code(
-        std::ostream&, ss1x::http::Headers&, const std::string& url)>& f,
+        std::ostream&, ss1x::http::Headers&, const std::string& url, const ss1x::http::Headers&)>& func,
+    const ss1x::http::Headers& request_header,
     int max_test = 5);
 
 } // namespace http
