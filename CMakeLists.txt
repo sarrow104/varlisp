@@ -5,14 +5,19 @@ add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors)
 set(target_name "varLisp")
 set(CMAKE_VERBOSE_MAKEFILE on)
 
+set(sss "sss")
+set(ss1x "ss1x")
+
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
  add_definitions(-DNODEBUG -O2 -s)
 elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Gprof")
  set(target_name "${target_name}G")
- add_definitions(-pg -g -O0)
  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+ add_definitions(-pg -g -O0)
 else()
  set(target_name "${target_name}D")
+ set(sss "sssD")
+ set(ss1x "ss1xD")
  add_definitions(-O0 -g -ggdb)
 endif()
 
@@ -42,5 +47,5 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 #include_directories(~/extra/sss/include)
 #link_directories(~/extra/sss/lib/)
-target_link_libraries(${target_name} re2 ss1x sss uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ssl crypto z ${libbrotlidec}) # must below the bin target definition!
+target_link_libraries(${target_name} re2 ${ss1x} ${sss} uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ssl crypto z ${libbrotlidec}) # must below the bin target definition!
 
