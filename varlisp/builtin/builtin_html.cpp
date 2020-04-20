@@ -242,9 +242,8 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
 
     if (p_gqnode->valid()) {
         std::string attribute = p_gqnode->attribute(*p_attrib_name->gen_shared());
-        if (!attribute.empty()) {
-            return string_t{std::move(attribute)};
-        }
+        // NOTE empty string is ok!
+        return string_t{std::move(attribute)};
     }
     return Object{Nill{}};
 }
