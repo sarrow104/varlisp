@@ -1,5 +1,7 @@
 #include "html.hpp"
 
+#include <re2/re2.h>
+
 #include <gq/QueryUtil.h>
 #include <gq/DocType.h>
 
@@ -109,6 +111,14 @@ bool is_url_same_origin(sss::string_view left, sss::string_view right)
     return matched_dot_cnt >= 2;
 }
 
+static void trim_to(std::string& str, char mark)
+{
+    auto pos = str.find(mark);
+    if (pos != std::string::npos) {
+        str.resize(pos);
+    }
+}
+
 std::string getResourceAuto(const std::string& output_dir, const std::string& url,
                             resource_manager_t& rs_mgr, const ss1x::http::Headers& request_header,
                             const std::string& proxy_domain, int proxy_port)
@@ -145,7 +155,7 @@ std::string getResourceAuto(const std::string& output_dir, const std::string& ur
     detail::http::downloadUrl(newUrl, max_content, headers,
                               downloadFunc, request_header);
 
-    if (headers.status_code != 200) {
+    if (headers.status_code / 100 != 2) { // 200
         COLOG_ERROR(url);
         rs_mgr[url] = local_info_t{"", 0, fs_ERROR};
         return "";
@@ -173,11 +183,10 @@ std::string getResourceAuto(const std::string& output_dir, const std::string& ur
 
     std::string fnameSuffix = sss::path::suffix(raw_url);
     if (headers.has("Content-Type")) {
+        // NOTE eg. Content-Type: "image/svg+xml"
         fnameSuffix = "." + sss::path::basename(headers["Content-Type"]);
-        auto semicolon = fnameSuffix.find(';');
-        if (semicolon != std::string::npos) {
-            fnameSuffix.resize(semicolon);
-        }
+        trim_to(fnameSuffix, ';');
+        trim_to(fnameSuffix, '+');
     }
 
     std::string output_path = output_dir;
@@ -313,6 +322,56 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                             o << " " << attrName << "=\""
                                 << htmlEntityEscape(url) << "\"";
                         }
+                    }
+                    else if (attrName == "style")
+                    {
+                        COLOG_DEBUG(attrName);
+                        std::string style_str = CQueryUtil::nthAttr(apNode, i)->value;
+                        // TODO
+                        // <span class="LinkCard-backdrop" style="background-image:url(https://pic4.zhimg.com/v2-7d66f99141b9c5ccad48fb4ee54d8bbf_ipico.jpg)"></span>
+                        static RE2 re(R"(url\((.+?)\))");
+                        RE2::FullMatch(style_str, re);
+                        std::ostringstream oss;
+
+                        std::vector<re2::StringPiece> sub_matches;
+                        // TODO 解析reg字符串，看捕获数量。
+                        sub_matches.resize(2);
+                        uint64_t offset = 0;
+                        while (offset < style_str.size() &&
+                               re.Match(style_str, offset, style_str.size(), RE2::UNANCHORED,
+                                                  &sub_matches[0], sub_matches.size()))
+                        {
+                            oss << sss::string_view(style_str.data() + offset, sub_matches[0].data() - (style_str.data() + offset));
+
+                            oss << "url(";
+
+                            std::string url{sub_matches[1].data(), sub_matches[1].size()};
+                            COLOG_DEBUG(SSS_VALUE_MSG(url));
+
+                            // NOTE https://www.jb51.net/css/41981.html
+                            // date:,data:image/png,data:image/jpeg!
+                            if (!url.empty() && rs_mgr.find(url) == rs_mgr.end()) {
+                                //std::cout << url.substr(0,6) << std::endl;
+                                std::cout << url << std::endl;
+                                getResourceAuto(output_dir, url, rs_mgr, request_header, proxy_domain, proxy_port);
+                            }
+
+                            COLOG_DEBUG(rs_mgr[url].fsize, rs_mgr[url].is_ok(), sss::path::basename(rs_mgr[url].path));
+
+                            if (!url.empty() && rs_mgr[url].fsize && rs_mgr[url].is_ok()) {
+                                oss << htmlEntityEscape(sss::path::basename(rs_mgr[url].path));
+                            }
+                            else {
+                                oss << htmlEntityEscape(url);
+                            }
+
+                            oss << ")";
+
+                            offset = sub_matches[0].data() - style_str.data() + sub_matches[0].size();
+                        }
+                        oss << sss::string_view(style_str.data() + offset, style_str.size() - offset);
+
+                        o << " " << attrName << "=\"" << oss.str() << "\"";
                     }
                     else {
                         o << " " << attrName << "=\""
