@@ -54,7 +54,7 @@ void downloadUrl(
         if (headers.status_code == 404) {
             break;
         }
-        if (headers.status_code != 200) {
+        if ((headers.status_code / 100) != 2) {
             COLOG_ERROR("(", sss::raw_string(cur_url), ": http-status code:", headers.status_code, ")");
             for (const auto& item : headers) {
                 std::cerr << "header : " << item.first << ": " << item.second
@@ -70,6 +70,11 @@ void downloadUrl(
                 request_header2 = request_header;
                 request_header2.unset("Referer");
                 p_req = &request_header2;
+                continue;
+            }
+            else if (headers.status_code == 0) {
+                // NOTE zero means nothing happend or totally failed;
+                // so try again
                 continue;
             }
             break;
