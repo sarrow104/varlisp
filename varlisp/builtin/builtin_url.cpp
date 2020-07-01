@@ -1,8 +1,6 @@
 #include <vector>
 #include <cstring>
 
-#include <re2/re2.h>
-
 #include <sss/spliter.hpp>
 #include <sss/path.hpp>
 #include <sss/utlstring.hpp>
