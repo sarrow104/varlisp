@@ -151,12 +151,15 @@ int Parser::parse(varlisp::Environment& env, const std::string& scripts,
 int Parser::retrieve_symbols(std::vector<std::string>& symbols,
                              const char* prefix) const
 {
+    int cnt = 0;
     this->m_toknizer.retrieve_symbols(symbols, prefix);
     for (const auto item : keywords_t::get_keywords_vector()) {
         if (sss::is_begin_with(item.to_string(), prefix)) {
+            ++cnt;
             symbols.push_back(item.to_string());
         }
     }
+    return cnt;
 }
 
 namespace detail {
@@ -183,8 +186,8 @@ bool Parser::balance_preread()
 {
     SSS_LOG_FUNC_TRACE(sss::log::log_DEBUG);
     size_t token_cnt = 0;
-    std::vector<std::tuple<int,int,int>> pt_stack;
-    const static std::tuple<int, int,int > pt_zero;
+    std::vector<std::tuple<int, int, int>> pt_stack;
+    const static std::tuple<int, int, int> pt_zero;
     std::vector<int> pt_types;
     pt_types.push_back(-1);
     COLOG_TRIGER_DEBUG(SSS_VALUE_MSG(pt_zero));
