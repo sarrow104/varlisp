@@ -6,6 +6,7 @@
 #include <sss/util/Parser.hpp>
 #include <sss/util/PostionThrow.hpp>
 #include <sss/util/StringSlice.hpp>
+#include <sss/util/utf8.hpp>
 #include <sss/colorlog.hpp>
 
 #ifndef DEBUG
@@ -13,6 +14,14 @@
 #endif
 
 namespace detail {
+
+inline uint8_t char_hex2int(char ch)
+{
+    return std::isdigit(ch)
+        ? (ch - '0')
+        : ((ch % 16) + 9);
+}
+
 bool & tokenizer_colog_switch()
 {
     static bool is_open = false;
@@ -224,14 +233,33 @@ void Tokenizer::init(const std::string& data)
                    uint8_t ch = 0u;
                    ++beg;
                    while (beg != end) {
-                       ch *= 16;
-                       ch += std::isdigit(*beg) ? (*beg - '0')
-                                                : ((*beg % 16) + 9);
+                       ch *= 16u;
+                       ch += ::detail::char_hex2int(*beg);
                        ++beg;
                    }
                    str_stack.push_back(ch);
-               })])))
-            .name("c_str_escapseq_p");
+               })] |
+
+           // hexunicode_pattern : '\u003e'=> <
+           (ss1x::parser::char_p('u') >
+            ss1x::parser::range(ss1x::parser::xdigit_p, 4, 4))
+               [ss1x::parser::rule::ActionT([&](
+                       StrIterator beg, StrIterator end,
+                       rule::matched_value_t) {
+                   uint32_t ucode = 0;
+                   ++beg;
+                   while (beg != end) {
+                       ucode *= 16u;
+                       ucode += ::detail::char_hex2int(*beg);
+                       ++beg;
+                   }
+                   auto outit = std::back_inserter(str_stack);
+                   sss::util::utf8::dumpout2utf8_once(
+                       &ucode,
+                       &ucode + 1,
+                       outit);
+               })]
+           ))).name("c_str_escapseq_p");
 
     this->String_p =
         (((ss1x::parser::char_p('"')[ss1x::parser::rule::ActionT(

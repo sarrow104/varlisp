@@ -207,7 +207,7 @@ private:
     ss1x::parser::rule  Double_p;
     ss1x::parser::rule  Symbol_p;
 
-    ss1x::parser::rule  c_str_escapseq_p;
+    ss1x::parser::rule  c_str_escapseq_p;   // '\a', '\r', '\n' ...
     ss1x::parser::rule  String_p;
     ss1x::parser::rule  RawString_p;
     ss1x::parser::rule  Parenthese_p;
