@@ -1,5 +1,7 @@
 #include <array>
 
+#include <re2/re2.h>
+
 #include <sss/debug/value_msg.hpp>
 
 #include "../object.hpp"
@@ -113,7 +115,11 @@ Object eval_regex_search(varlisp::Environment &env, const varlisp::List &args)
 REGIST_BUILTIN("regex-replace", 2, 3, eval_regex_replace,
                "; regex-replace 如果不提供fmt参数，则表示删除匹配到的部分文字\n"
                "(regex-replace reg-obj target) -> string\n"
-               "(regex-replace reg-obj target fmt) -> string");
+               "(regex-replace reg-obj target fmt) -> string\n"
+               "; 如果fmt位置的参数，不是一个字符串，而是functor，\n"
+               "; 那么会依次将匹配结果的列表，作为参数，传入该functor；\n"
+               "; 同时将返回的值，作为结果，替换到匹配的位置\n"
+               "(regex-replace reg-obj target functor) -> string");
 
 /**
  * @brief
@@ -134,15 +140,72 @@ Object eval_regex_replace(varlisp::Environment &env, const varlisp::List &args)
         requireTypedValue<varlisp::string_t>(env, args.nth(1), tmpObjs[1], funcName, 1, DEBUG_INFO);
 
     re2::StringPiece fmt = "";
+    bool is_functor = false;
     if (args.length() == 3) {
-        const string_t *p_fmt =
-            requireTypedValue<varlisp::string_t>(env, args.nth(2), tmpObjs[2], funcName, 2, DEBUG_INFO);
-        fmt = *p_fmt;
+        const Object& obj_ref = varlisp::getAtomicValue(env, args.nth(2), tmpObjs[2]);
+
+        const string_t *p_fmt = boost::get<string_t>(&obj_ref);
+
+        if (p_fmt)
+        {
+            //requireTypedValue<varlisp::string_t>(env, args.nth(2), tmpObjs[2], funcName, 2, DEBUG_INFO);
+            fmt = *p_fmt;
+        }
+        else
+        {
+            is_functor = true;
+        }
     }
 
-    std::string out = *p_target->gen_shared();
-    RE2::GlobalReplace(&out, *(*p_regobj), fmt);
-    return string_t(std::move(out));
+    if (!is_functor)
+    {
+        std::string out = *p_target->gen_shared();
+        RE2::GlobalReplace(&out, *(*p_regobj), fmt);
+        return string_t(std::move(out));
+    }
+    else
+    {
+        std::ostringstream oss;
+
+        std::vector<re2::StringPiece> sub_matches;
+        // NOTE resize to Capture Group Count
+        sub_matches.resize(1 + (*p_regobj)->NumberOfCapturingGroups());
+        uint64_t offset = 0;
+        while (offset < p_target->size() &&
+               (*p_regobj)->Match(*p_target, offset, p_target->size(), RE2::UNANCHORED,
+                               &sub_matches[0], sub_matches.size()))
+        {
+            varlisp::List matched_list = varlisp::List::makeSQuoteList();
+            auto back_it = detail::list_back_inserter<varlisp::string_t>(matched_list);
+
+            for (const auto& piece : sub_matches) {
+                *back_it++ = p_target->substr(sss::string_view(piece.data(), piece.size()));
+            }
+
+            oss << sss::string_view(p_target->data() + offset, sub_matches[0].data() - (p_target->data() + offset));
+
+            //std::cout << offset << " " << sub_matches[0] << " " << sub_matches[0].size() << " " << sss::raw_string(oss.str()) << std::endl;
+            auto wrap_list = varlisp::List::makeSQuoteList(std::move(matched_list));
+
+            varlisp::List* p_list = wrap_list.get_slist();
+
+            auto rst = varlisp::apply(env, args.nth(2), *p_list);
+
+            if (varlisp::string_t* p_str = boost::get<varlisp::string_t>(&rst)) {
+                oss << *p_str;
+            }
+            else {
+                boost::apply_visitor(print_visitor(oss), rst);
+            }
+
+            // "123
+            //
+            offset = sub_matches[0].data() - p_target->data() + sub_matches[0].size();
+        }
+        oss << sss::string_view(p_target->data() + offset, p_target->size() - offset);
+
+        return string_t(std::move(oss.str()));
+    }
 }
 
 REGIST_BUILTIN(
@@ -196,8 +259,8 @@ Object eval_regex_split(varlisp::Environment &env, const varlisp::List &args)
 
 REGIST_BUILTIN("regex-collect", 2, 3, eval_regex_collect,
                "(regex-collect reg \"target-string\")\n"
-               "(regex-collect reg \"target-string\" \"fmt-string\") ->"
-               " (list matched-sub1 matched-sub2 ...)");
+               "(regex-collect reg \"target-string\" \"fmt-string\") -> (list matched-sub1 matched-sub2 ...)\n"
+               "(regex-collect reg \"target-string\" functor) -> (list functor(matched-sub1) functor(matched-sub2) ...)");
 
 /**
  * @brief
