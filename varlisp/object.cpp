@@ -30,7 +30,7 @@ Object apply(Environment& env, const Object& funcObj, const List& args)
         return p_builtin_func->eval(env, args);
     }
     else {
-        SSS_POSITION_THROW(std::runtime_error, funcRef, " not callable objct");
+        SSS_POSITION_THROW(std::runtime_error, funcRef, funcRef.which(), " not callable objct");
     }
 }
 
