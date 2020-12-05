@@ -20,18 +20,14 @@ REGIST_BUILTIN("call?", 1, 1, eval_call_q,
 
 Object eval_call_q(varlisp::Environment& env, const varlisp::List& args)
 {
-    const char * funcName = "call?";
+    //const char * funcName = "call?";
     Object tmp;
-    Object * obj = varlisp::findSymbolDeep(env, args.nth(0), tmp, funcName);
-    if (!obj) {
-        return Nill{};
-    }
-
+    const Object& obj = varlisp::getAtomicValue(env, detail::car(args), tmp);
     varlisp::List ret;
-    if (boost::get<varlisp::Builtin>(obj)) {
+    if (boost::get<varlisp::Builtin>(&obj)) {
         return true;
     }
-    else if (boost::get<varlisp::Lambda>(obj)) {
+    else if (boost::get<varlisp::Lambda>(&obj)) {
         return true;
     }
     else {
@@ -48,18 +44,23 @@ Object eval_signature(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "signature";
     Object tmp;
-    Object * obj = varlisp::findSymbolDeep(env, args.nth(0), tmp, funcName);
-    if (!obj) {
+#if 1 // FIXME 2020-06-28
+    Object * p_obj = varlisp::findSymbolDeep(env, args.nth(0), tmp, funcName);
+    if (!p_obj) {
         return Nill{};
     }
+    const Object& obj = *p_obj;
+#else
+    const Object& obj = varlisp::getAtomicValue(env, detail::car(args), tmp);
+#endif
 
     varlisp::List ret;
-    if (auto * p_b = boost::get<varlisp::Builtin>(obj)) {
+    if (auto * p_b = boost::get<varlisp::Builtin>(&obj)) {
         ret.append(int64_t(varlisp::detail::get_builtin_infos()[p_b->type()].min));
         ret.append(int64_t(varlisp::detail::get_builtin_infos()[p_b->type()].max));
         ret.append(varlisp::detail::get_builtin_infos()[p_b->type()].help_msg);
     }
-    else if (auto * p_l = boost::get<varlisp::Lambda>(obj)) {
+    else if (auto * p_l = boost::get<varlisp::Lambda>(&obj)) {
         ret.append(int64_t(p_l->argument_count()));
         ret.append(int64_t(p_l->argument_count()));
         auto help_msg = p_l->help_msg();
@@ -99,7 +100,7 @@ REGIST_BUILTIN("curry", 1, -1, eval_curry,
 // /home/sarrow/project/node.js/curry/test.js:17
 // http://blog.csdn.net/jason5186/article/details/43764331
 //
-// 上面两个例子，都是可以讲参数的赋值过程给拆分开。如果参数需要在不同的
+// 上面两个例子，都是可以将参数的赋值过程给拆分开。如果参数需要在不同的
 // 程序运行状态下确定，这样的curry化，确实是一个好工具。
 // 这就相当于不断地curry。
 //
