@@ -47,5 +47,5 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 #include_directories(~/extra/sss/include)
 #link_directories(~/extra/sss/lib/)
-target_link_libraries(${target_name} re2 ${ss1x} ${sss} uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ${OPENSSL_LIBRARIES} z ${libbrotlidec}) # must below the bin target definition!
+target_link_libraries(${target_name} re2 ${ss1x} ${sss} uchardet gq gumbo ${Boost_LIBRARIES} rt Threads::Threads ${OPENSSL_LIBRARIES} magic z ${libbrotlidec}) # must below the bin target definition!
 
