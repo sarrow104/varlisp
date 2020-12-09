@@ -280,7 +280,16 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
         fd = int(*requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO));
     }
 
-    std::string line = detail::readline(fd);
+    std::string line;
+
+    if (fd)
+    {
+        line = detail::readline(fd);
+    }
+    else
+    {
+        line = detail::readline_stdin();
+    }
     if (line.empty() && errno) {
         return varlisp::Nill{};
     }
