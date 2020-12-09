@@ -225,9 +225,9 @@ REGIST_BUILTIN("letn", 2, -1, eval_letn,
                "(letn ((symbol expr)...) (expr)...) -> result-of-last-expr\n"
 
                "(letn\n"
-               "   (x 2\n"
-               "    y (pow x 3)\n"
-               "    z (pow x 4))\n"
+               "   ((x 2)\n"
+               "    (y (pow x 3))\n"
+               "    (z (pow x 4)))\n"
                " (println x)\n"
                " (println y)\n"
                " (println z))\n"
