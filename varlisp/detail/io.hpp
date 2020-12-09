@@ -10,6 +10,8 @@
 namespace varlisp {
 namespace detail {
 
+std::string readline_stdin();
+
 inline std::string readline(int64_t fd)
 {
     std::string line;
