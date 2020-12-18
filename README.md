@@ -9,8 +9,8 @@ a lisp syntax like mini interpreter
 - gumbo-parser
 - gumbo-query  (gumbo-query content query-string)
 - posix regex
-- sarrow104::ss1x(not upload yet)
-- sarrow104::sss(not upload yet)
+- sarrow104/ss1x
+- sarrow104/sss
 
 ## extra builin-function list:
 
