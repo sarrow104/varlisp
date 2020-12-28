@@ -167,7 +167,7 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
     if (!p_arg_list) {
         SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": need a s-list at 2nd arguments)");
+                          "(", funcName, ": need a s-list as 2nd arguments)");
     }
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
@@ -179,6 +179,46 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
         if (varlisp::is_true(env, value)) {
             *ret_it++ = *it;
         }
+    }
+    return ret;
+}
+
+REGIST_BUILTIN("transform", 2, 2, eval_transform,
+               "; transform 将func作用到输入列表的每个元素，\n"
+               "; 用其结果串接成一个新的列表；\n"
+               "; 再返回这个列表\n"
+
+               "(transform func list) ->\n"
+               "\t'(func(car-nth i list) ... )");
+
+/**
+ * @brief (transform func list)
+ *           -> (sigma list[i] where (func list[i]) == #t)
+ *
+ * @param env
+ * @param args
+ *
+ * @return 
+ */
+Object eval_transform(varlisp::Environment &env, const varlisp::List &args)
+{
+    const char * funcName = "transform";
+    // NOTE 第一个参数是只接受一个参数的call-able；
+    // 第二个参数，是一个s-list，元素个数不定；
+    const Object& callable = detail::car(args);
+    Object tmp;
+    const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
+    if (!p_arg_list) {
+        SSS_POSITION_THROW(std::runtime_error,
+                          "(", funcName, ": need a s-list as 2nd arguments)");
+    }
+
+    varlisp::List ret = varlisp::List::makeSQuoteList();
+    auto ret_it = detail::list_back_inserter<Object>(ret);
+    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
+        varlisp::List expr = varlisp::List({callable, *it});
+        Object value = expr.eval(env);
+        *ret_it++ = value;
     }
     return ret;
 }
