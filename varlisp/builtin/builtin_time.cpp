@@ -168,7 +168,7 @@ REGIST_BUILTIN("time-format", 1, 2, eval_time_format,
                "; %+ The date and time in date(1) format. (TZ) (Not supported in glibc2.)\n"
                "; %% 百分号\n"
                ";\n"
-               "(time-format \"fmt\" '())");
+               "(time-format \"fmt\" '()) -> string");
 
 Object eval_time_format(varlisp::Environment &env, const varlisp::List &args)
 {
