@@ -274,7 +274,7 @@ Object eval_set(varlisp::Environment& env, const varlisp::List& args)
 
 REGIST_BUILTIN("setq", 2, -1, eval_setq,
                "; 对符号引用到的变量做修改；如果变量不存在，则报错\n"
-               "((setq symbol1 expr1 symbol2 expr2 ... ) -> value-of-last-expr");
+               "(setq symbol1 expr1 symbol2 expr2 ... ) -> value-of-last-expr");
 
 /**
  * @brief
