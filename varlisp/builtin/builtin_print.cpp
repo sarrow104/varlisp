@@ -82,7 +82,7 @@ Object eval_print(varlisp::Environment& env, const varlisp::List& args)
 REGIST_BUILTIN("io-print-ln", 1, -1, eval_print_ln, "(io-print \"fmt\n\" ...)");
 
 /**
- * @brief (io-print "fmt\n" ...)
+ * @brief (io-print-ln "fmt\n" ...)
  *
  * @param[in] env
  * @param[in] args
