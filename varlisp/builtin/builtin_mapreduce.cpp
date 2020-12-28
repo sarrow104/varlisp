@@ -192,8 +192,8 @@ REGIST_BUILTIN("transform", 2, 2, eval_transform,
                "\t'(func(car-nth i list) ... )");
 
 /**
- * @brief (transform func list)
- *           -> (sigma list[i] where (func list[i]) == #t)
+ * @brief
+ *     (transform func list) -> '(func(car-nth i list) ... )
  *
  * @param env
  * @param args
