@@ -183,11 +183,12 @@ Object eval_shell_mkdir(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("shell-ls", 0, -1, eval_shell_ls,
-               "(ls \"dir1\" \"dir2\" ...) -> '(\"item1\",\"item2\", ...)");
+               "(shell-ls \"dir1\" \"dir2\" ...) -> '(\"item1\",\"item2\", ...)");
 
 // 允许任意个可以理解为路径的字符串作为参数；枚举出所有路径
 /**
- * @brief (ls "dir1" "dir2" ...) -> '("item1","item2", ...)
+ * @brief
+ *     (shell-ls "dir1" "dir2" ...) -> '("item1","item2", ...)
  *
  * @param[in] env
  * @param[in] args
