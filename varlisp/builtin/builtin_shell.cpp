@@ -256,7 +256,7 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
 }
 
 REGIST_BUILTIN("shell-pwd", 0, 0, eval_shell_pwd,
-               "(pwd) -> \"current-working-dir\"");
+               "(shell-pwd) -> \"current-working-dir\"");
 
 /**
  * @brief (pwd) -> "current-working-dir"
