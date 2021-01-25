@@ -56,17 +56,17 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, true_args);
     SSS_LOG_EXPRESSION(sss::log::log_DEBUG, *this);
     Environment inner(&env);
-    if (this->m_args.size() != true_args.length()) {
+    if (this->m_args.size() < true_args.length()) {
         SSS_POSITION_THROW(std::runtime_error, *this, " expect ",
                            this->m_args.size(), " argument, but given ",
                            true_args.length(), " argument: ", true_args);
     }
     auto p = true_args.begin();
-    for (size_t i = 0; i != this->m_args.size(); ++i, ++p) {
-        if (p == true_args.end()) {
-            SSS_POSITION_THROW(std::runtime_error, "Not enough argument at ", i,
-                              "; name ", m_args[i]);
-        }
+    for (size_t i = 0, isize = std::min<size_t>(this->m_args.size(), true_args.length());
+         i != isize;
+         ++i, ++p)
+    {
+        assert(p != true_args.end());
         if (!(*p).which()) {
             SSS_POSITION_THROW(std::runtime_error, "Empty argument at ", i,
                               "; name ", m_args[i]);
@@ -75,17 +75,25 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
         // SSS_LOG_EXPRESSION(sss::log::log_DEBUG, m_args[i]);
         inner[m_args[i]] = boost::apply_visitor(eval_visitor(env), *p);
     }
+    // NOTE 2021-01-26
+    // padding nil while not enough parameters
+    for (size_t i = true_args.length(); i < this->m_args.size(); ++i)
+    {
+        inner[m_args[i]] = Nill{};
+    }
 
     size_t i = 0;
+    Object rst;
     for (const auto& obj : this->m_body) {
         if (i == this->m_body.size() - 1) {
-            return boost::apply_visitor(eval_visitor(inner), obj);
+            rst = boost::apply_visitor(eval_visitor(inner), obj);
         }
         else {
             boost::apply_visitor(eval_visitor(inner), obj);
         }
         ++i;
     }
+    return rst;
 }
 
 // 比较通过递归完成；分别比较各个部分元素
