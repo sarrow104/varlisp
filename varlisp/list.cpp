@@ -174,23 +174,6 @@ void List::push_front(const Object& o)
     m_refer->operator[](0) = o;
 }
 
-Object eval_impl(Environment& env, const Object& funcObj, const List& args)
-{
-    COLOG_DEBUG(funcObj, args);
-    if (const varlisp::Lambda* pl =
-                 boost::get<varlisp::Lambda>(&funcObj)) {
-        return pl->eval(env, args);
-    }
-    else if (const varlisp::Builtin* p_builtin_func =
-                boost::get<varlisp::Builtin>(&funcObj))
-    {
-        return p_builtin_func->eval(env, args);
-    }
-    else {
-        SSS_POSITION_THROW(std::runtime_error, funcObj, " not callable objct");
-    }
-}
-
 Object List::eval(Environment& env) const
 {
     COLOG_DEBUG(*this);
@@ -231,7 +214,6 @@ Object List::eval(Environment& env) const
     // 对这个list树的遍历——同时需要用到多个栈，用来模拟调用栈。
 
     try {
-        // return eval_impl(env, funcRef, this->tail());
         // COLOG_ERROR(this->tail(0));
         return varlisp::apply(env, this->front(), this->tail());
     }

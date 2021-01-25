@@ -256,6 +256,7 @@ public:
                 result = boost::apply_visitor(eval_visitor(inner), *expr_it);
             }
         }
+        return result;
     }
 };
 

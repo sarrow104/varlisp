@@ -25,6 +25,7 @@ inline Object arithmetic2object(const arithmetic_t& a)
         case 2:
             return boost::get<double>(a);
     }
+    return Nill{};
 }
 
 inline double arithmetic2double(const arithmetic_t& a)
@@ -40,6 +41,7 @@ inline double arithmetic2double(const arithmetic_t& a)
         case 2:
             return boost::get<double>(a);
     }
+    return 0.0;
 }
 
 inline int64_t arithmetic2int(const arithmetic_t& a)
@@ -64,6 +66,7 @@ inline int64_t arithmetic2int(const arithmetic_t& a)
                 return ret;
             }
     }
+    return 0;
 }
 
 } // namespace varlisp

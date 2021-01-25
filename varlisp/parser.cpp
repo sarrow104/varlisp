@@ -779,6 +779,7 @@ Object Parser::parseSpecialDefine()
             SSS_POSITION_THROW(std::runtime_error, "expect a valid func-name");
         }
     }
+    return Nill{};
 }
 
 // (labmda (arg-list) "" expr-list)

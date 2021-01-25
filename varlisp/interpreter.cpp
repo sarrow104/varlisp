@@ -67,23 +67,28 @@ void Interpreter::load(const std::string& path, bool echo)
 
 int Interpreter::retrieve_symbols(std::vector<std::string>& symbols) const
 {
-    for (auto it = m_env.begin(); it != m_env.end(); ++it) {
+    int cnt = 0;
+    for (auto it = m_env.begin(); it != m_env.end(); ++cnt, ++it) {
         symbols.push_back(it->first);
     }
+    return cnt;
 }
 
 int Interpreter::retrieve_symbols(std::vector<std::string>& symbols,
                                   const char* prefix) const
 {
+    int cnt = 0;
     this->m_parser.retrieve_symbols(symbols, prefix);
     for (const auto& item : this->m_env) {
         if (sss::is_begin_with(item.first, prefix)) {
             symbols.push_back(item.first);
+            ++cnt;
         }
     }
     std::sort(symbols.begin(), symbols.end());
     auto last = std::unique(symbols.begin(), symbols.end());
     symbols.erase(last, symbols.end());
+    return cnt;
 }
 
 }  // namespace varlisp
