@@ -19,13 +19,9 @@ void json_object2stream(std::ostream& o, varlisp::Environment& env,
 {
     Object tmp;
     const Object& objRef = varlisp::getAtomicValue(env, obj, tmp);
-    if (boost::get<varlisp::Environment>(&objRef)) {
-        // OK
-    }
-    else if (const varlisp::List* p_l = boost::get<varlisp::List>(&objRef)) {
-        // OK
-    }
-    else {
+    if (!boost::get<varlisp::Environment>(&objRef) &&
+        !boost::get<varlisp::List>(&objRef))
+    {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": only Environment type or s-list type is valid; but ",
                            objRef, ")");
