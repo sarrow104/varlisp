@@ -74,7 +74,7 @@ Object eval_path_append(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_toAppend =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
-    std::string out_name = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    std::string out_name = sss::path::full_of_copy(*p_path->gen_shared());
     sss::path::append(out_name, *p_toAppend->gen_shared());
     return string_t(std::move(out_name));
 }
@@ -112,7 +112,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
     auto ret_it = detail::list_back_inserter<Object>(ret);
     
     sss::path::file_descriptor fd;
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    std::string path = sss::path::full_of_copy(*p_path->gen_shared());
     sss::path::glob_path gp(path, fd, f.get());
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
@@ -141,7 +141,7 @@ Object eval_file_q(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    std::string path = sss::path::full_of_copy(*p_path->gen_shared());
     return sss::path::file_exists(path) == sss::PATH_TO_FILE;
 }
 
@@ -157,7 +157,7 @@ Object eval_directory_q(varlisp::Environment &env, const varlisp::List &args)
     const string_t *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    std::string path = sss::path::full_of_copy(*p_path->gen_shared());
     return sss::path::file_exists(path) == sss::PATH_TO_DIRECTORY;
 }
 
@@ -206,7 +206,7 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     auto ret_it = detail::list_back_inserter<Object>(ret);
 
     sss::path::file_descriptor fd;
-    std::string path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    std::string path = sss::path::full_of_copy(*p_path->gen_shared());
     sss::path::glob_path_recursive gp(path, fd, f.get(), false);
     gp.max_depth(depth);
     while (gp.fetch()) {
@@ -229,5 +229,8 @@ Object eval_expand(varlisp::Environment &env, const varlisp::List &args)
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     return string_t(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
 }
+
+// TODO NOTE
+// 既然有 (expand) 方法，那么就应该提供一个 (escape$) 方法，以免错误地使用了(expand)
 
 }  // namespace varlisp

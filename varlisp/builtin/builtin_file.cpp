@@ -43,8 +43,7 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), path, funcName, 0, DEBUG_INFO);
 
-    std::string full_path = sss::path::full_of_copy(
-        varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    std::string full_path = sss::path::full_of_copy(*p_path->gen_shared());
 
     if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
         SSS_POSITION_THROW(std::runtime_error, "(path `", *p_path,

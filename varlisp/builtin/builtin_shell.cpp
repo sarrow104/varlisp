@@ -153,7 +153,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     const string_t* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::string target_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
+    std::string target_path = sss::path::full_of_copy(*p_path->gen_shared());
 
     bool is_ok = sss::path::chgcwd(target_path);
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
