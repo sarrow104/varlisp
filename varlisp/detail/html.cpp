@@ -300,6 +300,7 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                     }
                     if ((tagName == "img" && attrName == "src") ||
                         (tagName == "script" && attrName == "src") ||
+                        (tagName == "embed" && attrName == "src") ||
                         (tagName == "link" && attrName == "href" && detail::html::getAttribute(apNode, "rel") == "stylesheet"))
                     {
                         std::string url = CQueryUtil::nthAttr(apNode, i)->value;
