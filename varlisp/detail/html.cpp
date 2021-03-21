@@ -305,6 +305,10 @@ void gumbo_rewrite_outterHtml(std::ostream& o, GumboNode* apNode,
                     {
                         std::string url = CQueryUtil::nthAttr(apNode, i)->value;
 
+                        static RE2 local_anchor_pattern{R"(#\w+$)"};
+
+                        RE2::GlobalReplace(&url, local_anchor_pattern, "");
+
                         bool is_inline_href = sss::is_begin_with(url, "data:");
 
                         // NOTE https://www.jb51.net/css/41981.html
