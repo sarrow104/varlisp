@@ -69,7 +69,7 @@ a lisp syntax like mini interpreter
   - `(read-char file_descriptor) -> int64_t | nill`
   - `(write-char file_descriptor int64_t) -> int64_t | nill`
   - `(write-string file_descriptor string) -> int64_t | nill`
-  - `(list-opend-fd) -> [(fd name)...] | []`
+  - `(list-opened-fd) -> [(fd name)...] | []`
 
 ### string
   - `(split "string-to-be-split")`
