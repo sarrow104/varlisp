@@ -32,6 +32,10 @@ void Builtin::regist_builtin_function(Environment& env)
     CONSTANT_INT(O_APPEND);
     CONSTANT_INT(O_TRUNC);
     CONSTANT_INT(O_CREAT);
+
+    CONSTANT_INT(SEEK_CUR);
+    CONSTANT_INT(SEEK_SET);
+    CONSTANT_INT(SEEK_END);
 #undef CONSTANT_INT
 
 #define CONSTANT_INT2(name,i) (env.insert(#name, varlisp::Object{int64_t(i)}, true))
