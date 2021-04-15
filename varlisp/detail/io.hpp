@@ -29,6 +29,28 @@ inline std::string readline(int64_t fd)
     return line;
 }
 
+inline std::string readall(int64_t fd)
+{
+    char buf[1024]={'\0'};
+    int64_t offset = ::lseek(fd, 0, SEEK_CUR);
+    int64_t fsize = ::lseek(fd, 0, SEEK_END);
+
+    std::ostringstream oss;
+    ::lseek(fd, 0, SEEK_SET);
+    while (fsize != 0) {
+        auto to_read_size = std::min<int64_t>(fsize, sizeof(buf));
+        if (::read(fd, buf, to_read_size) == -1) {
+            break;
+        }
+        oss.write(buf, to_read_size);
+        fsize -= to_read_size;
+    }
+
+    ::lseek(fd, offset, SEEK_SET);
+
+    return oss.str();
+}
+
 inline int64_t readchar(int64_t fd)
 {
     char buf[6];
