@@ -5,6 +5,7 @@
 
 #include <array>
 #include <fstream>
+#include <cstdlib>
 
 #include <sss/debug/value_msg.hpp>
 #include <sss/colorlog.hpp>
@@ -26,6 +27,7 @@
 namespace varlisp {
 
 REGIST_BUILTIN("read-all", 1, 1, eval_read_all,
+               "(read-all fd) -> string\n"
                "(read-all \"path/to/file\") -> string");
 
 /**
@@ -39,19 +41,25 @@ REGIST_BUILTIN("read-all", 1, 1, eval_read_all,
 Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "read-all";
-    Object path;
-    const string_t* p_path = requireTypedValue<varlisp::string_t>(
-        env, args.nth(0), path, funcName, 0, DEBUG_INFO);
+    Object tmp;
 
-    std::string full_path = sss::path::full_of_copy(*p_path->gen_shared());
-
-    if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
-        SSS_POSITION_THROW(std::runtime_error, "(path `", *p_path,
-                          "` not to file)");
-    }
+    const Object& resRef = varlisp::getAtomicValue(env, args.nth(0), tmp);
 
     std::string content;
-    sss::path::file2string(full_path, content);
+    if (const string_t* p_path = boost::get<varlisp::string_t>(&resRef)) {
+        std::string full_path = sss::path::full_of_copy(*p_path->gen_shared());
+        if (sss::path::file_exists(full_path) != sss::PATH_TO_FILE) {
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName, " `", *p_path,
+                               "` not to file)");
+        }
+        sss::path::file2string(full_path, content);
+
+    } else if (const int64_t* p_fd = boost::get<int64_t>(&resRef)) {
+        content = detail::readall(*p_fd);
+    } else {
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName, " `", resRef,
+                           "` must be path/to/file:string or fd:int to already opened file)");
+    }
 
     return string_t(std::move(content));
 }
@@ -138,6 +146,22 @@ Object eval_write_append(varlisp::Environment& env, const varlisp::List& args)
     return eval_write_impl(env, args, true);
 }
 
+REGIST_BUILTIN("opentmp", 0, 0, eval_opentmp,
+               "(opentmp) -> file_descriptor | nil");
+
+Object eval_opentmp(varlisp::Environment& env, const varlisp::List& args)
+{
+    (void)env;
+    (void)args;
+
+    char tpl[] = "prefixXXXXXX";
+    int64_t fd = ::mkstemp(tpl);
+    if (fd != -1) {
+        varlisp::detail::file::register_fd(fd);
+    }
+    return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
+}
+
 REGIST_BUILTIN("open", 1, -1, eval_open,
                "(open \"path\") -> file_descriptor | nil\n"
                "(open \"path\" flag) -> file_descriptor | nil\n"
@@ -183,6 +207,37 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
         COLOG_ERROR(std::strerror(errno));
     }
     return fd == -1 ? Object{varlisp::Nill{}} : Object{fd};
+}
+
+REGIST_BUILTIN("lseek", 3, 3, eval_lseek,
+               "(lseek fd offset whence) -> offset | nil");
+
+/**
+ * @brief
+ *     (lseek fd offset whence) -> offset | nil
+ *
+ *     whence: SEEK_SET | SEEK_CUR | SEEK_END
+ *
+ * @param[in] env
+ * @param[in] args
+ *
+ * @return
+ */
+Object eval_lseek(varlisp::Environment& env, const varlisp::List& args)
+{
+    const char * funcName = "lseek";
+    std::array<Object, 3> objs;
+
+    int64_t fd = *requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    int64_t offset = *requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+    int64_t whence = *requireTypedValue<int64_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
+
+    int64_t res = ::lseek(fd, offset, whence);
+    COLOG_DEBUG(SSS_VALUE_MSG(res));
+    if (res == -1) {
+        COLOG_ERROR(std::strerror(errno));
+    }
+    return res == -1 ? Object{varlisp::Nill{}} : Object{res};
 }
 
 REGIST_BUILTIN("getfdflag", 1, 1, eval_getfdflag,
@@ -252,6 +307,9 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
         requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     COLOG_DEBUG(SSS_VALUE_MSG(*p_fd));
+    if (*p_fd != -1) {
+        varlisp::detail::file::unregister_fd(*p_fd);
+    }
 
     // errno；
     // 由于我这个是脚本，不是真正编译程序；也就是说，从产生错误号，到获取
@@ -554,12 +612,12 @@ Object eval_get_fd_fname(varlisp::Environment& env, const varlisp::List& args)
 // 除非我内部管理所有的fd，然后通过fd来检索，这样才能服用buffer，而不会发生错乱。
 //
 
-REGIST_BUILTIN("list-opend-fd", 0, 0, eval_list_opend_fd,
-               "; list-opend-fd 枚举打开的文件描述符以及对应的文件名\n"
+REGIST_BUILTIN("list-opened-fd", 0, 0, eval_list_opened_fd,
+               "; list-opened-fd 枚举打开的文件描述符以及对应的文件名\n"
                "; 并以list的形式返回\n"
-               "(list-opend-fd) -> [(fd name)...] | []");
+               "(list-opened-fd) -> [(fd name)...] | []");
 
-Object eval_list_opend_fd(varlisp::Environment& env, const varlisp::List& args)
+Object eval_list_opened_fd(varlisp::Environment& env, const varlisp::List& args)
 {
     const size_t buf_size = 256;
     char dir[buf_size];
