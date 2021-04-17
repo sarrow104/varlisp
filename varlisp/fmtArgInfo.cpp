@@ -370,6 +370,7 @@ void fmtArgInfo::print(std::ostream& o, double f) const
 
         case '%':
             std::sprintf(c_fmt, "%%.%d%c%%%%", 2, 'f');
+            std::sprintf(buf, c_fmt, f*100.0);
             adjust(o, buf, sign, this->fill, align, this->width);
             break;
 
