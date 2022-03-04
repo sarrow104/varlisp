@@ -146,13 +146,6 @@ Environment * Environment::ceiling(){
 
 // TODO 增加一个wrapper class；
 // 当完成赋值动作的时候，重建链接关系；
-//
-// FIXME 对下标的支持；
-//
-// 逻辑上更好的现实，是分别使用SList的数字下标和Environment()的symbol下标
-// 递归循环来处理，而不是一股脑，用本函数，完成处理。
-//
-// 这样考虑的话，内部逻辑，应该在json_accessor里面来完成处理。
 Object& Environment::operator [](const std::string& name)
 {
     detail::json_accessor jc(name);
@@ -161,6 +154,9 @@ Object& Environment::operator [](const std::string& name)
     }
     else {
         return jc.query_location(*this);
+        // TODO
+        // 检测使用json_accessor 的curd操作
+        //
         // std::string env_name = jc.prefix();
         // auto it = this->BaseT::find(env_name);
         // if (it == this->BaseT::end()) {
