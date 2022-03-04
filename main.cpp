@@ -17,9 +17,9 @@
 #include <sss/Terminal.hpp>
 #include <sss/CMLParser.hpp>
 
-#include "varlisp/interpreter.hpp"
-#include "varlisp/tokenizer.hpp"
-#include "varlisp/String.hpp"
+#include "src/interpreter.hpp"
+#include "src/tokenizer.hpp"
+#include "src/String.hpp"
 
 //http://stackoverflow.com/questions/6364681/how-to-handle-control-c-in-a-boost-tcp-udp-server
 #include <signal.h> // or <csignal> in C++
@@ -76,6 +76,12 @@ int get_indent(const std::string& line)
         indent++;
     }
     return indent;
+}
+
+int test_other()
+{
+    std::cout << sss::raw_string("\\");
+    return EXIT_SUCCESS;
 }
 
 int test_construct()
@@ -209,7 +215,8 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete,
                 ? gen_prompt_continue(interpreter) : prompt_start.c_str(), indent);
         indent = get_indent(line);
 
-        switch (st) {
+        try {
+            switch (st) {
             case varlisp::Interpreter::status_UNFINISHED:
                 st = interpreter.eval(line);
                 break;
@@ -227,6 +234,11 @@ int Interpret(bool echo_in_load, bool quit_on_load_complete,
 
             default:
                 break;
+            }
+        } catch (const std::exception& e) {
+            // TODO add line-number, offset
+            std::cout << e.what() << std::endl;
+            continue;
         }
 
         if (st == varlisp::Interpreter::status_OK ||
@@ -383,14 +395,20 @@ int main(int argc, char* argv[])
         return EXIT_SUCCESS;
     }
 
-#if 1
+#define CONDTION 1
+
+#if (CONDTION==1)
     return Interpret(echo_in_load,
                      quit_on_load_complete,
                      load_init_script,
                      argc - 1, argv + 1);
-#else
+#elif (CONDTION==2)
     return test_construct();
+#else
+    return test_other();
 #endif
+
+#undef CONDTION
 }
 // varLisp --sss-colog-level INFO,ERROR,WARN,FATAL --sss-colog-style LEVEL_SHORT,FUNC,LINE
 // (define fib (lambda (x) (if (> x 2) (+ (fib (- x 1)) (fib (- x 2))) 1)))
