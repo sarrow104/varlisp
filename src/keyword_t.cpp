@@ -55,7 +55,12 @@ struct keywords_info_t {
 const keywords_info_t keywords_info[] = {
     {"if"     , "keywords <if>\n\t(if condition consequent alternative); only #t will be treat as true, otherwise will be false"},
     {"else"   , "keywords <else>\n\t see (help cond)"},
-    {"define" , "keywords <define>\n\t(define var expr)\n\t(define (funcName args) \"help doc\" expr-list)"},
+    {"define" ,
+        "keywords <define>\n"
+        "\t(define var expr) define `var` as `expr`\n"
+        "\t(define var expr #t) force re-define `var` as `expr`\n"
+        "\t(define (funcName args) \"help doc\"? expr-list) define (funcName args...) as expr-list with optional doc,\n"
+        "\t\twhich return last expr as function value"},
     {"cond"   , "keywords <cond>\n\t(cond (cond1 result1)... [(else expr)])\n\t NOTE only #t will be treat as true then run this branch"},
     // 另外一种写法：
     // (COND
