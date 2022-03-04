@@ -143,6 +143,7 @@ int Parser::parse(varlisp::Environment& env, const std::string& raw_scripts,
                     boost::apply_visitor(print_visitor(std::cout), res);
                     std::cout << std::endl;
                 }
+                env["_"] = result;
             }
             catch (std::runtime_error& e) {
                 std::cout << e.what() << std::endl;
