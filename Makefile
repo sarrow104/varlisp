@@ -26,12 +26,12 @@ endif
 all: release
 release:
 	@mkdir -p Release
-	cd Release && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/bin .. && make
+	cd Release && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) -DCMAKE_INSTALL_PREFIX=~/bin .. && make
 	ln -f -s Release/compile_commands.json
 
 debug:
 	@mkdir -p Debug
-	@cd Debug && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug .. && make
+	@cd Debug && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) .. && make
 	ln -f -s Debug/compile_commands.json
 
 gprof:
@@ -75,7 +75,7 @@ memcheck-valgrind: debug
 #! http://www.cnblogs.com/cobbliu/p/4423775.html
 
 install:
-	@cd Release && make install
+	@ln -s $(shell pwd)/varLisp ~/bin
 
 clean: clean-debug clean-release clean-gprof
 clean-release:
