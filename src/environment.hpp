@@ -20,7 +20,7 @@ struct property_t
 };
 
 struct Environment : private std::map<std::string, std::pair<Object, property_t>> {
-    explicit Environment(Environment* parent = 0);
+    explicit Environment(Environment* parent = nullptr);
     ~Environment();
 
     Environment(const Environment& ref) = default;
@@ -30,9 +30,9 @@ struct Environment : private std::map<std::string, std::pair<Object, property_t>
     Environment& operator =(Environment&&) = default;
 
 public:
-    typedef std::map<std::string, std::pair<Object, property_t> > BaseT;
-    typedef BaseT::const_iterator                                 const_iterator;
-    typedef BaseT::iterator                                       iterator;
+    using BaseT = std::map<std::string, std::pair<Object, property_t>>;
+    using const_iterator = BaseT::const_iterator;
+    using iterator = BaseT::iterator;
 
 public:
     const Object* find(const std::string& name) const;
@@ -64,7 +64,7 @@ public:
     void insert(const std::string& name, const Object& o, bool is_const = false);
     void insert(std::string&& name, Object&& o, bool is_const = false);
 
-    Object eval(Environment& env) const
+    Object eval(Environment& /*env*/) const
     {
         return *this;
     }

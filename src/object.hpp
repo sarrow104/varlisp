@@ -1,37 +1,36 @@
 #ifndef __OBJECT_HPP_1457602801__
 #define __OBJECT_HPP_1457602801__
 
-#include <iosfwd>
 #include <cstddef>
+#include <iosfwd>
 
 #include <boost/variant.hpp>
 #include <boost/variant/recursive_wrapper.hpp>
 
-#include "regex_t.hpp"
-
-#include "symbol.hpp"
-#include "gumboNode.hpp"
 #include "String.hpp"
+#include "gumboNode.hpp"
 #include "keyword_t.hpp"
+#include "regex_t.hpp"
+#include "symbol.hpp"
 
 namespace varlisp {
 
 struct Empty {
 };
 
-inline std::ostream& operator<<(std::ostream& o, const Empty&) { return o; }
-inline bool operator==(const Empty&, const Empty&) { return true; }
-inline bool operator<(const Empty&, const Empty&) { return false; }
+inline std::ostream& operator<<(std::ostream& o, const Empty& /*unused*/) { return o; }
+inline bool operator==(const Empty& /*unused*/, const Empty& /*unused*/) { return true; }
+inline bool operator<(const Empty& /*unused*/, const Empty& /*unused*/) { return false; }
 
 struct Nill {
 };
 
-inline std::ostream& operator<<(std::ostream& o, const Nill&) {
+inline std::ostream& operator<<(std::ostream& o, const Nill& /*unused*/) {
     o << "nil";
     return o;
 }
-inline bool operator==(const Nill&, const Nill&) { return true; }
-inline bool operator<(const Nill&, const Nill&) { return false; }
+inline bool operator==(const Nill& /*unused*/, const Nill& /*unused*/) { return true; }
+inline bool operator<(const Nill& /*unused*/, const Nill& /*unused*/) { return false; }
 
 struct Define;
 struct IfExpr;
@@ -45,11 +44,11 @@ struct LogicOr;
 struct Environment;
 
 // struct String;
-typedef ::varlisp::String string_t;
+using string_t = ::varlisp::String;
 // typedef ::std::string string_t;
 
 // NOTE
-typedef boost::variant<
+using Object = boost::variant<
     Empty,                                  // 0
     Nill,                                   // 1
     bool,                                   // 2
@@ -71,8 +70,7 @@ typedef boost::variant<
     // quote-list只是作为一种函数存在！
     boost::recursive_wrapper<Lambda>,       // 17
     boost::recursive_wrapper<Environment>   // 18
-    >
-    Object;
+    >;
 
 Object apply(Environment& env, const Object& funcObj, const List& args);
 
@@ -81,12 +79,12 @@ Object apply(Environment& env, const Object& funcObj, const List& args);
 #include "Define.hpp"
 #include "builtin.hpp"
 #include "condition.hpp"
+#include "environment.hpp"
 #include "ifexpr.hpp"
 #include "lambda.hpp"
 #include "list.hpp"
 #include "logic_and.hpp"
 #include "logic_or.hpp"
-#include "environment.hpp"
 
 #include "print_visitor.hpp"
 

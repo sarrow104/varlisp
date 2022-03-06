@@ -7,12 +7,12 @@
 
 #include <sss/utlstring.hpp>
 
-#include "object.hpp"
-#include "environment.hpp"
-#include "print_visitor.hpp"
+#include "builtin_helper.hpp"
 #include "cast2bool_visitor.hpp"
 #include "detail/is_symbol.hpp"
-#include "builtin_helper.hpp"
+#include "environment.hpp"
+#include "object.hpp"
+#include "print_visitor.hpp"
 
 namespace varlisp {
 
@@ -30,7 +30,7 @@ struct cast_visitor : public boost::static_visitor<Object>
     {}
 
     template <typename T, typename U>
-    Object operator() (const T& , const U& ) const
+    Object operator() (const T&  /*unused*/, const U&  /*unused*/) const
     {
         return Nill{};
     }
@@ -42,15 +42,15 @@ struct cast_visitor : public boost::static_visitor<Object>
     //
     // (eval 'a) -> cannot find symbol a | nil (newlisp中，未定义的符号值是nil）
     template<typename T>
-    Object operator() (const symbol&, const T& v) const
+    Object operator() (const symbol& /*unused*/, const T&  /*v*/) const
     {
         Object temp;
         const Object& res = varlisp::getAtomicValueUnquote(m_env, m_value, temp);
 
-        if (auto p_sym = boost::get<varlisp::symbol>(&res)) {
+        if (const auto *p_sym = boost::get<varlisp::symbol>(&res)) {
             return res;
         }
-        else if (auto p_string = boost::get<varlisp::string_t>(&res)) {
+        if (const auto *p_string = boost::get<varlisp::string_t>(&res)) {
             auto name = p_string->gen_shared();
             if (detail::is_symbol(*name)) {
                 return symbol(*name);
@@ -59,22 +59,20 @@ struct cast_visitor : public boost::static_visitor<Object>
         return Nill{};
     }
     template<typename T>
-    Object operator() (const int64_t&, const T& v) const
+    Object operator() (const int64_t& /*unused*/, const T&  /*v*/) const
     {
         Object temp;
         const Object& res = varlisp::getAtomicValueUnquote(m_env, m_value, temp);
-        if (auto * p_double = boost::get<double>(&res)) {
-            if (std::abs(*p_double) > std::numeric_limits<int64_t>::max()) {
+        if (const auto * p_double = boost::get<double>(&res)) {
+            if (std::abs(*p_double) > double(std::numeric_limits<int64_t>::max())) {
                 return Nill{};
             }
-            else {
-                return int64_t(*p_double);
-            }
+            return int64_t(*p_double);
         }
-        else if (auto * p_int64 = boost::get<int64_t>(&res)) {
+        if (const auto * p_int64 = boost::get<int64_t>(&res)) {
             return *p_int64;
         }
-        else if (auto * p_string = boost::get<varlisp::string_t>(&res)) {
+        if (const auto * p_string = boost::get<varlisp::string_t>(&res)) {
             auto s = p_string->gen_shared();
             try {
                 return sss::string_cast<int64_t>(*s);
@@ -86,20 +84,20 @@ struct cast_visitor : public boost::static_visitor<Object>
         return Nill{};
     }
     template<typename T>
-    Object operator() (const double&, const int64_t& v) const
+    Object operator() (const double& /*unused*/, const int64_t&  /*v*/) const
     {
         Object temp;
         const Object& res = varlisp::getAtomicValueUnquote(m_env, m_value, temp);
-        if (auto * p_bool = boost::get<bool>(&res)) {
+        if (const auto * p_bool = boost::get<bool>(&res)) {
             return double(*p_bool);
         }
-        else if (auto * p_double = boost::get<double>(&res)) {
+        if (const auto * p_double = boost::get<double>(&res)) {
             return *p_double;
         }
-        else if (auto * p_int64 = boost::get<int64_t>(&res)) {
+        if (const auto * p_int64 = boost::get<int64_t>(&res)) {
             return double(*p_int64);
         }
-        else if (auto * p_string = boost::get<varlisp::string_t>(&res)) {
+        if (const auto * p_string = boost::get<varlisp::string_t>(&res)) {
             auto s = p_string->gen_shared();
             try {
                 return sss::string_cast<double>(*s);
@@ -111,27 +109,27 @@ struct cast_visitor : public boost::static_visitor<Object>
         return Nill{};
     }
     template<typename T>
-    Object operator() (const string_t, const T& value) const
+    Object operator() (const string_t& /*unused*/, const T&  /*value*/) const
     {
         Object temp;
         const Object& res = varlisp::getAtomicValueUnquote(m_env, m_value, temp);
-        if (auto * p_string = boost::get<varlisp::string_t>(&res)) {
+        if (const auto * p_string = boost::get<varlisp::string_t>(&res)) {
             return res;
         }
-        else if (auto * p_sym = boost::get<varlisp::symbol>(&res)) {
+        if (const auto * p_sym = boost::get<varlisp::symbol>(&res)) {
             return string_t(p_sym->name());
         }
         std::ostringstream oss;
         boost::apply_visitor(print_visitor(oss), m_value);
-        return string_t{std::move(oss.str())};
+        return string_t{oss.str()};
     }
     template<typename T>
-    Object operator() (const bool&, const T& s) const
+    Object operator() (const bool& /*unused*/, const T&  /*s*/) const
     {
         return boost::apply_visitor(cast2bool_visitor(m_env), m_value);
     }
     //NOTE cast到正则
-    Object operator() (const varlisp::regex_t&, const varlisp::string_t& s) const
+    Object operator() (const varlisp::regex_t& /*unused*/, const varlisp::string_t& s) const
     {
         return std::make_shared<RE2>(*s.gen_shared());
     }
