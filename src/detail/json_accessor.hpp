@@ -67,9 +67,6 @@ public:
     varlisp::Object *       access(varlisp::Environment& env) const;
     varlisp::Object&        query_location(varlisp::Environment& env) const;
 
-    static std::pair<const varlisp::Object*, const varlisp::Environment*> locate(const varlisp::Environment& env, const varlisp::symbol& sym);
-    static std::pair<varlisp::Object*, varlisp::Environment*> locate(varlisp::Environment& env, const varlisp::symbol& sym);
-
     location locate(varlisp::Environment& env);
 
 private:

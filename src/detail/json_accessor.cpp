@@ -5,15 +5,14 @@
 #include <cstdlib>
 
 #include <sss/algorithm.hpp>
-#include <sss/spliter.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
+#include <sss/spliter.hpp>
 
 #include "../environment.hpp"
 #include "../list.hpp"
 
-namespace varlisp {
-namespace detail {
+namespace varlisp::detail {
 
 json_accessor::json_accessor(const std::string& jstyle_name)
     : m_jstyle_name(jstyle_name), m_colon_pos(m_jstyle_name.find(':'))
@@ -293,67 +292,6 @@ std::pair<const varlisp::Object*, const varlisp::Environment*> locate_impl(const
 }
 } // namespace detail
 
-std::pair<const varlisp::Object*, const varlisp::Environment*> json_accessor::locate(const varlisp::Environment& env, const symbol& sym)
-{
-    COLOG_DEBUG(&env, sym);
-    json_accessor jc(sym.name());
-    if (!jc.has_sub()) {
-        return detail::locate_impl(env, sym.name());
-    }
-    else {
-        auto location = detail::locate_impl(env, jc.prefix());
-        COLOG_DEBUG(location);
-        for (size_t i = 0; i < jc.m_stems.size() && location.first; ++i) {
-            COLOG_DEBUG(jc.m_stems[i], is_index(jc.m_stems[i]));
-            if (is_index(jc.m_stems[i])) {
-                auto * p_list = boost::get<varlisp::List>(location.first);
-                if (!p_list) {
-                    SSS_POSITION_THROW(std::runtime_error,
-                                       "need a List here , but ", location.first->which());
-                }
-                if (p_list->is_quoted()) {
-                    p_list = p_list->unquoteType<varlisp::List>();
-                    if (!p_list) {
-                        SSS_POSITION_THROW(std::runtime_error,
-                                           "quoted but not s-list", *location.first);
-                    }
-                }
-
-                int index = sss::string_cast<int>(jc.m_stems[i]);
-                if (std::abs(index) >= p_list->size()) {
-                    SSS_POSITION_THROW(std::runtime_error, "require ", index,
-                                       "th element from ", p_list->size());
-                }
-                if (index < 0) {
-                    index += p_list->size();
-                }
-
-                location.first = &p_list->nth(index);
-                // location.first = p_list->objAt(sss::string_cast<int>(jc.m_stems[i]));
-                COLOG_DEBUG(*p_list);
-            }
-            else {
-                // auto * p_env = location.second
-                location.second = boost::get<varlisp::Environment>(location.first);
-                if (!location.second) {
-                    SSS_POSITION_THROW(std::runtime_error,
-                                       "need an Environment here , but ", location.first->which());
-                }
-                location.first = location.second->find(jc.m_stems[i]);
-            }
-            COLOG_DEBUG(location);
-        }
-        return location;
-    }
-}
-
-std::pair<varlisp::Object*, varlisp::Environment*> json_accessor::locate(varlisp::Environment& env, const varlisp::symbol& sym)
-{
-    // NOTE const_cast for not recursive call
-    auto ret = json_accessor::locate(const_cast<const varlisp::Environment&>(env), sym);
-    return std::make_pair(const_cast<varlisp::Object*>(std::get<0>(ret)), const_cast<varlisp::Environment*>(std::get<1>(ret)));
-}
-
 json_accessor::location json_accessor::locate(varlisp::Environment& env)
 {
     json_accessor& jc{*this};
@@ -413,5 +351,4 @@ json_accessor::location json_accessor::locate(varlisp::Environment& env)
     return {const_cast<varlisp::Object*>(pl.first), const_cast<varlisp::Environment*>(pl.second), nullptr};
 }
 
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail
