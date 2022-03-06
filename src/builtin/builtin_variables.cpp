@@ -1,26 +1,26 @@
 #include <set>
 #include <array>
+#include <vector>
 
-#include <sss/util/PostionThrow.hpp>
+#include <sss/array_view.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
-#include <sss/array_view.hpp>
-#include <vector>
+#include <sss/util/PostionThrow.hpp>
 
 // #include <gsl/array_view.hpp>
 
-#include "../object.hpp"
 #include "../builtin_helper.hpp"
-#include "../environment.hpp"
 #include "../cast_visitor.hpp"
-#include "../eval_visitor.hpp"
-#include "../keyword_t.hpp"
 #include "../detail/buitin_info_t.hpp"
-#include "../tokenizer.hpp"
-#include "../keyword_t.hpp"
 #include "../detail/car.hpp"
 #include "../detail/json_accessor.hpp"
 #include "../detail/list_iterator.hpp"
+#include "../environment.hpp"
+#include "../eval_visitor.hpp"
+#include "../keyword_t.hpp"
+#include "../keyword_t.hpp"
+#include "../object.hpp"
+#include "../tokenizer.hpp"
 
 namespace varlisp {
 
@@ -32,7 +32,7 @@ void eraseSListItem(varlisp::List& sList, int index) {
     if (uqList == nullptr) {
         SSS_POSITION_THROW(std::runtime_error, "uqList == nullptr");
     }
-    if (uqList->size() == 0) {
+    if (uqList->empty()) {
         SSS_POSITION_THROW(std::runtime_error, "uqList->size() == 0");
     }
 
@@ -50,14 +50,15 @@ void eraseSListItem(varlisp::List& sList, int index) {
     if (index == 0) {
         uqList->pop_front();
         return;
-    } else if (index == uqList->size() - 1) {
+    }
+    if (index == uqList->size() - 1) {
         uqList->pop_back();
         return;
     }
 
     varlisp::List newList{};
 
-    for (int i = 0; i != uqList->size(); ++i) {
+    for (size_t i = 0; i != uqList->size(); ++i) {
         if (i == index) { continue; }
         newList.append(uqList->nth(i));
     }
@@ -573,21 +574,24 @@ Object eval_symbols(varlisp::Environment& env, const varlisp::List& args)
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": need a symbol at first argument, but ", detail::car(args), ")");
         }
-        auto location = detail::json_accessor::locate(env, *p_sym);
-        if (!location.first) {
+
+        detail::json_accessor jc{p_sym->name()};
+
+        auto location = jc.locate(env);
+        if (!location.obj) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": symbol ", *p_sym, " cannot be found)");
         }
-        p_env = boost::get<varlisp::Environment>(location.first);
-        if (!p_env) {
+        p_env = boost::get<varlisp::Environment>(location.obj);
+        if (p_env == nullptr) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": symbol ", *p_sym, " is not to a context)");
         }
     }
     auto symbols = varlisp::List::makeSQuoteList();
     auto back_it = detail::list_back_inserter<Object>(symbols);
-    for (auto it = p_env->begin(); it != p_env->end(); ++it) {
-        *back_it++ = std::move(varlisp::symbol(it->first));
+    for (auto & it : *p_env) {
+        *back_it++ = varlisp::symbol(it.first);
     }
     return symbols;
 }
