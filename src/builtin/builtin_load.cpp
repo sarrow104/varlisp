@@ -208,13 +208,15 @@ Object eval_clear(varlisp::Environment& env, const varlisp::List& args)
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": 1st arg must be sym)");
         }
-        auto location = detail::json_accessor::locate(env, *p_sym);
-        if (!location.first) {
+
+        auto jc = detail::json_accessor{p_sym->name()};
+        auto location = jc.locate(env);
+        if (location.env == nullptr) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": sym ", *p_sym, " not exist)");
         }
-        p_target = boost::get<varlisp::Environment>(const_cast<Object*>(location.first));
-        if (!p_target) {
+        p_target = boost::get<varlisp::Environment>(const_cast<Object*>(location.obj));
+        if (p_target == nullptr) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": ", *p_sym, " is not an env{})");
         }
