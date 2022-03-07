@@ -3,8 +3,7 @@
 #include "v8.h"
 
 
-namespace varlisp {
-namespace detail {
+namespace varlisp::detail {
 
 bool I_v8_value_visitor::visit( v8::Isolate* isolate, v8::Local<v8::Value> val )
 {
@@ -153,7 +152,5 @@ void v8Env::runWithResult(std::string raw_script, std::function<void(v8::Local<v
     }
 }
 
-
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail
 
