@@ -59,3 +59,6 @@ endif()
 target_link_libraries(${target_name} PRIVATE restclient-cpp re2 ${ss1x} ${sss} uchardet gq gumbo ${Boost_LIBRARIES} Threads::Threads ${OPENSSL_LIBRARIES} v8 v8_libplatform magic iconv z brotlidec)
 target_link_libraries("test-omegaOption" PRIVATE re2 ${ss1x} ${sss} uchardet iconv)
 
+### tests
+
+add_subdirectory(tests)

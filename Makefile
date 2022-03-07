@@ -1,4 +1,4 @@
-.PHONY: all release debug install
+.PHONY: all release debug install ctest
 .PHONY: run run-debug
 .PHONY: clean clean-debug clean-release clean-gprof
 .PHONY: gprof gprof-view perf-view
@@ -91,3 +91,6 @@ clean-gprof:
 	@if [ -f perf.data ]; then rm perf.data* ; fi
 	@if [ -f Gprof/Makefile ]; then cd Gprof && make clean; fi
 	@if [ -d Gprof ]; then rm -rf Gprof; fi
+
+ctest:
+	@(cd Release/tests ; ctest ; cd -)
