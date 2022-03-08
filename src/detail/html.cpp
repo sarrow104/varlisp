@@ -19,9 +19,7 @@
 #include "http.hpp"
 #include "url.hpp"
 
-namespace varlisp {
-namespace detail {
-namespace html {
+namespace varlisp::detail::html {
 
 struct htmlEntityEscape_t : public sss::string_view
 {
@@ -33,9 +31,9 @@ struct htmlEntityEscape_t : public sss::string_view
 		// 0xA0 -> &#160 -> &nbsp;
 		// 对应utf8，是两个字节，分别是
 		// 0xC2, 0xA0
-        for (const char * p_ch = this->begin(); p_ch < this->end(); ++p_ch)
+        for (auto it = this->begin(); it != this->end(); ++it)
         {
-            switch (*p_ch) {
+            switch (*it) {
                 case '&':
                     o << "&amp;";
                     break;
@@ -53,12 +51,12 @@ struct htmlEntityEscape_t : public sss::string_view
 					break;
 
                 default:
-					if (p_ch + 1 < this->end() && std::memcmp(p_ch, "\xC2\xA0", 2) == 0) {
+					if (it + 1 != this->end() && std::memcmp(it, "\xC2\xA0", 2) == 0) {
 						o << "&nbsp;";
-						++p_ch;
+						++it;
 					}
 					else {
-						o << *p_ch;
+						o << *it;
 					}
                     break;
             }
@@ -90,11 +88,11 @@ inline std::ostream& operator << (std::ostream&o, const htmlEntityEscape_t& h)
 
 bool is_url_same_origin(sss::string_view left, sss::string_view right)
 {
-    sss::string_view::const_reverse_iterator rit_l = left.rbegin();
-    sss::string_view::const_reverse_iterator rit_r = right.rbegin();
+    auto rit_l = left.rbegin();
+    auto rit_r = right.rbegin();
 
-    sss::string_view::const_reverse_iterator rend_l = left.rend();
-    sss::string_view::const_reverse_iterator rend_r = right.rend();
+    auto rend_l = left.rend();
+    auto rend_r = right.rend();
 
     size_t matched_dot_cnt = 0;
     for (; rit_l != rend_l && rit_r != rend_r; ++rit_l, ++rit_r)
@@ -122,7 +120,7 @@ static void trim_to(std::string& str, char mark)
 
 std::string getResourceAuto(const std::string& output_dir, const std::string& url,
                             resource_manager_t& rs_mgr, const ss1x::http::Headers& request_header,
-                            const std::string& proxy_domain, int proxy_port)
+                            const std::string&  /*proxy_domain*/, int  /*proxy_port*/)
 {
     std::string max_content;
     ss1x::http::Headers respond_headers;
@@ -511,7 +509,7 @@ void gumbo_rewrite_impl(int fd, const gumboNode& g,
 void         set_gqnode_indent(const std::string& ind)
 {
     size_t space_cnt = 0;
-    while (space_cnt < ind.size() && std::isspace(ind[space_cnt])) {
+    while (space_cnt < ind.size() && (std::isspace(ind[space_cnt]) != 0)) {
         ++space_cnt;
     }
     get_gqnode_indent().assign(ind, 0, space_cnt);
@@ -534,6 +532,4 @@ bool&        get_rewrite_original()
     return rewrite_original;
 }
 
-} // namespace html
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail::html

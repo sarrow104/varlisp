@@ -5,13 +5,13 @@
 
 #include <uchardet/uchardet.h>
 
-#include <sss/encoding.hpp>
 #include <sss/colorlog.hpp>
-#include <sss/utlstring.hpp>
-#include <sss/spliter.hpp>
+#include <sss/encoding.hpp>
 #include <sss/iConvpp.hpp>
-#include <sss/ps.hpp>
 #include <sss/popenRWE.h>
+#include <sss/ps.hpp>
+#include <sss/spliter.hpp>
+#include <sss/utlstring.hpp>
 
 #include "../object.hpp"
 #include "../builtin_helper.hpp"
@@ -60,13 +60,13 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "uchardet";
     Object obj;
-    const string_t * p_content =
+    const auto * p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     uchardet_t ud = uchardet_new();
     std::string encoding;
     int err = uchardet_handle_data(ud, p_content->c_str(), p_content->length());
-    if (!err)
+    if (err == 0)
     {
         uchardet_data_end(ud);
         encoding = uchardet_get_charset(ud);
@@ -79,11 +79,11 @@ Object eval_uchardet(varlisp::Environment& env, const varlisp::List& args)
         encoding.assign("ascii");
     }
 
-    if (err) {
+    if (err != 0) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": analyze coding faild！)");
     }
-    return string_t(std::move(encoding));
+    return string_t(encoding);
 }
 
 REGIST_BUILTIN("pychardet", 1, 1, eval_pychardet,
@@ -102,7 +102,7 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "pychardet";
     Object obj;
-    const string_t * p_content =
+    const auto * p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     // Python 支持两种使用方式：
@@ -112,6 +112,7 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
     //
     // 前者，不一定适用；因为字符不一定来自外存；
     // 后者的麻烦在于，需要实现双向管道！
+    // TODO FIXME using boost::program
     int rwepipe_data[3] = {0, 0, 0};
     int pid = popenRWE(rwepipe_data, "chardet");
     if (pid == -1) {
@@ -158,10 +159,10 @@ Object eval_pychardet(varlisp::Environment& env, const varlisp::List& args)
 namespace detail {
 void trim(sss::string_view& s)
 {
-    while(s.size() && std::isspace(s.front())) {
+    while(!s.empty() && (std::isspace(s.front()) != 0)) {
         s.remove_prefix(1);
     }
-    while(s.size() && std::isspace(s.back())) {
+    while(!s.empty() && (std::isspace(s.back()) != 0)) {
         s.remove_suffix(1);
     }
 }
@@ -184,9 +185,9 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ivchardet";
     std::array<Object, 2> objs;
-    const string_t* p_encodings = requireTypedValue<varlisp::string_t>(
+    const auto* p_encodings = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-    const string_t * p_content = requireTypedValue<varlisp::string_t>(
+    const auto * p_content = requireTypedValue<varlisp::string_t>(
         env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     sss::string_view encoding;
@@ -201,7 +202,7 @@ Object eval_ivchardet(varlisp::Environment& env, const varlisp::List& args)
             if (!ic.is_ok()) {
                 continue;
             }
-            if (ic.convert(out, *p_content->gen_shared())) {
+            if (ic.convert(out, *p_content->gen_shared()) != 0) {
                 has_found = true;
                 break;
             }
@@ -234,22 +235,22 @@ Object eval_iconv(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "iconv";
     std::array<Object, 3> objs;
 
-    const string_t * p_enc_from =
+    const auto * p_enc_from =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t * p_enc_to =
+    const auto * p_enc_to =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
-    const string_t * p_content =
+    const auto * p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
 
     std::string out;
     sss::iConv ic(*p_enc_to->gen_shared(), *p_enc_from->gen_shared());
-    if (!ic.convert(out, *p_content->gen_shared())) {
+    if (ic.convert(out, *p_content->gen_shared()) == 0) {
         COLOG_ERROR("(iconv: error occurs while convert from", *p_enc_from, "to", *p_enc_to);
         return Object{Nill{}};
     }
-    return string_t(std::move(out));
+    return string_t(out);
 }
 
 REGIST_BUILTIN("ensure-utf8", 1, 2, eval_ensure_utf8,
@@ -270,10 +271,10 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "ensure-utf8";
     std::array<Object, 2> objs;
-    const string_t* p_content =
+    const auto* p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t * p_encodings = 0;
+    const string_t * p_encodings = nullptr;
     if (args.length() >= 2) {
         p_encodings =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
@@ -281,7 +282,7 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
 
     std::string encodings;
     std::string to_encoding = "utf8";
-    if (p_encodings) {
+    if (p_encodings != nullptr) {
         encodings = *p_encodings->gen_shared();
     }
     std::string from_encoding;
@@ -297,17 +298,13 @@ Object eval_ensure_utf8(varlisp::Environment& env, const varlisp::List& args)
     if (sss::Encoding::isCompatibleWith(from_encoding, to_encoding)) {
         return *p_content;
     }
-    else {
-        std::string out;
-        sss::iConv ic(to_encoding, from_encoding);
-        if (ic.convert(out, *content)) {
-            return string_t(std::move(out));
-        }
-        else {
-            COLOG_ERROR("(", funcName, ":", from_encoding, "to", to_encoding);
-            return Object{Nill{}};
-        }
+    std::string out;
+    sss::iConv ic(to_encoding, from_encoding);
+    if (ic.convert(out, *content) != 0) {
+        return string_t(out);
     }
+    COLOG_ERROR("(", funcName, ":", from_encoding, "to", to_encoding);
+    return {Nill{}};
 }
 
 } // namespace varlisp

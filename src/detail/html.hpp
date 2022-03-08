@@ -2,6 +2,7 @@
 
 #include "../gumboNode.hpp"
 
+#include <gsl/util>
 #include <iostream>
 #include <map>
 
@@ -9,9 +10,9 @@
 
 #include <sss/raw_print.hpp>
 
-namespace varlisp {
-namespace detail {
-namespace html {
+#include <gsl/gsl>
+
+namespace varlisp::detail::html {
 
 enum file_status_t {
     fs_NONE,    // 还未下载
@@ -33,7 +34,7 @@ struct local_info_t {
         return this->status == fs_DONE || this->status == fs_EXIST;
     }
     void print(std::ostream& o) const {
-        const char * name_table[] = {
+        std::array<const char*, fs_DONE + 1> name_table{
             "NONE",
             "EXIST",
             "ERROR",
@@ -43,7 +44,7 @@ struct local_info_t {
         o << "{";
         o << "\"path\": " << sss::raw_string(path) << ",";
         o << "\"fsize\": " << fsize << ",";
-        o << "\"status\": " << sss::raw_string(name_table[status]);
+        o << "\"status\": " << sss::raw_string(gsl::at(name_table, status));
         o << "}";
     }
 };
@@ -69,6 +70,4 @@ std::string& get_gqnode_indent();
 void         set_rewrite_original(bool o);
 bool&        get_rewrite_original();
 
-} // namespace html
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail::html

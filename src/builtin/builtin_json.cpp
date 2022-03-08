@@ -19,8 +19,8 @@ void json_object2stream(std::ostream& o, varlisp::Environment& env,
 {
     Object tmp;
     const Object& objRef = varlisp::getAtomicValue(env, obj, tmp);
-    if (!boost::get<varlisp::Environment>(&objRef) &&
-        !boost::get<varlisp::List>(&objRef))
+    if ((boost::get<varlisp::Environment>(&objRef) == nullptr) &&
+        (boost::get<varlisp::List>(&objRef) == nullptr))
     {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": only Environment type or s-list type is valid; but ",
@@ -65,7 +65,7 @@ Object eval_json_string(varlisp::Environment& env, const varlisp::List& args)
                                           1, DEBUG_INFO);
     }
     detail::json_object2stream(oss, env, detail::car(args), funcName, indent);
-    return string_t{std::move(oss.str())};
+    return string_t{oss.str()};
 }
 
 REGIST_BUILTIN("json-parse", 1, 1, eval_json_parse,
@@ -77,7 +77,7 @@ Object eval_json_parse(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "json-parse";
     Object obj;
-    const string_t * p_s =
+    const auto * p_s =
         requireTypedValue<string_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     return json::parse(p_s->to_string_view());
@@ -91,7 +91,7 @@ REGIST_BUILTIN("json-indent", 1, 1, eval_json_indent,
 Object eval_json_indent(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "json-indent";
-    if (args.length()) {
+    if (args.length() != 0U) {
         std::array<Object, 1> objs;
         const auto * p_indent =
             requireTypedValue<string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);

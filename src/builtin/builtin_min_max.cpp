@@ -82,4 +82,4 @@ Object eval_max(varlisp::Environment& env, const varlisp::List& args)
 }
 
 
-} // namespace verlisp
+} // namespace varlisp

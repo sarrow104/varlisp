@@ -40,7 +40,7 @@ REGIST_BUILTIN("help", 0, 1, eval_help,
  */
 Object eval_help(varlisp::Environment& env, const varlisp::List& args)
 {
-    if (args.length()) {
+    if (args.length() != 0U) {
         std::cout
             << boost::apply_visitor(helpmsg_visitor(env), detail::car(args))
             << std::endl;

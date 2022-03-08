@@ -55,9 +55,9 @@ Object eval_number_q(varlisp::Environment &env, const varlisp::List &args)
     // const char * funcName = "number?";
     Object obj;
     const Object& obj_ref = getAtomicValue(env, detail::car(args), obj);
-    return between_cc_range<int>(varlisp::type_id(env, obj_ref),
-                                 varlisp::type_id(env, varlisp::Object{int64_t(1)}),
-                                 varlisp::type_id(env, varlisp::Object{1.0}));
+    return between_cc_range<int64_t>(varlisp::type_id(env, obj_ref),
+                                     varlisp::type_id(env, varlisp::Object{int64_t(1)}),
+                                     varlisp::type_id(env, varlisp::Object{1.0}));
 }
 
 REGIST_BUILTIN("boolean?", 1, 1, eval_boolean_q, "(boolean? expr) -> boolean");
@@ -116,7 +116,7 @@ Object eval_slist_q(varlisp::Environment &env, const varlisp::List &args)
     // const char * funcName = "slist?";
     Object obj;
     const varlisp::List * p_list = getQuotedList(env, args, obj);
-    return p_list != 0;
+    return p_list != nullptr;
 }
 
 REGIST_BUILTIN("null?", 1, 1, eval_null_q, "(null? expr) -> boolean");

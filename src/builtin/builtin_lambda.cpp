@@ -12,6 +12,8 @@
 #include "../detail/car.hpp"
 #include "../detail/buitin_info_t.hpp"
 
+#include <fmt/core.h>
+
 namespace varlisp {
 
 REGIST_BUILTIN("call?", 1, 1, eval_call_q,
@@ -24,15 +26,10 @@ Object eval_call_q(varlisp::Environment& env, const varlisp::List& args)
     Object tmp;
     const Object& obj = varlisp::getAtomicValue(env, detail::car(args), tmp);
     varlisp::List ret;
-    if (boost::get<varlisp::Builtin>(&obj)) {
+    if (boost::get<varlisp::Builtin>(&obj) != nullptr) {
         return true;
     }
-    else if (boost::get<varlisp::Lambda>(&obj)) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    return boost::get<varlisp::Lambda>(&obj) != nullptr;
 }
 
 REGIST_BUILTIN("signature", 1, 1, eval_signature,
@@ -46,7 +43,7 @@ Object eval_signature(varlisp::Environment& env, const varlisp::List& args)
     Object tmp;
 #if 1 // FIXME 2020-06-28
     Object * p_obj = varlisp::findSymbolDeep(env, args.nth(0), tmp, funcName);
-    if (!p_obj) {
+    if (p_obj == nullptr) {
         return Nill{};
     }
     const Object& obj = *p_obj;
@@ -55,12 +52,12 @@ Object eval_signature(varlisp::Environment& env, const varlisp::List& args)
 #endif
 
     varlisp::List ret;
-    if (auto * p_b = boost::get<varlisp::Builtin>(&obj)) {
+    if (const auto * p_b = boost::get<varlisp::Builtin>(&obj)) {
         ret.append(int64_t(varlisp::detail::get_builtin_infos()[p_b->type()].min));
         ret.append(int64_t(varlisp::detail::get_builtin_infos()[p_b->type()].max));
         ret.append(varlisp::detail::get_builtin_infos()[p_b->type()].help_msg);
     }
-    else if (auto * p_l = boost::get<varlisp::Lambda>(&obj)) {
+    else if (const auto * p_l = boost::get<varlisp::Lambda>(&obj)) {
         ret.append(int64_t(p_l->argument_count()));
         ret.append(int64_t(p_l->argument_count()));
         auto help_msg = p_l->help_msg();
@@ -111,12 +108,11 @@ REGIST_BUILTIN("curry", 1, -1, eval_curry,
 //   (lambda (x)
 //     (apply f (append args
 //                      (list x)))))
-Object eval_curry(varlisp::Environment& env, const varlisp::List& args)
+Object eval_curry(varlisp::Environment&  /*env*/, const varlisp::List& args)
 {
     std::vector<std::string> lambda_args;
-    char buffer[32] = {0};
-    std::sprintf(buffer, "$_%p", &args.nth(0));
-    std::string var_name = buffer;
+    // NOTE use address as parameter length for minimise collision
+    std::string var_name = fmt::format("$_{:p}", static_cast<const void*>(&args.nth(0)));
     lambda_args.emplace_back(var_name);
     varlisp::string_t       lambda_doc;
     std::vector<varlisp::Object> lambda_body;
@@ -139,28 +135,36 @@ Object eval_curry(varlisp::Environment& env, const varlisp::List& args)
 // 目的是创建一个临时lambda，该lambda作用是讲对象序列化为规则样式的json字符串，然后写入到外部文件fname.json中
 // 虽然逻辑上可行，但是，这好像离原本的定义式，有有些远！
 // 我需要对每个参数，进行重建——替换$1，。。。。
+//
+// NOTE
+//
+// 如何需要类似延迟执行的效果——即，同一个需要计算的变量，多次使用；
+//
+// 需要对该变量，做一个缓存；
+// 
+// 也就是说，
+// 
+// 1. 要么，使用虚拟机来跑lisp——即，将partial的调用，拆分为多条语句；
+// 2. 
 REGIST_BUILTIN("partial", 1, -1, eval_partial,
                "; partial binding\n"
                "; var... 这些参数的求值时机是？\n"
                "(partial func var... $1...) -> (lambda ($1...) (apply f '(var... $...)))");
 
-Object eval_partial(varlisp::Environment& env, const varlisp::List& args)
+Object eval_partial(varlisp::Environment& /*env*/, const varlisp::List& args)
 {
-    static RE2 re("\\$\\d+");
+    static const RE2 re("\\$(\\d+)");
 
     // 1. std::map<int, symbol> id-名字；
     std::map<int, std::string> arg_map;
     auto true_args = varlisp::List();
     for (size_t i = 1; i < args.length(); ++i) {
-        if (auto * p_val = boost::get<varlisp::symbol>(&args.nth(i))) {
-            if (RE2::FullMatch(p_val->name(), re)) {
-                auto p_id_str = p_val->name().c_str() + 1;
-                int id = std::stoi(p_id_str);
+        if (const auto * p_val = boost::get<varlisp::symbol>(&args.nth(i))) {
+            int id {0};
+            if (RE2::FullMatch(p_val->name(), re, &id)) {
                 // NOTE id可重复使用；
                 if (arg_map.find(id) == arg_map.end()) {
-                    char buffer[32] = {0};
-                    std::sprintf(buffer, "$_%d_%p", id, p_id_str);
-                    arg_map[id] = buffer;
+                    arg_map[id] = fmt::format("$_{:d}_{:p}", id, p_val->name().c_str());
                 }
                 true_args.append(varlisp::symbol(arg_map[id]));
             }
@@ -175,7 +179,8 @@ Object eval_partial(varlisp::Environment& env, const varlisp::List& args)
 
     // 2. 将map中形参，按stoi后的序号，生成形参列表--std::vecor<string>
     std::vector<std::string> lambda_args;
-    for (auto item : arg_map) {
+    lambda_args.reserve(arg_map.size());
+    for (const auto& item : arg_map) {
         lambda_args.push_back(item.second);
     }
 
@@ -190,4 +195,5 @@ Object eval_partial(varlisp::Environment& env, const varlisp::List& args)
     return varlisp::Lambda(std::move(lambda_args), std::move(lambda_doc),
                            std::move(lambda_body));
 }
+
 } // namespace varlisp

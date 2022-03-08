@@ -61,7 +61,7 @@ Object eval_read_all(varlisp::Environment& env, const varlisp::List& args)
                            "` must be path/to/file:string or fd:int to already opened file)");
     }
 
-    return string_t(std::move(content));
+    return string_t(content);
 }
 
 /**
@@ -85,7 +85,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
 {
     const char* funcName = append ? "write-append" : "write";
     std::array<Object, 2> objs;
-    const string_t* p_path =
+    const auto* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string full_path = sss::path::full_of_copy(*p_path->gen_shared());
@@ -106,11 +106,11 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
     Object objList;
     const Object& firstArg = getAtomicValue(env, args.nth(1), objs[1]);
 
-    if (auto p_list = getQuotedList(env, firstArg, objList)) {
+    if (const auto *p_list = getQuotedList(env, firstArg, objList)) {
         // NOTE this p_list must be an s-list!
-        for (auto it = p_list->begin(); it != p_list->end(); ++it) {
-            COLOG_DEBUG(*it);
-            boost::apply_visitor(raw_stream_visitor(ofs, env), *it);
+        for (const auto & it : *p_list) {
+            COLOG_DEBUG(it);
+            boost::apply_visitor(raw_stream_visitor(ofs, env), it);
         }
     }
     else {
@@ -125,7 +125,7 @@ Object eval_write_impl(varlisp::Environment& env, const varlisp::List& args,
 
     COLOG_INFO("(", funcName, ":", sss::raw_string(*p_path), " by ",
                int64_t(write_cnt), "bytes complete)");
-    return Object(int64_t(write_cnt));
+    return {int64_t(write_cnt)};
 }
 
 REGIST_BUILTIN("write", 2, -1, eval_write,
@@ -181,7 +181,7 @@ Object eval_open(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "open";
     std::array<Object, 2> objs;
-    const string_t* p_path = requireTypedValue<varlisp::string_t>(
+    const auto* p_path = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     auto std_path = p_path->gen_shared();
@@ -256,7 +256,7 @@ Object eval_getfdflag(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "getfdflag";
     Object obj;
-    const int64_t* p_fd =
+    const auto* p_fd =
         requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     int64_t flag = ::fcntl(*p_fd, F_GETFL);
@@ -279,10 +279,10 @@ Object eval_setfdflag(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "setfdflag";
     std::array<Object, 2> objs;
-    const int64_t* p_fd =
+    const auto* p_fd =
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const int64_t* p_flag =
+    const auto* p_flag =
         requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     int64_t ec = ::fcntl(*p_fd, F_SETFL, *p_flag);
@@ -303,7 +303,7 @@ Object eval_close(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "close";
     Object obj;
-    const int64_t* p_fd =
+    const auto* p_fd =
         requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     COLOG_DEBUG(SSS_VALUE_MSG(*p_fd));
@@ -333,13 +333,13 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "read-line";
     std::array<Object, 1> objs;
     int fd = 0; // 默认是stdin
-    if (args.length()) {
+    if (args.length() != 0U) {
         fd = int(*requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO));
     }
 
     std::string line;
 
-    if (fd)
+    if (fd != 0)
     {
         line = detail::readline(fd);
     }
@@ -350,7 +350,7 @@ Object eval_read_line(varlisp::Environment& env, const varlisp::List& args)
     if (line.empty() && errno) {
         return varlisp::Nill{};
     }
-    return varlisp::string_t{std::move(line)};
+    return varlisp::string_t{line};
 }
 
 REGIST_BUILTIN("read-char", 0, 1, eval_read_char,
@@ -369,7 +369,7 @@ Object eval_read_char(varlisp::Environment& env, const varlisp::List& args)
     std::array<Object, 1> objs;
 
     int fd = 0;
-    if (args.length()) {
+    if (args.length() != 0U) {
         fd = int(*requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO));
     }
 
@@ -397,7 +397,7 @@ Object eval_read_byte(varlisp::Environment& env, const varlisp::List& args)
     std::array<Object, 1> objs;
 
     int fd = 0;
-    if (args.length()) {
+    if (args.length() != 0U) {
         fd = int(*requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO));
     }
 
@@ -424,10 +424,10 @@ Object eval_write_char(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "write-char";
     std::array<Object, 2> objs;
-    const int64_t* p_fd =
+    const auto* p_fd =
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const int64_t* p_ch =
+    const auto* p_ch =
         requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     int64_t ec = detail::writechar(*p_fd, *p_ch);
@@ -449,10 +449,10 @@ Object eval_write_byte(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "write-byte";
     std::array<Object, 2> objs;
-    const int64_t* p_fd =
+    const auto* p_fd =
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const int64_t* p_ch =
+    const auto* p_ch =
         requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     int64_t ec = detail::writebyte(*p_fd, *p_ch);
@@ -474,10 +474,10 @@ Object eval_write_string(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "write-char";
     std::array<Object, 2> objs;
-    const int64_t* p_fd =
+    const auto* p_fd =
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const varlisp::string_t* p_str =
+    const auto* p_str =
         requireTypedValue<string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     int64_t ec = detail::writestring(*p_fd, p_str->to_string_view());
@@ -491,7 +491,7 @@ Object eval_get_fd_fname(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "get-fd-fname";
     Object obj;
-    const int64_t* p_fd =
+    const auto* p_fd =
         requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
     try {
@@ -617,7 +617,7 @@ REGIST_BUILTIN("list-opened-fd", 0, 0, eval_list_opened_fd,
                "; 并以list的形式返回\n"
                "(list-opened-fd) -> [(fd name)...] | []");
 
-Object eval_list_opened_fd(varlisp::Environment& env, const varlisp::List& args)
+Object eval_list_opened_fd(varlisp::Environment&  /*env*/, const varlisp::List&  /*args*/)
 {
     varlisp::List ret;
     auto back_it = varlisp::detail::list_back_inserter<varlisp::Object>(ret);
@@ -625,7 +625,7 @@ Object eval_list_opened_fd(varlisp::Environment& env, const varlisp::List& args)
         *back_it++ = varlisp::List::makeSQuoteList(int64_t(id),
                                                    string_t(name));
     });
-    return varlisp::List::makeSQuoteObj(std::move(ret));
+    return varlisp::List::makeSQuoteObj(ret);
 }
 
-}  // namespace
+} // namespace varlisp

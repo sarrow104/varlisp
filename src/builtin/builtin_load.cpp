@@ -77,7 +77,7 @@ Object eval_load(varlisp::Environment& env, const varlisp::List& args)
 
     const char* funcName = "load";
     std::array<Object, 1> objs;
-    const string_t* p_path =
+    const auto* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     auto full_path = varlisp::detail::envmgr::expand(*p_path->gen_shared());
@@ -123,7 +123,7 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "load";
 
     std::array<Object, 1> objs;
-    const string_t* p_path =
+    const auto* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string full_path = sss::path::full_of_copy(*p_path->gen_shared());
@@ -133,21 +133,21 @@ Object eval_save(varlisp::Environment& env, const varlisp::List& args)
     }
 
     sss::path::mkpath(sss::path::dirname(full_path));
-    std::ofstream ofs(full_path.c_str(), std::ios_base::out | std::ios_base::out);
+    std::ofstream ofs(full_path.c_str(), std::ios_base::out | std::ios_base::app);
     std::set<std::string> dumped_obj_set;
     int64_t item_cnt = 0;
-    for (const varlisp::Environment * p_env = &env; p_env; p_env = p_env->parent()) {
-        for (auto it = p_env->begin(); it != p_env->end(); ++it) {
-            if (dumped_obj_set.find(it->first) == dumped_obj_set.end()) {
-                dumped_obj_set.insert(it->first);
-                if (boost::get<varlisp::Builtin>(&it->second.first)) {
+    for (const varlisp::Environment * p_env = &env; p_env != nullptr; p_env = p_env->parent()) {
+        for (const auto & it : *p_env) {
+            if (dumped_obj_set.find(it.first) == dumped_obj_set.end()) {
+                dumped_obj_set.insert(it.first);
+                if (boost::get<varlisp::Builtin>(&it.second.first) != nullptr) {
                     continue;
                 }
-                if (it->second.second.is_const) {
+                if (it.second.second.is_const) {
                     continue;
                 }
-                ofs << "(define " << it->first << " ";
-                boost::apply_visitor(print_visitor(ofs), it->second.first);
+                ofs << "(define " << it.first << " ";
+                boost::apply_visitor(print_visitor(ofs), it.second.first);
                 ofs << ")" << std::endl;
                 ++item_cnt;
             }
@@ -169,7 +169,7 @@ Object eval_script(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "script";
     int64_t index = 0;
-    if (args.size()) {
+    if (!args.empty()) {
         Object tmp;
         index =
             *requireTypedValue<int64_t>(env, args.nth(0), tmp, funcName, 0, DEBUG_INFO);
@@ -189,7 +189,7 @@ REGIST_BUILTIN("script-depth", 0, 0, eval_depth,
                "; script-depth 脚本状态\n"
                "(script-depth) -> int64_t");
 
-Object eval_depth(varlisp::Environment& env, const varlisp::List& args)
+Object eval_depth(varlisp::Environment&  /*env*/, const varlisp::List&  /*args*/)
 {
     return int64_t(detail::get_script_stack().size());
 }
@@ -202,9 +202,9 @@ Object eval_clear(varlisp::Environment& env, const varlisp::List& args)
     auto * p_target = &env;
     const char * funcName = "clear";
     Object tmp;
-    if (args.length()) {
-        auto * p_sym = varlisp::getSymbol(env, detail::car(args), tmp);
-        if (!p_sym) {
+    if (args.length() != 0U) {
+        const auto * p_sym = varlisp::getSymbol(env, detail::car(args), tmp);
+        if (p_sym == nullptr) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": 1st arg must be sym)");
         }

@@ -51,7 +51,7 @@ Object eval_catch(varlisp::Environment& env, const varlisp::List& args)
     catch (Object& exception) {
         for (size_t i = 1; i != args.length(); ++i) {
 
-            auto *p_vc_pair = boost::get<varlisp::List>(&args.nth(i));
+            const auto *p_vc_pair = boost::get<varlisp::List>(&args.nth(i));
             varlisp::requireOnFaild<varlisp::QuoteList>(p_vc_pair, "catch", 0, DEBUG_INFO);
             std::array<Object, 2> objs;
             const Object& require_type = getAtomicValue(env, p_vc_pair->nth(0), objs[0]);
@@ -63,13 +63,11 @@ Object eval_catch(varlisp::Environment& env, const varlisp::List& args)
                     raw_arg.append(exception);
                     return varlisp::apply(env, func, raw_arg);
                 }
-                else {
-                    return exception;
-                }
+                return exception;
             }
-            else if (auto * p_regex = boost::get<varlisp::regex_t>(&require_type)) {
+            if (const auto * p_regex = boost::get<varlisp::regex_t>(&require_type)) {
                 auto * p_string = boost::get<varlisp::string_t>(&exception);
-                if (p_string && RE2::PartialMatch(*p_string, *(*p_regex))) {
+                if ((p_string != nullptr) && RE2::PartialMatch(*p_string, *(*p_regex))) {
                     return exception;
                 }
             }

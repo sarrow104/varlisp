@@ -30,19 +30,15 @@ Object eval_eval(varlisp::Environment& env, const varlisp::List& args)
             Object result;
             return varlisp::getAtomicValue(env, *p_list->unquote(), result);
         }
-        else {
-            return p_list->eval(env);
-        }
+        return p_list->eval(env);
     }
-    else {
-        return refObj;
-    }
+    return refObj;
     // NOTE 对于(eval (quote atomic))，返回atomic
 }
 
 REGIST_BUILTIN("eval-string", 1, 2, eval_eval_string, "(eval-string \"(+ 1 2)\") -> ...");
 
-Object eval_eval_string(varlisp::Environment& env, const varlisp::List& args)
+Object eval_eval_string(varlisp::Environment&  /*env*/, const varlisp::List&  /*args*/)
 {
     SSS_POSITION_THROW(std::runtime_error, "TODO");
     // NOTE 需要改造解析器！

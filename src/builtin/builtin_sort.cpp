@@ -6,9 +6,10 @@
 #include "../object.hpp"
 #include "../builtin_helper.hpp"
 #include "../cast2bool_visitor.hpp"
+
 #include "../detail/buitin_info_t.hpp"
-#include "../detail/list_iterator.hpp"
 #include "../detail/car.hpp"
+#include "../detail/list_iterator.hpp"
 
 namespace varlisp {
 
@@ -16,7 +17,7 @@ namespace detail {
 varlisp::List sort_impl(varlisp::Environment& env, const varlisp::Object& callable,
                         const varlisp::List * p_list)
 {
-    int arg_length = p_list->length();
+    auto arg_length = p_list->length();
     COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
     std::vector<Object>      tmp_obj_vec;
     tmp_obj_vec.resize(arg_length);
@@ -40,7 +41,7 @@ varlisp::List sort_impl(varlisp::Environment& env, const varlisp::Object& callab
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto back_it = detail::list_back_inserter<Object>(ret);
 
-    for (int i = 0; i < arg_length; ++i) {
+    for (size_t i = 0; i < arg_length; ++i) {
         *back_it++ = *p_arg_list_vec[i];
     }
     return ret;
@@ -86,7 +87,7 @@ Object eval_sort(varlisp::Environment& env, const varlisp::List& args)
 
     Object listObj;
     const varlisp::List * p_list = varlisp::getQuotedList(env, detail::cadr(args), listObj);
-    if (!p_list) {
+    if (p_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": second must be list; but",
                            detail::cadr(args), ")");
@@ -113,20 +114,20 @@ Object eval_sort_bar(varlisp::Environment& env, const varlisp::List& args)
     const Object& callable = detail::car(args);
 
     Object symObj;
-    auto p_sym = varlisp::getSymbol(env, detail::cadr(args), symObj);
-    if (!p_sym) {
+    const auto *p_sym = varlisp::getSymbol(env, detail::cadr(args), symObj);
+    if (p_sym == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": second must be symbol)");
     }
     Object * p_value = env.deep_find(p_sym->name());
-    if (!p_value) {
+    if (p_value == nullptr) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
                            *p_sym, " not exist!)");
     }
 
     Object listObj;
     const varlisp::List * p_list = varlisp::getQuotedList(env, *p_value, listObj);
-    if (!p_list) {
+    if (p_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": second must be list); but ",
                            *p_value, ")");

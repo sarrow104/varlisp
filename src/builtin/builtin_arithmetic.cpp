@@ -15,7 +15,7 @@ namespace varlisp {
 
 template <typename T1, typename T2, typename Tr>
 struct binary_add {
-    auto operator()(T1 v1, T2 v2) -> decltype(v1 + v2) const
+    auto operator()(T1 v1, T2 v2) -> decltype(v1 + v2)
     {
         return Tr(v1 + v2);
     }
@@ -27,18 +27,18 @@ struct binary_add {
 //
 struct arithmetic_add_visitor : public boost::static_visitor<arithmetic_t> {
     template <typename T2>
-    arithmetic_t operator()(const Empty&, const T2&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const T2& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
     template <typename T1>
-    arithmetic_t operator()(const T1&, const Empty&) const
+    arithmetic_t operator()(const T1& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
-    arithmetic_t operator()(const Empty&, const Empty&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
@@ -52,18 +52,18 @@ struct arithmetic_add_visitor : public boost::static_visitor<arithmetic_t> {
 
 struct arithmetic_sub_visitor : public boost::static_visitor<arithmetic_t> {
     template <typename T2>
-    arithmetic_t operator()(const Empty&, const T2&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const T2& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
     template <typename T1>
-    arithmetic_t operator()(const T1&, const Empty&) const
+    arithmetic_t operator()(const T1& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
-    arithmetic_t operator()(const Empty&, const Empty&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
@@ -74,20 +74,21 @@ struct arithmetic_sub_visitor : public boost::static_visitor<arithmetic_t> {
         return v1 - v2;
     }
 };
+
 struct arithmetic_mul_visitor : public boost::static_visitor<arithmetic_t> {
     template <typename T2>
-    arithmetic_t operator()(const Empty&, const T2&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const T2& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
     template <typename T1>
-    arithmetic_t operator()(const T1&, const Empty&) const
+    arithmetic_t operator()(const T1& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
-    arithmetic_t operator()(const Empty&, const Empty&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
@@ -103,18 +104,18 @@ struct arithmetic_mul_visitor : public boost::static_visitor<arithmetic_t> {
 // 就是说 2/5 == 0
 struct arithmetic_div_visitor : public boost::static_visitor<arithmetic_t> {
     template <typename T2>
-    arithmetic_t operator()(const Empty&, const T2&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const T2& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
     template <typename T1>
-    arithmetic_t operator()(const T1&, const Empty&) const
+    arithmetic_t operator()(const T1& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
-    arithmetic_t operator()(const Empty&, const Empty&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
@@ -133,18 +134,18 @@ struct arithmetic_div_visitor : public boost::static_visitor<arithmetic_t> {
 // 就是说 1/5 == 0
 struct arithmetic_mod_visitor : public boost::static_visitor<arithmetic_t> {
     template <typename T2>
-    arithmetic_t operator()(const Empty&, const T2&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const T2& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
     template <typename T1>
-    arithmetic_t operator()(const T1&, const Empty&) const
+    arithmetic_t operator()(const T1& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
 
-    arithmetic_t operator()(const Empty&, const Empty&) const
+    arithmetic_t operator()(const Empty& /*unused*/, const Empty& /*unused*/) const
     {
         return arithmetic_t{};
     }
@@ -185,8 +186,8 @@ REGIST_BUILTIN("+", 0, -1, eval_add, "(+ ...) -> number");
 Object eval_add(varlisp::Environment& env, const varlisp::List& args)
 {
     arithmetic_t sum = int64_t(0);
-    
-    for (List::const_iterator it = args.begin(); sum.which() && it != args.end(); ++it) {
+
+    for (auto it = args.begin(); (sum.which() != 0) && it != args.end(); ++it) {
         arithmetic_t to_add =
             boost::apply_visitor(arithmetic_cast_visitor(env), *it);
         sum = boost::apply_visitor(arithmetic_add_visitor(), sum, to_add);
@@ -199,7 +200,7 @@ REGIST_BUILTIN("-", 0, -1, eval_sub, "(- arg ...) -> number");
 
 Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
 {
-    int args_cnt = args.length();
+    auto args_cnt = args.length();
     if (args_cnt == 1) {
         arithmetic_t sum{int64_t(0)};
         arithmetic_t to_sub =
@@ -207,19 +208,17 @@ Object eval_sub(varlisp::Environment& env, const varlisp::List& args)
         return arithmetic2object(
             boost::apply_visitor(arithmetic_sub_visitor(), sum, to_sub));
     }
-    else {
-        arithmetic_t sum =
-            boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
+    arithmetic_t sum =
+        boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
 
-        const List tail = args.tail();
+    const List tail = args.tail();
 
-        for (List::const_iterator it = tail.begin(); sum.which() && it != tail.end(); ++it) {
-            arithmetic_t to_sub =
-                boost::apply_visitor(arithmetic_cast_visitor(env), *it);
-            sum = boost::apply_visitor(arithmetic_sub_visitor(), sum, to_sub);
-        }
-        return Object(sum);
+    for (auto it = tail.begin(); (sum.which() != 0) && it != tail.end(); ++it) {
+        arithmetic_t to_sub =
+            boost::apply_visitor(arithmetic_cast_visitor(env), *it);
+        sum = boost::apply_visitor(arithmetic_sub_visitor(), sum, to_sub);
     }
+    return {sum};
 }
 
 REGIST_BUILTIN("*", 0, -1, eval_mul, "(* ...) -> number");
@@ -228,7 +227,7 @@ Object eval_mul(varlisp::Environment& env, const varlisp::List& args)
 {
     arithmetic_t mul{int64_t(1)};
 
-    for (List::const_iterator it = args.begin(); mul.which() && it != args.end(); ++it) {
+    for (auto it = args.begin(); (mul.which() != 0) && it != args.end(); ++it) {
         arithmetic_t to_mul =
             boost::apply_visitor(arithmetic_cast_visitor(env), *it);
         mul = boost::apply_visitor(arithmetic_mul_visitor(), mul, to_mul);
@@ -247,17 +246,15 @@ Object eval_div(varlisp::Environment& env, const varlisp::List& args)
             boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
         return arithmetic2object(boost::apply_visitor(arithmetic_div_visitor(), mul, to_div));
     }
-    else {
-        arithmetic_t mul = boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
+    arithmetic_t mul = boost::apply_visitor(arithmetic_cast_visitor(env), detail::car(args));
 
-        const List tail = args.tail();
-        for (List::const_iterator it = tail.begin(); mul.which() && it != tail.end(); ++it) {
-            arithmetic_t to_div = boost::apply_visitor(arithmetic_cast_visitor(env), *it);
-            mul = boost::apply_visitor(arithmetic_div_visitor(), mul, to_div);
-        }
-
-        return arithmetic2object(mul);
+    const List tail = args.tail();
+    for (auto it = tail.begin(); (mul.which() != 0) && it != tail.end(); ++it) {
+        arithmetic_t to_div = boost::apply_visitor(arithmetic_cast_visitor(env), *it);
+        mul = boost::apply_visitor(arithmetic_div_visitor(), mul, to_div);
     }
+
+    return arithmetic2object(mul);
 }
 
 REGIST_BUILTIN("%", 2, 2, eval_mod, "(%" " arg1 arg2) -> number");
@@ -279,7 +276,7 @@ Object eval_pow(varlisp::Environment& env, const varlisp::List& args)
     double rhs = arithmetic2double(
         boost::apply_visitor(arithmetic_cast_visitor(env), detail::cadr(args)));
 
-    return Object(std::pow(lhs, rhs));
+    return {std::pow(lhs, rhs)};
 }
 
 }  // namespace varlisp

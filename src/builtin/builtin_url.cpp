@@ -1,8 +1,8 @@
-#include <vector>
 #include <cstring>
+#include <vector>
 
-#include <sss/spliter.hpp>
 #include <sss/path.hpp>
+#include <sss/spliter.hpp>
 #include <sss/utlstring.hpp>
 
 #include <ss1x/asio/utility.hpp>
@@ -11,10 +11,10 @@
 
 #include "../builtin_helper.hpp"
 #include "../detail/buitin_info_t.hpp"
-#include "../json_print_visitor.hpp"
-#include "../json/parser.hpp"
 #include "../detail/car.hpp"
 #include "../detail/url.hpp"
+#include "../json/parser.hpp"
+#include "../json_print_visitor.hpp"
 #include "../raw_stream_visitor.hpp"
 
 namespace varlisp {
@@ -102,8 +102,9 @@ namespace detail {
 //
 inline bool url_is_reserved_char(char ch)
 {
-    return std::isalnum(ch) || std::strchr("-_.~;:", ch);
+    return std::isalnum(ch) != 0 || std::strchr("-_.~;:", ch) != nullptr;
 }
+
 // NOTE 需要处理不可打印，以及空白，还有部分符号。
 struct url_encode_t
 {
@@ -111,12 +112,12 @@ struct url_encode_t
     explicit url_encode_t(const sss::string_view& s) : str(s) {}
     void print(std::ostream& o) const
     {
-        for (size_t i = 0; i< str.size(); ++i) {
-            if (detail::url_is_reserved_char(str[i])) {
-                o << str[i];
+        for (char i : str) {
+            if (detail::url_is_reserved_char(i)) {
+                o << i;
             }
             else {
-                o << '%' << sss::lower_hex2char(str[i] >> 4u) << sss::lower_hex2char(str[i]);
+                o << '%' << sss::lower_hex2char(uint8_t(i) >> 4U) << sss::lower_hex2char(i);
             }
         }
     }
@@ -131,8 +132,8 @@ struct url_decode_t
         size_t i = 0;
         while (i < str.size()) {
             if (str[i] == '%') {
-                if (i + 2 < str.size() && std::isxdigit(str[i + 1]) && std::isxdigit(str[i + 2])) {
-                    char ch = (sss::hex2int(str[i + 1]) << 4u) | sss::hex2int(str[i + 2]);
+                if (i + 2 < str.size() && (std::isxdigit(str[i + 1]) != 0) && (std::isxdigit(str[i + 2]) != 0)) {
+                    char ch = (sss::hex2int(str[i + 1]) << 4U) | sss::hex2int(str[i + 2]);
                     o << ch;
                     i += 3;
                 }
@@ -179,20 +180,20 @@ Object eval_url_split(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "url-split";
     std::array<Object, 1> objs;
-    auto * p_url =
+    const auto * p_url =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     auto parts = ss1x::util::url::split_port_auto(*p_url->gen_shared());
     auto parts_list = varlisp::List();
-    parts_list.append(string_t(std::move(std::get<0>(parts))));
-    parts_list.append(string_t(std::move(std::get<1>(parts))));
+    parts_list.append(string_t(std::get<0>(parts)));
+    parts_list.append(string_t(std::get<1>(parts)));
     parts_list.append(int64_t(std::get<2>(parts)));
     auto q_pos = std::get<3>(parts).find('?');
     std::string parameters;
     if (q_pos == std::string::npos) {
-        parts_list.append(string_t(std::move(std::get<3>(parts))));
+        parts_list.append(string_t(std::get<3>(parts)));
     }
     else {
-        parts_list.append(string_t(std::move(std::get<3>(parts).substr(0, q_pos))));
+        parts_list.append(string_t(std::get<3>(parts).substr(0, q_pos)));
         parameters = std::get<3>(parts).substr(q_pos + 1);
         varlisp::Environment param_env;
         if (!parameters.empty()) {
@@ -207,7 +208,7 @@ Object eval_url_split(varlisp::Environment& env, const varlisp::List& args)
                     param_env[detail::url_decode(item.substr(0, eq_pos))] = string_t(detail::url_decode(item.substr(eq_pos + 1)));
                 }
                 else {
-                    param_env[detail::url_decode(item)] = string_t(std::move(std::string()));
+                    param_env[detail::url_decode(item)] = string_t(std::string());
                 }
                 COLOG_DEBUG(item);
             }
@@ -245,7 +246,7 @@ Object eval_url_join(varlisp::Environment& env, const varlisp::List& args)
                             const auto * p_params =
                                 requireTypedValue<varlisp::Environment>(env, p_list->nth(i), tmp, funcName, i, DEBUG_INFO);
                             bool is_1st = true;
-                            for (auto it = p_params->begin(); it != p_params->end(); ++it) {
+                            for (const auto & p_param : *p_params) {
                                 if (is_1st) {
                                     path += '?';
                                     is_1st = false;
@@ -253,9 +254,9 @@ Object eval_url_join(varlisp::Environment& env, const varlisp::List& args)
                                 else {
                                     path += '&';
                                 }
-                                path += it->first;
+                                path += p_param.first;
                                 std::ostringstream oss;
-                                boost::apply_visitor(raw_stream_visitor(oss, env), it->second.first);
+                                boost::apply_visitor(raw_stream_visitor(oss, env), p_param.second.first);
                                 std::string value = oss.str();
                                 if (!value.empty()) {
                                     path += '=';
@@ -265,11 +266,13 @@ Object eval_url_join(varlisp::Environment& env, const varlisp::List& args)
                         }
                         break;
 
+                default:
+                        throw std::logic_error("");
             }
         }
     }
 
-    return string_t(std::move(ss1x::util::url::join(protocal, domain, port, path)));
+    return string_t(ss1x::util::url::join(protocal, domain, port, path));
 }
 
 REGIST_BUILTIN("url-full", 2, 2, eval_url_full,
@@ -280,19 +283,17 @@ Object eval_url_full(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "url-full";
     std::array<Object, 2> objs;
-    auto * p_target_string =
+    const auto * p_target_string =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-    auto * p_maping_url =
+    const auto * p_maping_url =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     auto target = p_target_string->to_string();
     bool is_modified = varlisp::detail::url::full_of(target, *p_maping_url->gen_shared());
     if (is_modified) {
-        return string_t(std::move(target));
+        return string_t(target);
     }
-    else {
-        return *p_target_string;
-    }
+    return *p_target_string;
 }
 
 REGIST_BUILTIN("url-encode", 1, 1, eval_url_encode,
@@ -308,7 +309,7 @@ Object eval_url_encode(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "url-encode";
     std::array<Object, 1> objs;
-    auto * p_target_string =
+    const auto * p_target_string =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     return string_t(detail::url_encode(p_target_string->to_string_view()));
@@ -323,7 +324,7 @@ Object eval_url_decode(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "url-decode";
     std::array<Object, 1> objs;
-    auto * p_target_string =
+    const auto * p_target_string =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     return string_t(detail::url_decode(p_target_string->to_string_view()));

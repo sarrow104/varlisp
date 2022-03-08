@@ -48,7 +48,7 @@ varlisp::string_t Lambda::gen_help_msg(const std::string& name) const
         oss << this->m_args.back();
     }
     oss << ")";
-    return string_t(std::move(oss.str()));
+    return string_t(oss.str());
 }
 
 Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
@@ -67,7 +67,7 @@ Object Lambda::eval(Environment& env, const varlisp::List& true_args) const
          ++i, ++p)
     {
         assert(p != true_args.end());
-        if (!(*p).which()) {
+        if ((*p).which() == 0) {
             SSS_POSITION_THROW(std::runtime_error, "Empty argument at ", i,
                               "; name ", m_args[i]);
         }

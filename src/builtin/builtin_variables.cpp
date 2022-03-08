@@ -28,7 +28,7 @@ namespace varlisp {
 // 否则，查看引用计数；如果仅自己，则原地修改；
 // 否则，新建一个，再拷贝；
 void eraseSListItem(varlisp::List& sList, int index) {
-    auto uqList = sList.unquoteType<varlisp::List>();
+    auto *uqList = sList.unquoteType<varlisp::List>();
     if (uqList == nullptr) {
         SSS_POSITION_THROW(std::runtime_error, "uqList == nullptr");
     }
@@ -37,13 +37,13 @@ void eraseSListItem(varlisp::List& sList, int index) {
     }
 
     if (index < 0) {
-        if (index < - uqList->size()) {
+        if (index < - int(uqList->size())) {
             SSS_POSITION_THROW(std::runtime_error, "uqList->size() == 0");
         }
-        index += uqList->size();
+        index += int(uqList->size());
     }
 
-    if (uqList->size() <= index) {
+    if (int(uqList->size()) <= index) {
         SSS_POSITION_THROW(std::runtime_error, "uqList->size() <= index");
     }
 
@@ -51,7 +51,7 @@ void eraseSListItem(varlisp::List& sList, int index) {
         uqList->pop_front();
         return;
     }
-    if (index == uqList->size() - 1) {
+    if (index == int(uqList->size()) - 1) {
         uqList->pop_back();
         return;
     }
@@ -59,7 +59,7 @@ void eraseSListItem(varlisp::List& sList, int index) {
     varlisp::List newList{};
 
     for (size_t i = 0; i != uqList->size(); ++i) {
-        if (i == index) { continue; }
+        if (i == size_t(index)) { continue; }
         newList.append(uqList->nth(i));
     }
     varlisp::Object o{newList};
@@ -85,7 +85,7 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "undef";
     const varlisp::symbol * p_sym = boost::get<varlisp::symbol>(&detail::car(args));
-    if (!p_sym) {
+    if (p_sym == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
     }
@@ -97,7 +97,7 @@ Object eval_undef(varlisp::Environment& env, const varlisp::List& args)
     bool ret = false;
     try {
         auto location = jc.locate(env);
-        if (!location.obj) {
+        if (location.obj == nullptr) {
             COLOG_INFO("tobe delete symbol ", p_sym->name(), " not exist");
             return ret;
         }
@@ -178,7 +178,7 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
     const varlisp::Environment * p_env = &env;
     int64_t var_count = 0;
     std::array<Object, 1> objs;
-    if (args.length()) {
+    if (args.length() != 0u) {
        p_env =
             varlisp::requireTypedValue<varlisp::Environment>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     }
@@ -186,7 +186,7 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
     // 被子环境覆盖了的父环境变量，不会输出。
     // keyword不允许覆盖定义
     std::set<std::string> outted;
-    for (; p_env; p_env = p_env->parent()) {
+    for (; p_env != nullptr; p_env = p_env->parent()) {
         for (auto it = p_env->begin(); it != p_env->end(); ++it) {
             if (outted.find(it->first) == outted.end()) {
                 std::cout << it->first << "\n"
@@ -196,7 +196,7 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
             }
         }
     }
-    var_count = outted.size();
+    var_count = int64_t(outted.size());
     return var_count;
 }
 
@@ -206,7 +206,7 @@ Object let_and_letn_impl(varlisp::Environment& env, const varlisp::List& args,
 {
     const varlisp::List * p_sym_pairs = boost::get<varlisp::List>(&detail::car(args));
     COLOG_DEBUG(detail::car(args));
-    if (!p_sym_pairs) {
+    if (p_sym_pairs == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a list; but",
                            detail::car(args), ")");
@@ -216,7 +216,7 @@ Object let_and_letn_impl(varlisp::Environment& env, const varlisp::List& args,
         COLOG_DEBUG(*it_pair);
         const varlisp::List* p_sym_pair =
             boost::get<varlisp::List>(&(*it_pair));
-        if (!p_sym_pair) {
+        if (p_sym_pair == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": must be name-value  list; but",
                                p_sym_pairs->nth(0), ")");
@@ -229,7 +229,7 @@ Object let_and_letn_impl(varlisp::Environment& env, const varlisp::List& args,
         const varlisp::symbol* p_sym =
             boost::get<varlisp::symbol>(&p_sym_pair->nth(0));
 
-        if (!p_sym) {
+        if (p_sym == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": must be name-value  list; but",
                                *it_pair, ")");
@@ -298,30 +298,24 @@ Object eval_set(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "setq";
     std::array<Object, 2> objs;
-    auto * p_quoted_symbol =
+    const auto * p_quoted_symbol =
         varlisp::getTypedValue<varlisp::List>(env, args.nth(0), objs[0]);
-    if (p_quoted_symbol && p_quoted_symbol->is_quoted()) {
-        if(auto * p_sym = boost::get<varlisp::symbol>(p_quoted_symbol->unquote())) {
+    if ((p_quoted_symbol != nullptr) && p_quoted_symbol->is_quoted()) {
+        if(const auto * p_sym = boost::get<varlisp::symbol>(p_quoted_symbol->unquote())) {
             if (auto * p_value = env.deep_find(p_sym->name())) {
                 *p_value = varlisp::getAtomicValue(env, args.nth(1), objs[1]);
                 return *p_value;
             }
-            else {
-                SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
-                                   *p_sym, " not exist!)");
-            }
+            SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
+                               *p_sym, " not exist!)");
         }
-        else {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": need a quoted symbol, as 1st argument, but ",
-                               *p_quoted_symbol, " )");
-        }
+        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                           ": need a quoted symbol, as 1st argument, but ",
+                           *p_quoted_symbol, " )");
     }
-    else {
-            SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                               ": need a quoted symbol, as 1st argument, but ",
-                               args.nth(0), " )");
-    }
+    SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                       ": need a quoted symbol, as 1st argument, but ",
+                       args.nth(0), " )");
 }
 
 REGIST_BUILTIN("setq", 2, -1, eval_setq,
@@ -344,30 +338,30 @@ Object eval_setq(varlisp::Environment& env, const varlisp::List& args)
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": num of args not correct!", args.size(), ")");
     }
-    Object * p_value = 0;
+    Object * p_value = nullptr;
     for (size_t i = 0; i < args.size(); i += 2) {
         // NOTE 这里需要的是一个将 Object cast 为 symbol的函数
         Object tmpObj;
         const varlisp::symbol * p_sym = varlisp::getSymbol(env,
                                                            args.nth(i),
                                                            tmpObj);
-        if (!p_sym) {
+        if (p_sym == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": 1st must be a symbol; but ", args.nth(i),
                                ")");
         }
         p_value = env.deep_find(p_sym->name());
-        if (!p_value) {
+        if (p_value == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName, ": symbol, ",
                                *p_sym, " not exist!)");
         }
         Object res;
         // FIXME
-        auto & x = varlisp::getAtomicValue(env, args.nth(i + 1), res);
+        const auto & x = varlisp::getAtomicValue(env, args.nth(i + 1), res);
         COLOG_DEBUG(*p_value, x);
-        *p_value = std::move(x);
+        *p_value = x;
     }
-    if (!p_value) {
+    if (p_value == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": last value nullptr error!)");
     }
@@ -427,25 +421,25 @@ Object eval_swap(varlisp::Environment& env, const varlisp::List& args)
     // TODO FIXME
     const char * funcName = "swap";
     const varlisp::symbol * p_sym1 = boost::get<varlisp::symbol>(&detail::car(args));
-    if (!p_sym1) {
+    if (p_sym1 == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a symbol)");
     }
 
     const varlisp::symbol * p_sym2 = boost::get<varlisp::symbol>(&detail::cadr(args));
-    if (!p_sym2) {
+    if (p_sym2 == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 2nd must be a symbol)");
     }
 
     // FIXME swap也需要重建 binding
     Object * p_val1 = env.deep_find(p_sym1->name());
-    if (!p_val1) {
+    if (p_val1 == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st symbol, ", *p_sym1, " not exist)");
     }
     Object * p_val2 = env.deep_find(p_sym2->name());
-    if (!p_val2) {
+    if (p_val2 == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 2nd symbol, ", *p_sym2, " not exist)");
     }
@@ -471,8 +465,8 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
     const Object& objRef = varlisp::getAtomicValue(env, detail::car(args), tmp);
 
     Object tmpStems;
-    auto p_stem_list = varlisp::getQuotedList(env, detail::cadr(args), tmpStems);
-    if (!p_stem_list) {
+    const auto *p_stem_list = varlisp::getQuotedList(env, detail::cadr(args), tmpStems);
+    if (p_stem_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 2nd argument must be a s-list; but ", detail::cadr(args), " )");
     }
@@ -482,27 +476,27 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
         p_default = &varlisp::getAtomicValue(env, args.nth(2), tmpDefault);
     }
 
-    auto * p_obj = &objRef;
+    const auto * p_obj = &objRef;
     auto * p_env = &env;
 
     for (auto stem_it = p_stem_list->begin(); stem_it != p_stem_list->end(); ++stem_it) {
         Object tmp2;
         const auto & locator = getAtomicValue(env, *stem_it, tmp2);
-        if (auto * p_index = boost::get<int64_t>(&locator)) {
-            auto * p_list = boost::get<varlisp::List>(p_obj);
-            if (!p_list) {
+        if (const auto * p_index = boost::get<int64_t>(&locator)) {
+            const auto * p_list = boost::get<varlisp::List>(p_obj);
+            if (p_list == nullptr) {
                 SSS_POSITION_THROW(std::runtime_error,
                                    "need a List here , but ", p_obj->which());
             }
             p_list = p_list->unquoteType<varlisp::List>();
-            if (!p_list) {
+            if (p_list == nullptr) {
                 SSS_POSITION_THROW(std::runtime_error,
                                    "need a s-List here , but ", p_obj->which());
             }
 
             p_obj = const_cast<varlisp::Object*>(&p_list->nth(*p_index));
-            if (!p_obj) {
-                if (p_default) {
+            if (p_obj == nullptr) {
+                if (p_default != nullptr) {
                     p_obj = p_default;
                     break;
                 }
@@ -511,16 +505,16 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
                                    p_list->length(), " element(s).");
             }
         }
-        else if (auto * p_str = boost::get<string_t>(&locator)) {
+        else if (const auto * p_str = boost::get<string_t>(&locator)) {
             p_env = const_cast<varlisp::Environment*>(boost::get<varlisp::Environment>(p_obj));
-            if (!p_env) {
+            if (p_env == nullptr) {
                 SSS_POSITION_THROW(std::runtime_error,
                                    "need an Environment here , but ", *stem_it);
             }
             std::string name = *p_str->gen_shared();
             p_obj = p_env->find(name);
-            if (!p_obj) {
-                if (p_default) {
+            if (p_obj == nullptr) {
+                if (p_default != nullptr) {
                     p_obj = p_default;
                     break;
                 }
@@ -528,19 +522,19 @@ Object eval_locate(varlisp::Environment& env, const varlisp::List& args)
                                    " not exist! use (symbol ...) to check");
             }
         }
-        else if (auto * p_slist = boost::get<varlisp::List>(&locator)) {
+        else if (const auto * p_slist = boost::get<varlisp::List>(&locator)) {
             if (!p_slist->is_quoted()) {
                 SSS_POSITION_THROW(std::runtime_error, "slist required!");
             }
-            auto * p_sym = p_slist->unquoteType<varlisp::symbol>();
+            const auto * p_sym = p_slist->unquoteType<varlisp::symbol>();
             p_env = const_cast<varlisp::Environment*>(boost::get<varlisp::Environment>(p_obj));
-            if (!p_env) {
+            if (p_env == nullptr) {
                 SSS_POSITION_THROW(std::runtime_error,
                                    "need an Environment here , but ", *stem_it);
             }
             p_obj = p_env->find(p_sym->name());
-            if (!p_obj) {
-                if (p_default) {
+            if (p_obj == nullptr) {
+                if (p_default != nullptr) {
                     p_obj = p_default;
                     break;
                 }
@@ -570,7 +564,7 @@ Object eval_symbols(varlisp::Environment& env, const varlisp::List& args)
     if (!args.empty()) {
         Object tmp;
         const varlisp::symbol* p_sym = varlisp::getSymbol(env, detail::car(args), tmp);
-        if (!p_sym) {
+        if (p_sym == nullptr) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": need a symbol at first argument, but ", detail::car(args), ")");
         }
@@ -578,7 +572,7 @@ Object eval_symbols(varlisp::Environment& env, const varlisp::List& args)
         detail::json_accessor jc{p_sym->name()};
 
         auto location = jc.locate(env);
-        if (!location.obj) {
+        if (location.obj == nullptr) {
             SSS_POSITION_THROW(std::runtime_error,
                                "(", funcName, ": symbol ", *p_sym, " cannot be found)");
         }

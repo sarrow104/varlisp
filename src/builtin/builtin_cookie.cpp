@@ -120,8 +120,8 @@ REGIST_BUILTIN("cookie-enable?", 0, 0, eval_cookie_enable_q,
                "; cookie-enable? 显示当前cookie开启关闭状态\n"
                "(cookie-enable?) -> boolean");
 
-Object eval_cookie_enable_q(varlisp::Environment& env,
-                            const varlisp::List& args)
+Object eval_cookie_enable_q(varlisp::Environment&  /*env*/,
+                            const varlisp::List&  /*args*/)
 {
     return detail::CookieMgr_t::get_cookie_enable_status();
 }
@@ -135,20 +135,18 @@ Object eval_cookie_get_value(varlisp::Environment& env,
                              const varlisp::List& args)
 {
     const char* funcName = "cookie-get-value";
-    Object tmp1, tmp2;
+    std::array<Object, 2> tmp;
     const auto* p_domain = varlisp::requireTypedValue<varlisp::string_t>(
-        env, args.nth(0), tmp1, funcName, 0, DEBUG_INFO);
+        env, args.nth(0), tmp[0], funcName, 0, DEBUG_INFO);
     const auto* p_path = varlisp::requireTypedValue<varlisp::string_t>(
-        env, args.nth(1), tmp2, funcName, 1, DEBUG_INFO);
+        env, args.nth(1), tmp[1], funcName, 1, DEBUG_INFO);
 
     std::string cookie = detail::CookieMgr_t::getCookie(*p_domain->gen_shared(),
                                                         *p_path->gen_shared());
     if (cookie.empty()) {
         return Nill{};
     }
-    else {
-        return string_t(std::move(cookie));
-    }
+    return string_t(cookie);
 }
 
 REGIST_BUILTIN("cookie-set-value", 3, 3, eval_cookie_set_value,
@@ -159,16 +157,16 @@ Object eval_cookie_set_value(varlisp::Environment& env,
                              const varlisp::List& args)
 {
     const char* funcName = "cookie-get-value";
-    Object tmp1, tmp2, tmp3;
+    std::array<Object, 3> tmp;
     const auto* p_domain = varlisp::requireTypedValue<varlisp::string_t>(
-        env, args.nth(0), tmp1, funcName, 0, DEBUG_INFO);
+        env, args.nth(0), tmp[0], funcName, 0, DEBUG_INFO);
     const auto* p_path = varlisp::requireTypedValue<varlisp::string_t>(
-        env, args.nth(1), tmp2, funcName, 1, DEBUG_INFO);
+        env, args.nth(1), tmp[1], funcName, 1, DEBUG_INFO);
     const auto* p_cookie = varlisp::requireTypedValue<varlisp::string_t>(
-        env, args.nth(2), tmp3, funcName, 2, DEBUG_INFO);
+        env, args.nth(2), tmp[2], funcName, 2, DEBUG_INFO);
 
     return detail::CookieMgr_t::setCookie(
         *p_domain->gen_shared(), *p_path->gen_shared(), *p_cookie->gen_shared());
 }
 
-}  // namespace varllisp
+}  // namespace varlisp

@@ -56,7 +56,7 @@ Object eval_loop_step(varlisp::Environment& env,
 
 Object eval_loop_condition(varlisp::Environment& env,
                            const varlisp::List* p_ctrl_block,
-                           const varlisp::List exprs);
+                           const varlisp::List& exprs);
 
 /**
  * @brief
@@ -74,7 +74,7 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
         boost::get<varlisp::List>(&detail::car(args));
     COLOG_DEBUG(detail::car(args));
 
-    if (!p_loop_ctrl) {
+    if (p_loop_ctrl == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                            "(", funcName, ": 1st must be a list; but",
                            detail::car(args), ")");
@@ -86,14 +86,14 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
     }
     COLOG_DEBUG(SSS_VALUE_MSG(p_loop_ctrl->is_quoted()));
     COLOG_DEBUG(SSS_VALUE_MSG(detail::car(*p_loop_ctrl)));
-    int ctrl_block_len = p_loop_ctrl->length();
+    auto ctrl_block_len = p_loop_ctrl->length();
     COLOG_DEBUG(SSS_VALUE_MSG(ctrl_block_len));
     Object tmpSym;
     const varlisp::symbol* p_sym =
         boost::get<varlisp::symbol>(&detail::car(*p_loop_ctrl));
 
     if (2 == ctrl_block_len) {
-        if (!p_sym) {
+        if (p_sym == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": a symbol is_needed as iterator arg; but",
                                detail::car(*p_loop_ctrl), ")");
@@ -101,7 +101,7 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
         Object tmpSList;
         const varlisp::List* p_slist = varlisp::getQuotedList(
             env, detail::cadr(*p_loop_ctrl), tmpSList);
-        if (!p_slist) {
+        if (p_slist == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": a slist is_needed as iterator range; but",
                                detail::cadr(*p_loop_ctrl), ")");
@@ -109,7 +109,7 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
         return eval_loop_list(env, *p_sym, *p_slist, args.tail());
     }
     else if (4 == ctrl_block_len || (3 == ctrl_block_len && p_sym)) {
-        if (!p_sym) {
+        if (p_sym == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": a symbol is_needed as iterator arg; but",
                                detail::car(*p_loop_ctrl), ")");
@@ -126,7 +126,7 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
                                 : tmpStep,
             args.tail());
     }
-    else if (3 == ctrl_block_len && !p_sym) {
+    else if (3 == ctrl_block_len && (p_sym == nullptr)) {
         return eval_loop_condition(env, p_loop_ctrl, args.tail());
     }
     else {
@@ -142,13 +142,11 @@ Object eval_loop_list(varlisp::Environment& env,
 {
     varlisp::Environment inner(&env);
     Object result;
-    for (auto it = slist.begin(); it != slist.end(); ++it) {
-        inner[sym.name()] = *it;
-        for (auto expr_it = exprs.begin();
-             expr_it != exprs.end();
-             ++expr_it)
+    for (const auto & it : slist) {
+        inner[sym.name()] = it;
+        for (const auto & expr : exprs)
         {
-            result = boost::apply_visitor(eval_visitor(inner), *expr_it);
+            result = boost::apply_visitor(eval_visitor(inner), expr);
         }
     }
     return result;
@@ -186,11 +184,11 @@ public:
         const char * funcName = "for";
         const varlisp::List* p_kv_pair_list =
             boost::get<varlisp::List>(&detail::car(*p_ctrl_block));
-        if (!p_kv_pair_list) {
+        if (p_kv_pair_list == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, detail::car(*p_ctrl_block));
         }
 
-        if (p_kv_pair_list->size() == 0 || p_kv_pair_list->size() % 2) {
+        if (p_kv_pair_list->empty() || ((p_kv_pair_list->size() % 2) != 0U)) {
             SSS_POSITION_THROW(std::runtime_error,
                                "for(v4) need positive even number elements");
         }
@@ -203,7 +201,7 @@ public:
                 m_env,
                 p_kv_pair_list->nth(i),
                 tmpObj);
-            if (!p_sym) {
+            if (p_sym == nullptr) {
                 SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                    ": 1st must be a symbol; but ", p_kv_pair_list->nth(i),
                                    ")");
@@ -244,16 +242,15 @@ public:
         Object tmpRes;
         varlisp::getAtomicValue(m_env, m_next, tmpRes);
     }
-    Object loop(Environment& env, const varlisp::List exprs)
+    Object loop(Environment& env, const varlisp::List& exprs)
     {
         varlisp::Environment inner(&env);
         Object result = Nill{};
 
         for (this->start(); this->condition(); this->next()) {
-            for (auto expr_it = exprs.begin();
-                 expr_it != exprs.end(); ++expr_it) {
-                COLOG_DEBUG(*expr_it);
-                result = boost::apply_visitor(eval_visitor(inner), *expr_it);
+            for (const auto & expr : exprs) {
+                COLOG_DEBUG(expr);
+                result = boost::apply_visitor(eval_visitor(inner), expr);
             }
         }
         return result;
@@ -285,7 +282,7 @@ Object eval_loop_step(varlisp::Environment& env,
 
 Object eval_loop_condition(varlisp::Environment& env,
                            const varlisp::List* p_ctrl_block,
-                           const varlisp::List exprs)
+                           const varlisp::List& exprs)
 {
     // ((v1 a1 v2 ...)
     //  condition
@@ -315,11 +312,10 @@ Object eval_begin(varlisp::Environment& env, const varlisp::List& args)
 {
     Object result = Nill{};
 
-    for (auto expr_it = args.begin();
-         expr_it != args.end(); ++expr_it)
+    for (const auto & arg : args)
     {
-        COLOG_DEBUG(*expr_it);
-        result = boost::apply_visitor(eval_visitor(env), *expr_it);
+        COLOG_DEBUG(arg);
+        result = boost::apply_visitor(eval_visitor(env), arg);
     }
     
     return result;
@@ -367,9 +363,9 @@ Object eval_tie(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "tie";
     std::array<Object, 2> objs;
-    auto * p_var_list = boost::get<varlisp::List>(&args.nth(0));
+    const auto * p_var_list = boost::get<varlisp::List>(&args.nth(0));
     varlisp::requireOnFaild<varlisp::List>(p_var_list, funcName, 0, DEBUG_INFO);
-    auto * p_value_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
+    const auto * p_value_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
     varlisp::requireOnFaild<varlisp::QuoteList>(p_value_list, funcName, 1, DEBUG_INFO);
 
     varlisp::List tmp_list;
@@ -391,21 +387,19 @@ Object eval_tie(varlisp::Environment& env, const varlisp::List& args)
         else {
             if (p_var_list->size() < tmp_list.size()) {
                 if (i == 0) {
-                    env[p_sym->name()] = varlisp::List::makeSQuoteObj(std::move(tmp_list));
+                    env[p_sym->name()] = varlisp::List::makeSQuoteObj(tmp_list);
                 }
                 else {
-                    env[p_sym->name()] = varlisp::List::makeSQuoteObj(std::move(tmp_list.tail(i - 1)));
+                    env[p_sym->name()] = varlisp::List::makeSQuoteObj(tmp_list.tail(i - 1));
                 }
             }
         }
     }
 
-    if (p_sym) {
+    if (p_sym != nullptr) {
         return env[p_sym->name()];
     }
-    else {
-        return varlisp::List::makeSQuoteObj(std::move(tmp_list));
-    }
+    return varlisp::List::makeSQuoteObj(tmp_list);
 }
 
 } // namespace varlisp

@@ -64,7 +64,7 @@ REGIST_BUILTIN("colog-style", 0, -1, eval_colog_format,
 Object eval_colog_format(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "colog-style";
-    if (args.length()) {
+    if (args.length() != 0U) {
         std::array<Object, 1> objs;
         sss::colog::log_style next_style = sss::colog::ls_NONE;
         for (size_t i = 0; i != args.length(); ++i) {

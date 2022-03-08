@@ -1,5 +1,6 @@
 #include <array>
 
+#include <memory>
 #include <sss/path/glob_path.hpp>
 #include <sss/path/glob_path_recursive.hpp>
 #include <sss/path/name_filter.hpp>
@@ -50,14 +51,14 @@ Object eval_path_fnamemodify(varlisp::Environment &env, const varlisp::List &arg
     const char *funcName = "path-fnamemodify";
     std::array<Object, 2> objs;
     Object path;
-    const string_t *p_path =
+    const auto *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t *p_modifier =
+    const auto *p_modifier =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     std::string mod_name = sss::path::modify_copy(*p_path->gen_shared(), *p_modifier->gen_shared());
-    return Object(string_t(std::move(mod_name)));
+    return string_t(mod_name);
 }
 
 REGIST_BUILTIN("path-append", 2, 2, eval_path_append,
@@ -68,15 +69,15 @@ Object eval_path_append(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "path-append";
     std::array<Object, 2> objs;
-    const string_t *p_path =
+    const auto *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t *p_toAppend =
+    const auto *p_toAppend =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     std::string out_name = sss::path::full_of_copy(*p_path->gen_shared());
     sss::path::append(out_name, *p_toAppend->gen_shared());
-    return string_t(std::move(out_name));
+    return string_t(out_name);
 }
 
 REGIST_BUILTIN("glob", 1, 2, eval_glob,
@@ -98,14 +99,14 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "glob";
     std::array<Object, 2> objs;
-    const string_t *p_path =
+    const auto *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::unique_ptr<sss::path::filter_t> f;
     if (args.length() > 1) {
-        const string_t *p_filter =
+        const auto *p_filter =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
-        f.reset(new sss::path::name_filter_t(*p_filter->gen_shared()));
+        f = std::make_unique<sss::path::name_filter_t>(*p_filter->gen_shared());
     }
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
@@ -126,7 +127,7 @@ Object eval_glob(varlisp::Environment &env, const varlisp::List &args)
         }
     }
 
-    return Object(ret);
+    return ret;
 }
 
 REGIST_BUILTIN(
@@ -138,7 +139,7 @@ Object eval_file_q(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "file?";
     std::array<Object, 1> objs;
-    const string_t *p_path =
+    const auto *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string path = sss::path::full_of_copy(*p_path->gen_shared());
@@ -154,7 +155,7 @@ Object eval_directory_q(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "directory?";
     std::array<Object, 1> objs;
-    const string_t *p_path =
+    const auto *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string path = sss::path::full_of_copy(*p_path->gen_shared());
@@ -183,21 +184,21 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "glob-recurse";
     std::array<Object, 3> objs;
-    const string_t *p_path =
+    const auto *p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::unique_ptr<sss::path::filter_t> f;
     if (args.length() > 1) {
         Object filter;
-        const string_t *p_filter =
+        const auto *p_filter =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
-        f.reset(new sss::path::name_filter_t(*p_filter->gen_shared()));
+        f = std::make_unique<sss::path::name_filter_t>(*p_filter->gen_shared());
     }
 
-    int depth = 0;
+    int64_t depth = 0;
     if (args.length() > 2) {
         Object arg;
-        const int64_t *p_depth =
+        const auto *p_depth =
             requireTypedValue<int64_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
         depth = *p_depth;
     }
@@ -208,14 +209,14 @@ Object eval_glob_recurse(varlisp::Environment &env, const varlisp::List &args)
     sss::path::file_descriptor fd;
     std::string path = sss::path::full_of_copy(*p_path->gen_shared());
     sss::path::glob_path_recursive gp(path, fd, f.get(), false);
-    gp.max_depth(depth);
+    gp.max_depth(int(depth));
     while (gp.fetch()) {
         if (fd.is_normal_file()) {
             *ret_it++ = string_t(sss::path::relative_to(fd.get_path(), path));
         }
     }
 
-    return Object(ret);
+    return ret;
 }
 
 REGIST_BUILTIN("expand", 1, 1, eval_expand,
@@ -225,7 +226,7 @@ Object eval_expand(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "expand";
     std::array<Object, 1> objs;
-    const string_t *p_path = requireTypedValue<varlisp::string_t>(
+    const auto *p_path = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     return string_t(varlisp::detail::envmgr::expand(*p_path->gen_shared()));
 }

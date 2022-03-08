@@ -25,7 +25,7 @@ Object eval_bit_and(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "&";
     Object res;
-    const int64_t * p_var =
+    const auto * p_var =
         requireTypedValue<int64_t>(env, args.nth(0), res, funcName, 0, DEBUG_INFO);
 
     int64_t ret = *p_var;
@@ -49,7 +49,7 @@ Object eval_bit_or(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "|";
     Object res;
-    const int64_t * p_var =
+    const auto * p_var =
         requireTypedValue<int64_t>(env, args.nth(0), res, funcName, 0, DEBUG_INFO);
 
     int64_t ret = *p_var;
@@ -90,7 +90,7 @@ Object eval_bit_xor(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "^";
     Object res;
-    const int64_t * p_var =
+    const auto * p_var =
         requireTypedValue<int64_t>(env, args.nth(0), res, funcName, 0, DEBUG_INFO);
 
     int64_t ret = *p_var;
@@ -114,8 +114,8 @@ Object eval_bit_shift_right(varlisp::Environment& env, const varlisp::List& args
 {
     const char * funcName = ">>";
     std::array<Object, 2> objs;
-    const int64_t * p_var   = requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-    const int64_t * p_shift = requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+    const auto * p_var   = requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const auto * p_shift = requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
     return (*p_var) >> (*p_shift);
 }
 
@@ -133,8 +133,8 @@ Object eval_bit_shift_left(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "<<";
     std::array<Object, 2> objs;
-    const int64_t * p_var   = requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-    const int64_t * p_shift = requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
+    const auto * p_var   = requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    const auto * p_shift = requireTypedValue<int64_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
     return (*p_var) << (*p_shift);
 }
 

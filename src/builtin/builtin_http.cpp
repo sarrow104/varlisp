@@ -74,17 +74,16 @@ REGIST_BUILTIN(
 Object eval_http_debug(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "http-debug";
-    if (!args.length()) {
+    if (args.length() == 0U) {
         return bool(ss1x::asio::ptc_colog_status());
     }
-    else {
-        bool old_status = ss1x::asio::ptc_colog_status();
-        Object tmp;
-        const auto* p_bool = varlisp::requireTypedValue<bool>(
-            env, detail::car(args), tmp, funcName, 0, DEBUG_INFO);
-        ss1x::asio::ptc_colog_status() = *p_bool;
-        return old_status;
-    }
+    bool old_status = ss1x::asio::ptc_colog_status();
+    Object tmp;
+    const auto* p_bool = varlisp::requireTypedValue<bool>(
+        env, detail::car(args), tmp, funcName, 0, DEBUG_INFO);
+    ss1x::asio::ptc_colog_status() = *p_bool;
+    return old_status;
+   
 }
 
 REGIST_BUILTIN(
@@ -106,11 +105,11 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "http-get";
     std::array<Object, 5> objs;
-    const string_t* p_url =
+    const auto* p_url =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t* p_proxy = 0;
-    const int64_t* p_port = 0;
+    const string_t* p_proxy = nullptr;
+    const int64_t* p_port = nullptr;
     ss1x::http::Headers request_header;
 
     if (args.length() >= 3) {
@@ -121,7 +120,7 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
             requireTypedValue<int64_t>(env, args.nth(2), objs[2], funcName, 2, DEBUG_INFO);
     }
     if (args.length() == 2 || args.length() == 4) {
-        int rh_index = args.length() - 1;
+        auto rh_index = args.length() - 1;
         const auto * p_request_header =
             requireTypedValue<varlisp::Environment>(env, args.nth(rh_index), objs[rh_index], funcName, rh_index, DEBUG_INFO);
         varlisp::detail::http::Environment2ss1x_header(request_header, env, *p_request_header);
@@ -181,18 +180,18 @@ Object eval_http_get(varlisp::Environment& env, const varlisp::List& args)
     Environment ret;
     ret["status_code"] = int64_t(headers.status_code);
     if (!headers.http_version.empty()) {
-        ret["http_version"] = string_t(std::move(headers.http_version));
+        ret["http_version"] = string_t(headers.http_version);
     }
 
     for (const auto& it : headers) {
         // COLOG_INFO(it.first, ": ", sss::raw_string(it.second));
         // NOTE 最好按字符串保存值——因为header的值可能比较奇葩。
         // 而且，有可能数字以0开头——你保存为int，那么前导的0就丢失了！
-        ret[it.first] = string_t(std::move(it.second));
+        ret[it.first] = string_t(it.second);
     }
     COLOG_INFO(ret);
 
-    return varlisp::List::makeSQuoteList(string_t(std::move(max_content)),
+    return varlisp::List::makeSQuoteList(string_t(max_content),
                                          std::move(ret));
 }
 
@@ -215,14 +214,14 @@ Object eval_http_post(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "http-post";
     std::array<Object, 6> objs;
-    const string_t* p_url =
+    const auto* p_url =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t* p_content =
+    const auto* p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
-    const string_t* p_proxy = 0;
-    const int64_t* p_port = 0;
+    const string_t* p_proxy = nullptr;
+    const int64_t* p_port = nullptr;
     ss1x::http::Headers request_header;
 
     if (args.length() >= 4) {
@@ -233,7 +232,7 @@ Object eval_http_post(varlisp::Environment& env, const varlisp::List& args)
             requireTypedValue<int64_t>          (env, args.nth(3), objs[3], funcName, 3, DEBUG_INFO);
     }
     if (args.length() == 3 || args.length() == 5) {
-        int rh_index = args.length() - 1;
+        auto rh_index = args.length() - 1;
         const auto * p_request_header =
             requireTypedValue<varlisp::Environment>(env, args.nth(rh_index), objs[rh_index], funcName, rh_index, DEBUG_INFO);
         varlisp::detail::http::Environment2ss1x_header(request_header, env, *p_request_header);
@@ -297,18 +296,18 @@ Object eval_http_post(varlisp::Environment& env, const varlisp::List& args)
     Environment ret;
     ret["status_code"] = int64_t(headers.status_code);
     if (!headers.http_version.empty()) {
-        ret["http_version"] = string_t(std::move(headers.http_version));
+        ret["http_version"] = string_t(headers.http_version);
     }
 
     for (const auto& it : headers) {
         // COLOG_INFO(it.first, ": ", sss::raw_string(it.second));
         // NOTE 最好按字符串保存值——因为header的值可能比较奇葩。
         // 而且，有可能数字以0开头——你保存为int，那么前导的0就丢失了！
-        ret[it.first] = string_t(std::move(it.second));
+        ret[it.first] = string_t(it.second);
     }
     COLOG_INFO(ret);
 
-    return varlisp::List::makeSQuoteList(string_t(std::move(max_content)),
+    return varlisp::List::makeSQuoteList(string_t(max_content),
                                          std::move(ret));
 }
 

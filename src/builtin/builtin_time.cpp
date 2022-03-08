@@ -70,7 +70,7 @@ REGIST_BUILTIN(
 Object eval_date_time(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "date-time";
-    std::tm tm;
+    std::tm tm{};
     if (args.length() == 1)
     {
         Object tmp;
@@ -98,7 +98,7 @@ Object eval_date_time_nano(varlisp::Environment &env, const varlisp::List &args)
 	// TODO FIXME 2021-05-18
     std::time_t t = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
 
-    std::tm tm;
+    std::tm tm{};
 	::localtime_r(&t, &tm);// 这个得到一个 time_point
 
     // COLOG_ERROR(duration.count());
@@ -181,7 +181,7 @@ Object eval_time_format(varlisp::Environment &env, const varlisp::List &args)
     const auto * p_fmt =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    std::tm tm{0,0,0,0,0,0,0,0,0,0,0};
+    std::tm tm{};
     if (args.length() == 2) {
         const auto * p_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
         for (size_t i = 0; i < p_list->length(); ++i) {
@@ -198,14 +198,14 @@ Object eval_time_format(varlisp::Environment &env, const varlisp::List &args)
     }
     else {
         // 这个得到一个 time_point
-        std::tm tm = detail::get_std_tm(::std::chrono::system_clock::now());
+        tm = detail::get_std_tm(::std::chrono::system_clock::now());
     }
     std::string buf;
     buf.resize(p_fmt->size() + 256);
     auto fmt = p_fmt->gen_shared();
     size_t cnt = std::strftime(const_cast<char*>(&buf[0]), buf.size(), fmt->c_str(), &tm);
     buf.resize(cnt);
-    return string_t(std::move(buf));
+    return string_t(buf);
 }
 
 REGIST_BUILTIN("time-strparse", 2, 2, eval_time_strparse,
@@ -221,7 +221,7 @@ Object eval_time_strparse(varlisp::Environment &env, const varlisp::List &args)
     auto fmt =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO)->gen_shared();
 
-    std::tm tm{0,0,0,0,0,0,0,0,0,0,0};
+    std::tm tm{};
 
     // "27 December 2016, at 13:17"
     // %d %h %Y, at %H:%M

@@ -52,7 +52,7 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     // 1. builtin
     // 2. lambda
 
-    int arg_length = args.size() - 1;
+    auto arg_length = args.size() - 1;
     COLOG_DEBUG(SSS_VALUE_MSG(arg_length));
     std::vector<Object>      tmp_obj_vec;
     tmp_obj_vec.resize(arg_length);
@@ -62,10 +62,10 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
     int min_items_count = std::numeric_limits<int>::max();
     const List arg_list = args.tail();
     auto arg_list_it = arg_list.begin();
-    for (int i = 0; i < arg_length; ++i, ++arg_list_it)
+    for (auto i = 0U; i < arg_length; ++i, ++arg_list_it)
     {
         p_arg_list_vec[i] = varlisp::getQuotedList(env, *arg_list_it, tmp_obj_vec[i]);
-        if (!p_arg_list_vec[i]) {
+        if (p_arg_list_vec[i] == nullptr) {
             SSS_POSITION_THROW(std::runtime_error,
                               "(", funcName, ": the other arguments must be s-list; "
                               " but", *arg_list_it, ")");
@@ -82,7 +82,7 @@ Object eval_map(varlisp::Environment &env, const varlisp::List &args)
         varlisp::List expr {callable};
         auto back_it = detail::list_back_inserter<Object>(expr);
 
-        for (int j = 0; j < arg_length; ++j) {
+        for (auto j = 0U; j < arg_length; ++j) {
             COLOG_DEBUG(SSS_VALUE_MSG(i), ',', SSS_VALUE_MSG(j), ',', p_arg_list_vec[j]->nth(i));
             *back_it++ = p_arg_list_vec[j]->nth(i);
         }
@@ -121,7 +121,7 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
     const Object& callable = detail::car(args);
     Object tmp;
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
-    if (!p_arg_list) {
+    if (p_arg_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a s-list at 2nd arguments)");
     }
@@ -132,8 +132,7 @@ Object eval_reduce(varlisp::Environment &env, const varlisp::List &args)
 
     Object first_arg = p_arg_list->head();
     auto args_list = p_arg_list->tail();
-    for (auto arg_it = args_list.begin(); arg_it != args_list.end(); ++arg_it) {
-        Object second_arg = *arg_it;
+    for (const auto& second_arg : args_list) {
         varlisp::List expr = varlisp::List( {callable, first_arg, second_arg});
         first_arg = expr.eval(env);
     }
@@ -165,19 +164,19 @@ Object eval_filter(varlisp::Environment &env, const varlisp::List &args)
     const Object& callable = detail::car(args);
     Object tmp;
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
-    if (!p_arg_list) {
+    if (p_arg_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a s-list as 2nd arguments)");
     }
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto ret_it = detail::list_back_inserter<Object>(ret);
-    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
-        varlisp::List expr = varlisp::List({callable, *it});
+    for (const auto & it : *p_arg_list) {
+        varlisp::List expr = varlisp::List({callable, it});
         Object value = expr.eval(env);
 
         if (varlisp::is_true(env, value)) {
-            *ret_it++ = *it;
+            *ret_it++ = it;
         }
     }
     return ret;
@@ -208,15 +207,15 @@ Object eval_transform(varlisp::Environment &env, const varlisp::List &args)
     const Object& callable = detail::car(args);
     Object tmp;
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
-    if (!p_arg_list) {
+    if (p_arg_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a s-list as 2nd arguments)");
     }
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto ret_it = detail::list_back_inserter<Object>(ret);
-    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
-        varlisp::List expr = varlisp::List({callable, *it});
+    for (const auto & it : *p_arg_list) {
+        varlisp::List expr = varlisp::List({callable, it});
         Object value = expr.eval(env);
         *ret_it++ = value;
     }
@@ -241,8 +240,8 @@ Object eval_pipe_run(varlisp::Environment &env, const varlisp::List &args)
 
     const varlisp::List func_list = args.tail();
 
-    for (auto func_it = func_list.begin(); func_it != func_list.end(); ++func_it) {
-        varlisp::List expr = varlisp::List({*func_it, argument});
+    for (const auto & func_it : func_list) {
+        varlisp::List expr = varlisp::List({func_it, argument});
         argument = expr.eval(env);
     }
 
@@ -262,15 +261,15 @@ Object eval_is_all(varlisp::Environment &env, const varlisp::List &args)
     const Object& callable = detail::car(args);
     Object tmp;
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
-    if (!p_arg_list || p_arg_list->empty()) {
+    if ((p_arg_list == nullptr) || p_arg_list->empty()) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
                           detail::cadr(args), ")");
     }
 
     bool is_all = true;
-    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
-        varlisp::List expr = varlisp::List( {callable, *it});
+    for (const auto & it : *p_arg_list) {
+        varlisp::List expr = varlisp::List( {callable, it});
 
         Object res = expr.eval(env);
         if (!boost::apply_visitor(cast2bool_visitor(env), res)) {
@@ -295,15 +294,15 @@ Object eval_is_any(varlisp::Environment &env, const varlisp::List &args)
     const Object& callable = detail::car(args);
     Object tmp;
     const List * p_arg_list = varlisp::getQuotedList(env, detail::cadr(args), tmp);
-    if (!p_arg_list || p_arg_list->empty()) {
+    if ((p_arg_list == nullptr) || p_arg_list->empty()) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": need a none-empty s-list at 2nd arguments; but ",
                           detail::cadr(args), ")");
     }
 
     bool is_any = false;
-    for (auto it = p_arg_list->begin(); it != p_arg_list->end(); ++it) {
-        varlisp::List expr = varlisp::List( {callable, *it});
+    for (const auto & it : *p_arg_list) {
+        varlisp::List expr = varlisp::List( {callable, it});
 
         Object res = expr.eval(env);
         if (boost::apply_visitor(cast2bool_visitor(env), res)) {

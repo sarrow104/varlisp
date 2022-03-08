@@ -23,7 +23,7 @@ Object eval_en_base64(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "en-base64";
     std::array<Object, 1> objs;
-    auto* p_str = requireTypedValue<varlisp::string_t>(
+    const auto* p_str = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     sss::enc::Base64 b;
     return varlisp::string_t(b.encode(*p_str->gen_shared()));
@@ -36,7 +36,7 @@ Object eval_de_base64(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "de-base64";
     std::array<Object, 1> objs;
-    auto* p_str = requireTypedValue<varlisp::string_t>(
+    const auto* p_str = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     sss::enc::Base64 b;
     return varlisp::string_t(b.decode(*p_str->gen_shared()));
@@ -50,7 +50,7 @@ Object eval_en_gzip(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "en-gzip";
     std::array<Object, 1> objs;
-    auto* p_str = requireTypedValue<varlisp::string_t>(
+    const auto* p_str = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
@@ -87,7 +87,7 @@ Object eval_de_gzip(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "de-gzip";
     std::array<Object, 1> objs;
-    auto* p_str = requireTypedValue<varlisp::string_t>(
+    const auto* p_str = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
@@ -142,7 +142,7 @@ Object eval_deflate(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "deflate";
     std::array<Object, 3> objs;
-    auto* p_str = requireTypedValue<varlisp::string_t>(
+    const auto* p_str = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     int level = Z_DEFAULT_COMPRESSION;
@@ -151,7 +151,7 @@ Object eval_deflate(varlisp::Environment& env, const varlisp::List& args)
     int strategy = Z_DEFAULT_STRATEGY;
 
     if (args.size() >= 3) {
-        auto* p_method_name = requireTypedValue<varlisp::string_t>(
+        const auto* p_method_name = requireTypedValue<varlisp::string_t>(
             env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
         detail::calcWindowBits(windowBits, p_method_name->to_string_view(),
@@ -164,10 +164,10 @@ Object eval_deflate(varlisp::Environment& env, const varlisp::List& args)
     }
     else {
         const auto& value = varlisp::getAtomicValue(env, args.nth(1), objs[1]);
-        if (auto* p_method_name = boost::get<string_t>(&value)) {
+        if (const auto* p_method_name = boost::get<string_t>(&value)) {
             detail::calcWindowBits(windowBits, *p_method_name, funcName);
         }
-        else if (auto* p_level = boost::get<int64_t>(&value)) {
+        else if (const auto* p_level = boost::get<int64_t>(&value)) {
             detail::calcLevel(level, *p_level, funcName);
         }
         else {
@@ -195,15 +195,12 @@ Object eval_deflate(varlisp::Environment& env, const varlisp::List& args)
 
     uLong bound = deflateBound(&strm, strm.avail_in);
 
-    char* out = (char*)malloc(bound);
-
-    if (out == NULL) {
-        SSS_POSITION_THROW(std::runtime_error, "malloc error ",
-                           std::strerror(errno));
-    }
+    std::vector<char> out;
+    out.resize(bound);
+    // char* out = (char*)malloc(bound);
 
     strm.avail_out = bound;
-    strm.next_out = (Bytef*)out;
+    strm.next_out = reinterpret_cast<Bytef*>(out.data());
 
     r = deflate(&strm, Z_FINISH);
 
@@ -217,8 +214,7 @@ Object eval_deflate(varlisp::Environment& env, const varlisp::List& args)
     }
 
     // output
-    string_t ret{std::string(out, out_length)};
-    free(out);
+    string_t ret{std::string(out.data(), out_length)};
 
     return ret;
 }
@@ -235,13 +231,13 @@ Object eval_inflate(varlisp::Environment& env, const varlisp::List& args)
 
     const char* funcName = "inflate";
     std::array<Object, 2> objs;
-    auto* p_str = requireTypedValue<varlisp::string_t>(
+    const auto* p_str = requireTypedValue<varlisp::string_t>(
         env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     enum deflate_method_t { dm_gzip = 0, dm_zlib = 1, dm_deflate = 2 };
 
     if (args.size() >= 2) {
-        auto* p_method_name = requireTypedValue<varlisp::string_t>(
+        const auto* p_method_name = requireTypedValue<varlisp::string_t>(
             env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
         detail::calcWindowBits(windowBits, p_method_name->to_string_view(), funcName);
@@ -272,31 +268,22 @@ Object eval_inflate(varlisp::Environment& env, const varlisp::List& args)
     // urgh, we don't know the buffer size (Q: is it in the gzip header?)
     uLong bound = 128 * 1024;  // 128K =  131072 byte
 
-    char* out = (char*)malloc(bound);
-
-    if (out == NULL) {
-        SSS_POSITION_THROW(std::runtime_error, "malloc error ",
-                           std::strerror(errno));
-    }
+    std::vector<char> out;
+    out.resize(bound);
 
     strm.avail_out = bound;
-    strm.next_out = (Bytef*)out;
+    strm.next_out = reinterpret_cast<Bytef*>(out.data());
 
     r = inflate(&strm, Z_FINISH);
 
     while (r == Z_BUF_ERROR) {
         bound = bound * 2;
-        size_t len = (char*)strm.next_out - out;
+        size_t len = (char*)strm.next_out - out.data();
 
-        out = (char*)realloc(out, bound);
-
-        if (out == NULL) {
-            SSS_POSITION_THROW(std::runtime_error, "realloc error ",
-                               std::strerror(errno));
-        }
+        out.resize(bound);
 
         strm.avail_out = bound - len;
-        strm.next_out = (Bytef*)(out + len);
+        strm.next_out = reinterpret_cast<Bytef*>(out.data() + len);
 
         r = inflate(&strm, Z_FINISH);
     }
@@ -312,8 +299,7 @@ Object eval_inflate(varlisp::Environment& env, const varlisp::List& args)
     inflateEnd(&strm);
 
     // output
-    string_t ret{std::string(out, out_length)};
-    free(out);
+    string_t ret{std::string(out.data(), out_length)};
 
     return ret;
 }

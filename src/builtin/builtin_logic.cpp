@@ -1,9 +1,9 @@
 #include "../object.hpp"
 
 #include "../builtin_helper.hpp"
+#include "../builtin_helper.hpp"
 #include "../strict_equal_visitor.hpp"
 #include "../strict_less_visitor.hpp"
-#include "../builtin_helper.hpp"
 
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
@@ -39,7 +39,7 @@ Object eval_eq(varlisp::Environment& env, const varlisp::List& args)
     Object obj2;
     const Object& obj2_ref = varlisp::getAtomicValue(env, detail::cadr(args), obj2);
 
-    return Object(boost::apply_visitor(strict_equal_visitor(env), obj1_ref, obj2_ref));
+    return {boost::apply_visitor(strict_equal_visitor(env), obj1_ref, obj2_ref)};
 }
 
 REGIST_BUILTIN("!=", 2, 2, eval_not_eq, "(!= arg1 arg2) -> boolean");
@@ -78,8 +78,8 @@ Object eval_gt(varlisp::Environment& env, const varlisp::List& args)
     const Object& obj1_ref = varlisp::getAtomicValue(env, detail::car(args), obj1);
     Object obj2;
     const Object& obj2_ref = varlisp::getAtomicValue(env, detail::cadr(args), obj2);
-    return Object(!boost::apply_visitor(strict_equal_visitor(env), obj2_ref, obj1_ref) &&
-                  boost::apply_visitor(strict_less_visitor(env), obj2_ref, obj1_ref));
+    return !boost::apply_visitor(strict_equal_visitor(env), obj2_ref, obj1_ref) &&
+                  boost::apply_visitor(strict_less_visitor(env), obj2_ref, obj1_ref);
 }
 
 REGIST_BUILTIN("<", 2, 2, eval_lt, "(< arg1 arg2) -> boolean");
@@ -98,7 +98,7 @@ Object eval_lt(varlisp::Environment& env, const varlisp::List& args)
     const Object& obj1_ref = varlisp::getAtomicValue(env, detail::car(args), obj1);
     Object obj2;
     const Object& obj2_ref = varlisp::getAtomicValue(env, detail::cadr(args), obj2);
-    return Object(boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
+    return boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref);
 }
 
 REGIST_BUILTIN(">=", 2, 2, eval_ge, "(>= arg1 arg2) -> boolean");
@@ -117,7 +117,7 @@ Object eval_ge(varlisp::Environment& env, const varlisp::List& args)
     const Object& obj1_ref = varlisp::getAtomicValue(env, detail::car(args), obj1);
     Object obj2;
     const Object& obj2_ref = varlisp::getAtomicValue(env, detail::cadr(args), obj2);
-    return Object(!boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
+    return !boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref);
 }
 
 REGIST_BUILTIN("<=", 2, 2, eval_le, "(<= arg1 arg2) -> boolean");
@@ -136,8 +136,8 @@ Object eval_le(varlisp::Environment& env, const varlisp::List& args)
     const Object& obj1_ref = varlisp::getAtomicValue(env, detail::car(args), obj1);
     Object obj2;
     const Object& obj2_ref = varlisp::getAtomicValue(env, detail::cadr(args), obj2);
-    return Object(boost::apply_visitor(strict_equal_visitor(env), obj2_ref, obj1_ref) ||
-                  boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref));
+    return boost::apply_visitor(strict_equal_visitor(env), obj2_ref, obj1_ref) ||
+                  boost::apply_visitor(strict_less_visitor(env), obj1_ref, obj2_ref);
 }
 
 REGIST_BUILTIN("not", 1, 1, eval_not, "(not expr) -> boolean");
@@ -171,13 +171,13 @@ Object eval_equal(varlisp::Environment& env, const varlisp::List& args)
 {
     Object obj1;
     const varlisp::List * p_list1 = varlisp::getQuotedList(env, detail::car(args), obj1);
-    if (!p_list1) {
+    if (p_list1 == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(equal: 1st argument must be an s-list)");
     }
     Object obj2;
     const varlisp::List * p_list2 = varlisp::getQuotedList(env, detail::cadr(args), obj2);
-    if (!p_list2) {
+    if (p_list2 == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(equal: 1st argument must be an s-list)");
     }

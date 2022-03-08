@@ -32,7 +32,7 @@ Object eval_mime_file(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "mime-file";
     std::array<Object, 1> objs;
-    const string_t *p_file_name =
+    const auto *p_file_name =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     static FileTyping::Magic mg;
@@ -57,7 +57,7 @@ Object eval_mime_buffer(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "mime-buffer";
     std::array<Object, 1> objs;
-    const string_t *p_buffer =
+    const auto *p_buffer =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     static FileTyping::Magic mg;

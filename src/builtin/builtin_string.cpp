@@ -38,12 +38,12 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "split";
     std::array<Object, 2> objs;
-    const string_t *p_content =
+    const auto *p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string sep(1, ' ');
     if (args.length() == 2) {
-        const string_t *p_sep =
+        const auto *p_sep =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
         sep = *p_sep->gen_shared();
     }
@@ -55,12 +55,10 @@ Object eval_split(varlisp::Environment &env, const varlisp::List &args)
         while (sp.fetch_next(stem)) {
             *ret_it++ = p_content->substr(stem);
         }
+        return ret;
     }
-    else {
-        SSS_POSITION_THROW(std::runtime_error,
-                          "(", funcName, ": only support sep.length() == 1)");
-    }
-    return Object(ret);
+    SSS_POSITION_THROW(std::runtime_error,
+                       "(", funcName, ": only support sep.length() == 1)");
 }
 
 REGIST_BUILTIN("join", 1, 2, eval_join,
@@ -83,14 +81,14 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     std::array<Object, 2> objs;
     const List *p_list = getQuotedList(env, detail::car(args), objs[0]);
 
-    if (!p_list) {
+    if (p_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": 1st must a list!)");
     }
 
     std::string sep;
     if (args.length() == 2) {
-        const string_t *p_sep =
+        const auto *p_sep =
             requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
         sep = *p_sep->gen_shared();
     }
@@ -98,9 +96,9 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
     std::ostringstream oss;
 
     bool is_first = true;
-    for (auto it = p_list->begin(); it != p_list->end(); ++it) {
+    for (const auto & it : *p_list) {
         Object obj;
-        const string_t *p_stem = getTypedValue<string_t>(env, *it, obj);
+        const auto *p_stem = getTypedValue<string_t>(env, it, obj);
         if (is_first) {
             is_first = false;
         }
@@ -108,15 +106,15 @@ Object eval_join(varlisp::Environment &env, const varlisp::List &args)
             oss << sep;
         }
 
-        if (!p_stem) {
-            boost::apply_visitor(raw_stream_visitor(oss, env), *it);
+        if (p_stem == nullptr) {
+            boost::apply_visitor(raw_stream_visitor(oss, env), it);
         }
         else {
             oss << *p_stem;
         }
     }
 
-    return Object(string_t(std::move(oss.str())));
+    return {string_t(oss.str())};
 }
 
 namespace detail {
@@ -124,12 +122,12 @@ const char * locateNthUtf8(const char * it_beg, const char * it_end, size_t nth)
 {
     while(nth > 0 && it_beg < it_end) {
         auto len = sss::util::utf8::next_length(it_beg, it_end);
-        if (!len) {
+        if (len == 0) {
             // NOTE utf8-parse error
             return nullptr;
         }
         --nth;
-        it_beg += len;
+        std::advance(it_beg, len);
     }
     if (nth == 0) {
         return it_beg;
@@ -139,8 +137,8 @@ const char * locateNthUtf8(const char * it_beg, const char * it_end, size_t nth)
 
 uint32_t nthUtf8(const char* it_beg, const char* it_end, size_t nth)
 {
-    auto nth_ptr = locateNthUtf8(it_beg, it_end, nth);
-    if (!nth_ptr) {
+    const auto *nth_ptr = locateNthUtf8(it_beg, it_end, nth);
+    if (nth_ptr == nullptr) {
         return 0;
     }
     return sss::util::utf8::peek(nth_ptr, it_end).first;
@@ -164,14 +162,14 @@ Object eval_substr_byte(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "substr-byte";
     std::array<Object, 3> objs;
-    const string_t *p_content =
+    const auto *p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     const Object &offset_ref = getAtomicValue(env, args.nth(1), objs[1]);
 
     arithmetic_t offset_number =
         boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
-    if (!offset_number.which()) {
+    if (offset_number.which() == 0) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need int64_t as 2nd argument)");
     }
@@ -181,7 +179,7 @@ Object eval_substr_byte(varlisp::Environment &env, const varlisp::List &args)
         offset_int = 0;
     }
     if (offset_int > int64_t(p_content->length())) {
-        offset_int = p_content->length();
+        offset_int = int64_t(p_content->length());
     }
 
     int64_t length = -1;
@@ -191,7 +189,7 @@ Object eval_substr_byte(varlisp::Environment &env, const varlisp::List &args)
 
         arithmetic_t arithmetic_length = boost::apply_visitor(
             arithmetic_cast_visitor(env), (length_obj_ref));
-        if (!arithmetic_length.which()) {
+        if (arithmetic_length.which() == 0) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                               ": need int64_t as 3rd argument)");
         }
@@ -199,30 +197,24 @@ Object eval_substr_byte(varlisp::Environment &env, const varlisp::List &args)
     }
 
     if (offset_int < 0) {
-        int end_offset = int(p_content->length()) + offset_int;
+        int end_offset = int(p_content->length()) + int(offset_int);
         if (end_offset < 0) {
             return Nill{};
         }
         if (length < 0) {
             return p_content->substr(end_offset);
         }
-        else {
-            int start_offset = end_offset - length;
-            if (start_offset < 0) {
-                start_offset = 0;
-            }
-            return p_content->substr(start_offset, end_offset);
+        int start_offset = end_offset - int(length);
+        if (start_offset < 0) {
+            start_offset = 0;
         }
+        return p_content->substr(start_offset, end_offset);
     }
-    else {
-        if (length < 0) {
-            return p_content->substr(offset_int);
+    if (length < 0) {
+        return p_content->substr(offset_int);
 
-        }
-        else {
-            return p_content->substr(offset_int, length);
-        }
     }
+    return p_content->substr(offset_int, length);
 }
 
 REGIST_BUILTIN("substr", 2, 3, eval_substr,
@@ -244,21 +236,21 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "substr-byte";
     std::array<Object, 3> objs;
-    const string_t *p_content =
+    const auto *p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     const Object &offset_ref = getAtomicValue(env, args.nth(1), objs[1]);
 
     arithmetic_t offset_number =
         boost::apply_visitor(arithmetic_cast_visitor(env), (offset_ref));
-    if (!offset_number.which()) {
+    if (offset_number.which() == 0) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                           ": need int64_t as 2nd argument)");
     }
     int64_t offset_int = arithmetic2int(offset_number);
 
     if (offset_int > int64_t(p_content->length())) {
-        offset_int = p_content->length();
+        offset_int = int64_t(p_content->length());
     }
 
     int64_t length = -1;
@@ -268,7 +260,7 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
 
         arithmetic_t arithmetic_length = boost::apply_visitor(
             arithmetic_cast_visitor(env), (length_obj_ref));
-        if (!arithmetic_length.which()) {
+        if (arithmetic_length.which() == 0) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                               ": need int64_t as 3rd argument)");
         }
@@ -282,57 +274,48 @@ Object eval_substr(varlisp::Environment &env, const varlisp::List &args)
         // 记录每个u8字符，开始的偏移；
         std::vector<uint32_t> u8_offset_vec;
         u8_offset_vec.reserve(p_content->length() / 2);
-        uint32_t current_offset = 0u;
-        auto it = p_content->begin();
+        uint32_t current_offset = 0U;
+        const auto *it = p_content->begin();
         while (it != p_content->end()) {
             auto len = sss::util::utf8::next_length(it, p_content->end());
-            if (!len) {
+            if (len == 0) {
                 break;
             }
             u8_offset_vec.push_back(current_offset);
             current_offset += len;
-            it += len;
+            std::advance(it, len);
         }
-        int end_offset = int(u8_offset_vec.size()) + offset_int;
+        int end_offset = int(u8_offset_vec.size()) + int(offset_int);
         if (end_offset < 0) {
             return Nill{};
         }
         if (length < 0) {
             return p_content->substr(0, u8_offset_vec[end_offset]);
         }
-        else {
-            int start_offset = end_offset - length;
+        int start_offset = end_offset - int(length);
 
-            return p_content->substr(u8_offset_vec[start_offset],
-                                     u8_offset_vec[end_offset] -
-                                     u8_offset_vec[start_offset]);
-        }
+        return p_content->substr(u8_offset_vec[start_offset],
+                                 u8_offset_vec[end_offset] -
+                                 u8_offset_vec[start_offset]);
     }
-    else {
-        if (length < 0) {
-            auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
-            if (!nth_ptr) {
-                return Nill{};
-            }
-            else {
-                return p_content->substr(nth_ptr - p_content->begin());
-            }
+    if (length < 0) {
+        const auto *nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
+        if (nth_ptr == nullptr) {
+            return Nill{};
         }
-        else {
-            auto nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
-            if (!nth_ptr) {
-                return Nill{};
-            }
-
-            auto end_ptr = detail::locateNthUtf8(nth_ptr, p_content->end(), length);
-            if (!nth_ptr) {
-                return Nill{};
-            }
-
-            return p_content->substr(nth_ptr - p_content->begin(), end_ptr - nth_ptr);
-        }
+        return p_content->substr(nth_ptr - p_content->begin());
+    }
+    const auto *nth_ptr = detail::locateNthUtf8(p_content->begin(), p_content->end(), offset_int);
+    if (nth_ptr == nullptr) {
+        return Nill{};
     }
 
+    const auto *end_ptr = detail::locateNthUtf8(nth_ptr, p_content->end(), length);
+    if (nth_ptr == nullptr) {
+        return Nill{};
+    }
+
+    return p_content->substr(nth_ptr - p_content->begin(), end_ptr - nth_ptr);
 }
 
 REGIST_BUILTIN("ltrim", 1, 1, eval_ltrim,
@@ -342,11 +325,11 @@ Object eval_ltrim(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "ltrim";
     std::array<Object, 1> objs;
-    const string_t *p_str =
+    const auto *p_str =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     sss::string_view sv = p_str->to_string_view();
-    while(!sv.empty() && std::isspace(sv.front())) {
+    while(!sv.empty() && (std::isspace(sv.front()) != 0)) {
         sv.pop_front();
     }
     return p_str->substr(sv);
@@ -359,11 +342,11 @@ Object eval_rtrim(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "rtrim";
     std::array<Object, 1> objs;
-    const string_t *p_str =
+    const auto *p_str =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     sss::string_view sv = p_str->to_string_view();
-    while(!sv.empty() && std::isspace(sv.back())) {
+    while(!sv.empty() && (std::isspace(sv.back()) != 0)) {
         sv.pop_back();
     }
     return p_str->substr(sv);
@@ -376,14 +359,14 @@ Object eval_trim(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "trim";
     std::array<Object, 1> objs;
-    const string_t *p_str =
+    const auto *p_str =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     sss::string_view sv = p_str->to_string_view();
-    while(!sv.empty() && std::isspace(sv.front())) {
+    while(!sv.empty() && (std::isspace(sv.front()) != 0)) {
         sv.pop_front();
     }
-    while(!sv.empty() && std::isspace(sv.back())) {
+    while(!sv.empty() && (std::isspace(sv.back()) != 0)) {
         sv.pop_back();
     }
     return p_str->substr(sv);
@@ -406,7 +389,7 @@ Object eval_strlen(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "strlen";
     std::array<Object, 1> objs;
-    const string_t *p_str =
+    const auto *p_str =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     return int64_t(sss::util::utf8::count_nocheck(p_str->begin(), p_str->end()));
 }
@@ -426,7 +409,7 @@ Object eval_strlen_byte(varlisp::Environment &env, const varlisp::List &args)
 {
     const char *funcName = "strlen-byte";
     std::array<Object, 1> objs;
-    const string_t *p_str =
+    const auto *p_str =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     return int64_t(p_str->length());
 }
@@ -448,7 +431,7 @@ Object eval_split_char(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "split-char";
     std::array<Object, 1> objs;
-    const string_t *p_str =
+    const auto *p_str =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
@@ -476,7 +459,7 @@ Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "join-char";
     Object obj;
     const varlisp::List * p_list = varlisp::getQuotedList(env, detail::car(args), obj);
-    if (!p_list) {
+    if (p_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need quote list as the 1st argument)");
     }
@@ -484,7 +467,7 @@ Object eval_join_char(varlisp::Environment &env, const varlisp::List &args)
     sss::util::utf8::dumpout2utf8(detail::list_const_iterator_t<int64_t>(p_list),
                                   detail::list_const_iterator_t<int64_t>(nullptr),
                                   std::back_inserter(ret));
-    return varlisp::string_t{std::move(ret)};
+    return varlisp::string_t{ret};
 }
 
 REGIST_BUILTIN("split-byte",       1,  1,  eval_split_byte,
@@ -494,15 +477,15 @@ Object eval_split_byte(varlisp::Environment &env, const varlisp::List &args)
 {
     const char * funcName = "split-byte";
     std::array<Object, 1> objs;
-    const string_t *p_str =
+    const auto *p_str =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     varlisp::List ret = varlisp::List::makeSQuoteList();
 
     // NOTE  谨防 0x80 0xFF 字符可能引起问题
     auto back_it = detail::list_back_inserter<int64_t>(ret);
-    for (auto it = p_str->begin(); it != p_str->end(); ++it) {
-        *back_it++ = int64_t(uint8_t(*it));
+    for (char it : *p_str) {
+        *back_it++ = int64_t(uint8_t(it));
     }
     return ret;
 }
@@ -515,16 +498,16 @@ Object eval_join_byte(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "join-byte";
     Object obj;
     const varlisp::List * p_list = varlisp::getQuotedList(env, detail::car(args), obj);
-    if (!p_list) {
+    if (p_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need quote list as the 1st argument)");
     }
     std::string ret;
     // FIXME 谨防 0x80 0xFF 字符可能引起问题
-    for (auto it = detail::list_const_iterator_t<int64_t>(p_list); it; ++it) {
-        ret.push_back(char(*it & 0xFF));
+    for (auto it = detail::list_const_iterator_t<int64_t>(p_list); it != nullptr; ++it) {
+        ret.push_back(char(uint8_t(*it) & 0xffU));
     }
-    return varlisp::string_t{std::move(ret)};
+    return varlisp::string_t{ret};
 }
 
 REGIST_BUILTIN("byte-nth", 2, 2, eval_byte_nth,
@@ -567,12 +550,10 @@ Object eval_char_nth(varlisp::Environment &env, const varlisp::List &args)
 
     auto nth_char = detail::nthUtf8(p_str->begin(), p_str->end(), *p_nth);
 
-    if (nth_char) {
+    if (nth_char != 0u) {
         return int64_t(nth_char);
     }
-    else {
-        return Nill{};
-    }
+    return Nill{};
 }
 
 REGIST_BUILTIN("strstr", 2, 2, eval_strstr,

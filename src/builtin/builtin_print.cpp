@@ -1,17 +1,17 @@
 #include <array>
 
+#include <sss/colorlog.hpp>
+#include <sss/debug/value_msg.hpp>
 #include <sss/raw_print.hpp>
 #include <sss/util/PostionThrow.hpp>
-#include <sss/debug/value_msg.hpp>
-#include <sss/colorlog.hpp>
 
-#include "../object.hpp"
 #include "../builtin_helper.hpp"
-#include "../fmtArgInfo.hpp"
-#include "../fmt_print_visitor.hpp"
-#include "../detail/io.hpp"
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
+#include "../detail/io.hpp"
+#include "../fmtArgInfo.hpp"
+#include "../fmt_print_visitor.hpp"
+#include "../object.hpp"
 
 namespace varlisp {
 
@@ -19,7 +19,7 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env,
               const varlisp::List& args, const char* funcName)
 {
     std::array<Object, 1> objs;
-    const string_t* p_fmt =
+    const auto* p_fmt =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::vector<fmtArgInfo> fmts;
@@ -34,8 +34,8 @@ void fmt_impl(std::ostream& oss, varlisp::Environment& env,
     vecObjPtr.resize(arg_len, nullptr);
 
     const varlisp::List arg = args.tail();
-    for (auto it = arg.begin(); it != arg.end(); ++it) {
-        vecArgPtr.push_back(&(*it));
+    for (const auto & it : arg) {
+        vecArgPtr.push_back(&it);
     }
 
     COLOG_DEBUG(SSS_VALUE_MSG(arg_len));
@@ -112,7 +112,7 @@ Object eval_fmt(varlisp::Environment& env, const varlisp::List& args)
     std::ostringstream oss;
     fmt_impl(oss, env, args, "io:fmt");
     std::string out = oss.str();
-    return Object{string_t{std::move(out)}};
+    return Object{string_t{out}};
 }
 
 REGIST_BUILTIN("format", 1, -1, eval_format,
@@ -192,12 +192,10 @@ Object eval_format(varlisp::Environment& env, const varlisp::List& args)
     std::string out = oss.str();
 
     if (fd == 0) {
-        return string_t{std::move(out)};
+        return string_t{out};
     }
-    else {
-        varlisp::detail::writestring(fd, sss::string_view{out});
-        return varlisp::Nill{};
-    }
+    varlisp::detail::writestring(fd, sss::string_view{out});
+    return varlisp::Nill{};
 }
 
 REGIST_BUILTIN("fmt-escape", 1, 1, eval_fmt_escape,
@@ -217,7 +215,7 @@ Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "fmt-escape";
     std::array<Object, 1> objs;
-    const string_t* p_fmt =
+    const auto* p_fmt =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     std::string escaped_str;
     escaped_str.reserve(p_fmt->size());
@@ -236,7 +234,7 @@ Object eval_fmt_escape(varlisp::Environment& env, const varlisp::List& args)
                 break;
         }
     }
-    return Object{string_t{std::move(escaped_str)}};
+    return Object{string_t{escaped_str}};
 }
 
 // NOTE ruby中，有这种格式串：

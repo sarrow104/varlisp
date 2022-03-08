@@ -3,28 +3,28 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
-#include <gq/QueryUtil.h>
 #include <gq/DocType.h>
+#include <gq/QueryUtil.h>
 
-#include <sss/utlstring.hpp>
-#include <sss/path.hpp>
 #include <sss/debug/value_msg.hpp>
+#include <sss/path.hpp>
+#include <sss/utlstring.hpp>
 
-#include <ss1x/asio/utility.hpp>
 #include <ss1x/asio/headers.hpp>
+#include <ss1x/asio/utility.hpp>
 
-#include "../object.hpp"
-#include "../list.hpp"
 #include "../builtin_helper.hpp"
+#include "../list.hpp"
+#include "../object.hpp"
 #include "../raw_stream_visitor.hpp"
 
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
-#include "../detail/list_iterator.hpp"
+#include "../detail/file.hpp"
 #include "../detail/html.hpp"
 #include "../detail/http.hpp"
-#include "../detail/file.hpp"
 #include "../detail/io.hpp"
+#include "../detail/list_iterator.hpp"
 
 namespace varlisp {
 
@@ -68,13 +68,9 @@ Object eval_gumbo(varlisp::Environment& env, const varlisp::List& args)
             }
             return ret_nodes;
         }
-        else {
-            return doc;
-        }
+        return doc;
     }
-    else {
-        return Object{Nill{}};
-    }
+    return Nill{};
 }
 
 REGIST_BUILTIN("gumbo-query", 2, 2, eval_gumbo_query,
@@ -160,14 +156,14 @@ Object eval_gumbo_query(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gumbo-query";
     std::array<Object, 2> objs;
-    const gumboNode* p_node =
+    const auto* p_node =
         requireTypedValue<gumboNode>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t* p_query =
+    const auto* p_query =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     varlisp::List ret_nodes = varlisp::List::makeSQuoteList();
-    if (p_node->valid() && p_query && p_query->length()) {
+    if (p_node->valid() && (p_query != nullptr) && (p_query->length() != 0U)) {
         std::vector<gumboNode> vec = p_node->find(*p_query->gen_shared());
         auto back_it = detail::list_back_inserter<Object>(ret_nodes);
         for (auto& item : vec) {
@@ -187,7 +183,7 @@ Object eval_gumbo_children(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gumbo-query";
     Object gNode;
-    const gumboNode* p_node =
+    const auto* p_node =
         requireTypedValue<gumboNode>(env, args.nth(0), gNode, funcName, 0, DEBUG_INFO);
 
     varlisp::List ret_nodes = varlisp::List::makeSQuoteList();
@@ -209,7 +205,7 @@ REGIST_BUILTIN("gqnode-indent", 0, 1, eval_gqnode_indent,
 Object eval_gqnode_indent(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gqnode-indent";
-    if (args.size()) {
+    if (args.size() != 0U) {
         Object tmp;
         const auto * p_indent =requireTypedValue<varlisp::string_t>(env, args.nth(0), tmp, funcName, 0, DEBUG_INFO);
         detail::html::set_gqnode_indent(*p_indent->gen_shared());
@@ -234,18 +230,18 @@ Object eval_gqnode_attr(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gqnode-attr";
     std::array<Object, 2> objs;
-    const gumboNode* p_gqnode =
+    const auto* p_gqnode =
         requireTypedValue<gumboNode>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t* p_attrib_name =
+    const auto* p_attrib_name =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     if (p_gqnode->valid()) {
         std::string attribute = p_gqnode->attribute(*p_attrib_name->gen_shared());
         // NOTE empty string is ok!
-        return string_t{std::move(attribute)};
+        return string_t{attribute};
     }
-    return Object{Nill{}};
+    return Nill{};
 }
 
 REGIST_BUILTIN("gqnode-hasAttr", 2, 2, eval_gqnode_hasAttr,
@@ -265,10 +261,10 @@ Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
     const char* funcName = "gqnode-hasAttr";
 
     std::array<Object, 2> objs;
-    const gumboNode* p_gqnode =
+    const auto* p_gqnode =
         requireTypedValue<gumboNode>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t* p_attrib_name =
+    const auto* p_attrib_name =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     if (p_gqnode->valid()) {
@@ -277,7 +273,8 @@ Object eval_gqnode_hasAttr(varlisp::Environment& env, const varlisp::List& args)
     return Object{Nill{}};
 }
 
-typedef std::string (gumboNode::*gbNodeMethod_t)() const;
+using gbNodeMethod_t = std::string (gumboNode::*)() const;
+
 struct gumboNodeMethodWrapper {
     gumboNodeMethodWrapper(const char* funcName, gbNodeMethod_t m)
         : m_funcName(funcName), m_method(m)
@@ -288,10 +285,10 @@ public:
     Object operator()(varlisp::Environment& env, const varlisp::List& args)
     {
         Object gqnode;
-        const gumboNode* p_gqnode =
+        const auto* p_gqnode =
             requireTypedValue<gumboNode>(env, args.nth(0), gqnode, m_funcName, 0, DEBUG_INFO);
         if (p_gqnode->valid()) {
-            return string_t(std::move((p_gqnode->*m_method)()));
+            return string_t((p_gqnode->*m_method)());
         }
         return Object{Nill{}};
     }
@@ -317,7 +314,7 @@ Object eval_gqnode_valid(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gqnode-valid";
     Object gqnode;
-    const gumboNode* p_gqnode =
+    const auto* p_gqnode =
         requireTypedValue<gumboNode>(env, args.nth(0), gqnode, funcName, 0, DEBUG_INFO);
     return p_gqnode->valid();
 }
@@ -338,7 +335,7 @@ Object eval_gqnode_isText(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "gqnode-isText";
     Object gqnode;
-    const gumboNode* p_gqnode =
+    const auto* p_gqnode =
         requireTypedValue<gumboNode>(env, args.nth(0), gqnode, funcName, 0, DEBUG_INFO);
 
     if (p_gqnode->valid()) {
@@ -544,16 +541,16 @@ Object eval_gumbo_query_text(varlisp::Environment& env,
 {
     const char * funcName = "gumbo-query-text";
     std::array<Object, 2> objs;
-    const string_t* p_content =
+    const auto* p_content =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-    const string_t* p_query =
+    const auto* p_query =
         requireTypedValue<varlisp::string_t>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
     std::ostringstream oss;
     ss1x::util::html::queryText(oss, *p_content->gen_shared(), *p_query->gen_shared());
 
-    return string_t(std::move(oss.str()));
+    return string_t(oss.str());
 }
 
 REGIST_BUILTIN("gumbo-original-rewrite", 0, 1, eval_gumbo_original_rewrite,
@@ -565,7 +562,7 @@ REGIST_BUILTIN("gumbo-original-rewrite", 0, 1, eval_gumbo_original_rewrite,
 Object eval_gumbo_original_rewrite(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "gumbo-original-rewrite";
-    if (args.length()) {
+    if (args.length() != 0U) {
         std::array<Object, 1> objs;
         const auto* p_bool =
             requireTypedValue<bool>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
@@ -594,10 +591,10 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
     int64_t proxy_port = 0;
 
     int64_t fd = -1;
-    if (auto * p_fd = varlisp::getTypedValue<int64_t>(env, args.nth(0), objs[0])) {
+    if (const auto * p_fd = varlisp::getTypedValue<int64_t>(env, args.nth(0), objs[0])) {
         fd = *p_fd;
     }
-    else if (auto * p_list = varlisp::getQuotedList(env, args.nth(0), objs[0])) {
+    else if (const auto * p_list = varlisp::getQuotedList(env, args.nth(0), objs[0])) {
         fd = *requireTypedValue<int64_t>(
             env, p_list->nth(0), proxy_tmp[0],
             "(gumbo-rewrite [fd proxy-domain proxy-port] ...)", 0, DEBUG_INFO);
@@ -634,9 +631,9 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 
     detail::html::resource_manager_t rs_mgr;
     for (size_t i = 1; i < args.length(); ++i) {
-        auto& secondRef = varlisp::getAtomicValue(env, args.nth(i), objs[1]);
+        const auto& secondRef = varlisp::getAtomicValue(env, args.nth(i), objs[1]);
         if (i == 1) {
-            if (auto * p_request_header = boost::get<varlisp::Environment>(&secondRef)) {
+            if (const auto * p_request_header = boost::get<varlisp::Environment>(&secondRef)) {
                 varlisp::detail::http::Environment2ss1x_header(
                     request_header, env, *p_request_header);
                 continue;
@@ -645,12 +642,12 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
 
         Object gpNodeList;
         Object gpNodeObj;
-        if (auto * p_list = varlisp::getQuotedList(env, secondRef, gpNodeList)) {
-            for (auto it = p_list->begin(); it != p_list->end(); ++it) {
-                auto * p_gp = varlisp::getTypedValue<gumboNode>(env, *it, gpNodeObj);
-                if (!p_gp) {
+        if (const auto * p_list = varlisp::getQuotedList(env, secondRef, gpNodeList)) {
+            for (const auto & it : *p_list) {
+                const auto * p_gp = varlisp::getTypedValue<gumboNode>(env, it, gpNodeObj);
+                if (p_gp == nullptr) {
                     std::ostringstream oss;
-                    boost::apply_visitor(raw_stream_visitor(oss, env), *it);
+                    boost::apply_visitor(raw_stream_visitor(oss, env), it);
                     detail::writestring(fd, oss.str());
                 }
                 else {
@@ -660,7 +657,7 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
                 }
             }
         }
-        else if (auto * p_gp = varlisp::getTypedValue<gumboNode>(env, secondRef, gpNodeObj)) {
+        else if (const auto * p_gp = varlisp::getTypedValue<gumboNode>(env, secondRef, gpNodeObj)) {
             detail::html::gumbo_rewrite_impl(fd, *p_gp, output_dir, rs_mgr,
                                              request_header,
                                              proxy_domain, proxy_port);
@@ -671,7 +668,7 @@ Object eval_gumbo_rewrite(varlisp::Environment& env, const varlisp::List& args)
             detail::writestring(fd, oss.str());
         }
     }
-    for (const auto kv : rs_mgr) {
+    for (const auto& kv : rs_mgr) {
         if (!kv.second.is_ok()) {
             COLOG_ERROR(sss::raw_string(kv.first), kv.second);
         }

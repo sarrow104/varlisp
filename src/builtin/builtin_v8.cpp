@@ -21,7 +21,7 @@
 namespace varlisp {
 
 struct varlisp_v8_visitor : varlisp::detail::I_v8_value_visitor {
-    typedef varlisp::detail::I_v8_value_visitor base_type;
+    using base_type = varlisp::detail::I_v8_value_visitor;
     bool visit(v8::Isolate *isolate, v8::Local<v8::Value> val) override;
     void visitNull(v8::Isolate *isolate) override;
     void visitArray(v8::Isolate *isolate, v8::Local<v8::Array> val) override;
@@ -52,7 +52,7 @@ Object eval_v8_run(varlisp::Environment &env, const varlisp::List &args)
     const char * funcName = "v8-run";
     std::array<Object, 1> objs;
 
-    const string_t* p_js_script =
+    const auto* p_js_script =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     varlisp_v8_visitor myVisitor;
@@ -73,7 +73,7 @@ bool varlisp_v8_visitor::visit(v8::Isolate *isolate, v8::Local<v8::Value> val)
     return true;
 }
 
-void varlisp_v8_visitor::visitNull(v8::Isolate *isolate)
+void varlisp_v8_visitor::visitNull(v8::Isolate * /*isolate*/)
 {
     this->obj = varlisp::Nill{};
 }
@@ -81,7 +81,7 @@ void varlisp_v8_visitor::visitNull(v8::Isolate *isolate)
 void varlisp_v8_visitor::visitArray(v8::Isolate *isolate, v8::Local<v8::Array> val)
 {
     this->obj = varlisp::List::makeSQuoteList();
-    auto m_list = boost::get<varlisp::List>(&this->obj)->get_slist();
+    auto *m_list = boost::get<varlisp::List>(&this->obj)->get_slist();
 
     varlisp::detail::v8Env::Accepter acc{isolate};
     acc.loopArray(val, [&](uint32_t i, v8::Local<v8::Value> val) {
@@ -106,7 +106,7 @@ void varlisp_v8_visitor::visitBool(v8::Isolate *isolate, v8::Local<v8::Boolean> 
 void varlisp_v8_visitor::visitObject(v8::Isolate *isolate, v8::Local<v8::Object> val)
 {
     this->obj = varlisp::Environment();
-    auto p_env = boost::get<varlisp::Environment>(&this->obj);
+    auto *p_env = boost::get<varlisp::Environment>(&this->obj);
 
     varlisp::detail::v8Env::Accepter acc{isolate};
     acc.loopObject(val, [&](uint32_t i, v8::Local<v8::Value> key, v8::Local<v8::Value> val) {

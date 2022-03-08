@@ -17,7 +17,7 @@ REGIST_BUILTIN("errno", 0, 0, eval_errno, "(errno) -> int64_t");
  *
  * @return
  */
-Object eval_errno(varlisp::Environment& env, const varlisp::List& args)
+Object eval_errno(varlisp::Environment&  /*env*/, const varlisp::List&  /*args*/)
 {
     return int64_t(errno);
 }
@@ -36,7 +36,7 @@ Object eval_strerr(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "strerr";
     Object obj;
-    const int64_t* p_err =
+    const auto* p_err =
         requireTypedValue<int64_t>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
 
 #if 0

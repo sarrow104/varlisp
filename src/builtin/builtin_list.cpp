@@ -1,6 +1,6 @@
-#include <stdexcept>
 #include <algorithm>
 #include <iterator>
+#include <stdexcept>
 
 #include <sss/util/PostionThrow.hpp>
 
@@ -30,7 +30,7 @@ Object eval_car(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "car";
     Object obj;
     const varlisp::List* p_list = getQuotedList(env, detail::car(args), obj);
-    if (!p_list) {
+    if (p_list == nullptr) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need squote-List)");
     }
@@ -53,7 +53,7 @@ Object eval_cdr(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "cdr";
     Object obj;
-    const varlisp::List* p_list =
+    const auto* p_list =
         requireTypedValue<varlisp::List>(env, args.nth(0), obj, funcName, 0, DEBUG_INFO);
     return p_list->cdr();
 }
@@ -75,11 +75,11 @@ Object eval_car_nth(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "car-nth";
     std::array<Object, 2> objs;
-    const int64_t * p_nth =
+    const auto * p_nth =
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     const varlisp::List* p_list = varlisp::getQuotedList(env, args.nth(1), objs[1]);
     varlisp::requireOnFaild<QuoteList>(p_list, funcName, 1, DEBUG_INFO);
-    int index = *p_nth >= 0 ? *p_nth : p_list->length() + *p_nth;
+    int64_t index = *p_nth >= 0 ? *p_nth : int64_t(p_list->length()) + *p_nth;
     if (index < 0) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": 2nd argument too small; query ", *p_nth, " from ", p_list->size());
@@ -104,12 +104,12 @@ Object eval_cdr_nth(varlisp::Environment& env, const varlisp::List& args)
 {
     const char * funcName = "cdr-nth";
     std::array<Object, 2> objs;
-    const int64_t * p_nth =
+    const auto * p_nth =
         requireTypedValue<int64_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
-    const varlisp::List* p_list =
+    const auto* p_list =
         requireTypedValue<List>(env, args.nth(1), objs[1], funcName, 1, DEBUG_INFO);
 
-    int index = *p_nth >= 0 ? *p_nth : p_list->length() + *p_nth;
+    int64_t index = *p_nth >= 0 ? *p_nth : int64_t(p_list->length()) + *p_nth;
     if (index < 0) {
         SSS_POSITION_THROW(std::runtime_error,
                           "(", funcName, ": 2nd argument too small");
@@ -139,12 +139,10 @@ Object eval_cons(varlisp::Environment& env, const varlisp::List& args)
     if (p_list->empty()) {
         return varlisp::List::makeSQuoteList(headRef);
     }
-    else {
-        // NOTE FIXME
-        // 第二个参数，如果是list，需要拆开，重组！
-        // 如果是单值，则是 dot 并列结构——
-        return varlisp::List::makeCons(headRef, *p_list);
-    }
+    // NOTE FIXME
+    // 第二个参数，如果是list，需要拆开，重组！
+    // 如果是单值，则是 dot 并列结构——
+    return varlisp::List::makeCons(headRef, *p_list);
 }
 // FIXME double quote
 // > (cons 1 '[2])
@@ -169,15 +167,13 @@ Object eval_length(varlisp::Environment& env, const varlisp::List& args)
     if (const varlisp::List * p_list = varlisp::getQuotedList(env, detail::car(args), obj)) {
         return int64_t(p_list->length());
     }
-    else if (const varlisp::Environment* p_env =
+    if (const auto* p_env =
                  varlisp::getTypedValue<varlisp::Environment>(env, detail::car(args),
                                                               obj)) {
         return int64_t(p_env->size());
     }
-    else {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": not support on this object ", detail::car(args), ")");
-    }
+    SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                       ": not support on this object ", detail::car(args), ")");
 }
 
 REGIST_BUILTIN("empty?", 1, 1, eval_empty_q,
@@ -199,15 +195,13 @@ Object eval_empty_q(varlisp::Environment& env, const varlisp::List& args)
     if (const varlisp::List * p_list = getQuotedList(env, detail::car(args), obj)) {
         return p_list->empty();
     }
-    else if (const varlisp::Environment* p_env =
+    if (const auto* p_env =
                  varlisp::getTypedValue<varlisp::Environment>(env, detail::car(args),
                                                               obj)) {
         return p_env->empty();
     }
-    else {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": not support on this object ", detail::car(args), ")");
-    }
+    SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                       ": not support on this object ", detail::car(args), ")");
 }
 
 REGIST_BUILTIN("append", 2, -1, eval_append,
@@ -227,7 +221,7 @@ Object eval_append(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "append";
     std::array<Object, 2> objs;
     const varlisp::List * p_list1 = getQuotedList(env, args.nth(0), objs[0]);
-    if (!p_list1) {
+    if (p_list1 == nullptr) {
         SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                            ": need s-List as the 1st argument)");
     }
@@ -238,7 +232,7 @@ Object eval_append(varlisp::Environment& env, const varlisp::List& args)
     for (size_t i = 1; i != args.size(); ++i) {
         // TODO append single value
         const varlisp::List * p_list2 = getQuotedList(env, args.nth(i), objs[1]);
-        if (!p_list2) {
+        if (p_list2 == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": need s-List as the ", i, "th argument)");
         }
@@ -259,7 +253,7 @@ void append_flat(varlisp::List& out, const varlisp::List& ref)
             // 'symbol
             if (p_inner->is_quoted()) {
                 const auto * p_list = p_inner->get_slist();
-                if (p_list) {
+                if (p_list != nullptr) {
                     detail::append_flat(out, *p_list);
                 }
                 else {
@@ -275,6 +269,7 @@ void append_flat(varlisp::List& out, const varlisp::List& ref)
         }
     }
 }
+
 } // namespace detail
 
 REGIST_BUILTIN("flat", 1, 1, eval_flat,
@@ -364,7 +359,9 @@ Object eval_slice(varlisp::Environment& env, const varlisp::List& args)
     varlisp::requireOnFaild<varlisp::QuoteList>(p_list, funcName, 0, DEBUG_INFO);
 
     varlisp::List ret = varlisp::List();
-    int64_t start = 0, stop = -1, step = 1;
+    int64_t start = 0;
+    int64_t stop = -1;
+    int64_t step = 1;
     std::tie(start, stop, step) = detail::range_require_impl(env, args.tail(), funcName, 1);
     start = detail::index_regular(start, p_list->size());
     stop = detail::index_regular(stop, p_list->size());
@@ -388,7 +385,9 @@ Object eval_range(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "range";
 
     varlisp::List ret = varlisp::List();
-    int64_t start = 0, stop = -1, step = 1;
+    int64_t start = 0;
+    int64_t stop = -1;
+    int64_t step = 1;
     std::tie(start, stop, step) = detail::range_require_impl(env, args, funcName, 0);
     auto offset = stop - start;
     auto times = offset / step;
@@ -419,7 +418,7 @@ Object eval_find(varlisp::Environment& env, const varlisp::List& args)
         p_callAble = &getAtomicValue(env, args.nth(2), objs[2]);
     }
 
-    if (p_callAble) {
+    if (p_callAble != nullptr) {
         for (size_t i = 0; i != p_list->size(); ++i) {
             Object result = varlisp::apply(env, *p_callAble, p_list->sublist(i, 1));
             if (boost::apply_visitor(strict_equal_visitor(env), item, result)) {

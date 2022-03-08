@@ -4,25 +4,27 @@
 //#include <sss/linux/epollPipeRun.hpp>
 
 #include <boost/process/pipe.hpp>
+
 #include <chrono>
 #include <iostream>
-#include <sss/ps.hpp>
-#include <sss/util/Escaper.hpp>
-#include <sss/colorlog.hpp>
-#include <sss/path.hpp>
-#include <sss/path/glob_path.hpp>
-#include <sss/debug/value_msg.hpp>
-#include <sss/raw_print.hpp>
-#include <sss/environ.hpp>
 #include <sstream>
 
+#include <sss/colorlog.hpp>
+#include <sss/debug/value_msg.hpp>
+#include <sss/environ.hpp>
+#include <sss/path.hpp>
+#include <sss/path/glob_path.hpp>
+#include <sss/ps.hpp>
+#include <sss/raw_print.hpp>
+#include <sss/util/Escaper.hpp>
+
+#include "../builtin_helper.hpp"
 #include "../object.hpp"
 #include "../raw_stream_visitor.hpp"
-#include "../builtin_helper.hpp"
 
 #include "../detail/buitin_info_t.hpp"
-#include "../detail/list_iterator.hpp"
 #include "../detail/car.hpp"
+#include "../detail/list_iterator.hpp"
 #include "../detail/varlisp_env.hpp"
 
 namespace {
@@ -70,7 +72,7 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 
     std::array<Object, 1> objs;
 
-    const string_t* p_program =
+    const auto* p_program =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     oss << *p_program->gen_shared();
@@ -104,9 +106,9 @@ Object eval_shell(varlisp::Environment& env, const varlisp::List& args)
 	//pipe_err >> err;
 
     varlisp::List ret = varlisp::List::makeSQuoteList(
-        string_t(std::move(out)), string_t(std::move(err)));
+        string_t(out), string_t(err));
 
-    return Object(ret);
+    return ret;
 }
 
 REGIST_BUILTIN("shell-pipe", 1, -1,  eval_shell_pipe,
@@ -131,7 +133,7 @@ Object eval_shell_pipe(varlisp::Environment& env, const varlisp::List& args)
 
     std::array<Object, 1> objs;
 
-    const string_t* p_program =
+    const auto* p_program =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string cmd = *p_program->gen_shared();
@@ -174,9 +176,9 @@ Object eval_shell_pipe(varlisp::Environment& env, const varlisp::List& args)
 	//pipe_err >> err;
 
     varlisp::List ret = varlisp::List::makeSQuoteList(
-        string_t(std::move(out)), string_t(std::move(err)));
+        string_t(out), string_t(err));
 
-    return Object(ret);
+    return ret;
 }
 
 REGIST_BUILTIN("system", 1, -1,  eval_system,
@@ -200,7 +202,7 @@ Object eval_system(varlisp::Environment& env, const varlisp::List& args)
 
     std::array<Object, 1> objs;
 
-    const string_t* p_program =
+    const auto* p_program =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::ostringstream oss;
@@ -222,11 +224,12 @@ Object eval_system(varlisp::Environment& env, const varlisp::List& args)
         esp.escapeToStream(oss, param);
     }
 
-    std::string out, err;
+    std::string out;
+    std::string err;
 
     COLOG_INFO("(", funcName, ": ", oss.str(), ')');
 
-    return Object(static_cast<int64_t>(std::system(oss.str().c_str())));
+    return {static_cast<int64_t>(std::system(oss.str().c_str()))};
 }
 
 REGIST_BUILTIN("shell-cd", 1, 1, eval_shell_cd,
@@ -244,7 +247,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "shell-cd";
     std::array<Object, 1> objs;
-    const string_t* p_path =
+    const auto* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     std::string target_path = sss::path::full_of_copy(*p_path->gen_shared());
@@ -252,7 +255,7 @@ Object eval_shell_cd(varlisp::Environment& env, const varlisp::List& args)
     bool is_ok = sss::path::chgcwd(target_path);
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
-    return Object(string_t{std::move(sss::path::getcwd())});
+    return {string_t{sss::path::getcwd()}};
 }
 
 REGIST_BUILTIN("shell-mkdir", 1, 1, eval_shell_mkdir,
@@ -262,18 +265,16 @@ Object eval_shell_mkdir(varlisp::Environment& env, const varlisp::List& args)
 {
     const char* funcName = "shell-mkdir";
     std::array<Object, 1> objs;
-    const string_t* p_path =
+    const auto* p_path =
         requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
     bool is_ok = sss::path::mkpath(*p_path->gen_shared());
     COLOG_INFO("(", funcName, ": ", sss::raw_string(*p_path),
                is_ok ? "succeed" : "failed", ")");
     if (is_ok) {
-        return Object(*p_path);
+        return {*p_path};
     }
-    else {
-        return Nill{};
-    }
+    return Nill{};
 }
 
 REGIST_BUILTIN("shell-ls", 0, -1, eval_shell_ls,
@@ -294,11 +295,11 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
     const char * funcName = "shell-ls";
     varlisp::List ret = varlisp::List::makeSQuoteList();
     auto ret_it = detail::list_back_inserter<Object>(ret);
-    if (args.length()) {
+    if (args.length() != 0U) {
 
         for (size_t i = 0; i < args.length(); ++i) {
             std::array<Object, 1> objs;
-            const string_t* p_ls_arg =
+            const auto* p_ls_arg =
                 requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
             std::string ls_path = sss::path::full_of_copy(varlisp::detail::envmgr::expand(*p_ls_arg->gen_shared()));
@@ -314,7 +315,7 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
                         if (fd.is_normal_dir()) {
                             std::string item{fd.get_name()};
                             item += sss::path::sp_char;
-                            *ret_it++ = string_t(std::move(item));
+                            *ret_it++ = string_t(item);
                         }
                         else if (fd.is_normal_file()) {
                             *ret_it++ = string_t(fd.get_name());
@@ -339,14 +340,14 @@ Object eval_shell_ls(varlisp::Environment& env, const varlisp::List& args)
             if (fd.is_normal_dir()) {
                 std::string item{fd.get_name()};
                 item += sss::path::sp_char;
-                *ret_it++ = string_t(std::move(item));
+                *ret_it++ = string_t(item);
             }
             else if (fd.is_normal_file()) {
                 *ret_it++ = string_t(fd.get_name());
             }
         }
     }
-    return Object(ret);
+    return ret;
 }
 
 REGIST_BUILTIN("shell-pwd", 0, 0, eval_shell_pwd,
@@ -364,7 +365,7 @@ Object eval_shell_pwd(varlisp::Environment& env, const varlisp::List& args)
 {
     (void)env;
     (void)args;
-    return Object(string_t(std::move(sss::path::getcwd())));
+    return {string_t(sss::path::getcwd())};
 }
 
 REGIST_BUILTIN("shell-env", 0, 1, eval_shell_env,
@@ -378,7 +379,7 @@ Object eval_shell_env(varlisp::Environment& env, const varlisp::List& args)
         varlisp::Environment sysEnv(&env);
 
         char ** p_env = environ;
-        while (p_env && p_env[0]) {
+        while ((p_env != nullptr) && (p_env[0] != nullptr)) {
             int eq_pos = std::strchr(p_env[0], '=') - p_env[0];
             sysEnv[std::string(p_env[0], eq_pos)] = string_t(std::string(p_env[0] + eq_pos + 1));
             p_env++;
@@ -386,19 +387,15 @@ Object eval_shell_env(varlisp::Environment& env, const varlisp::List& args)
 
         return sysEnv;
     }
-    else {
-        std::array<Object, 1> objs;
-        const string_t* p_path =
-            requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
+    std::array<Object, 1> objs;
+    const auto* p_path =
+        requireTypedValue<varlisp::string_t>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
 
-        const char * p_value = ::getenv(p_path->gen_shared()->c_str());
-        if (!p_value) {
-            return Nill{};
-        }
-        else {
-            return string_t(std::string(p_value));
-        }
+    const char * p_value = ::getenv(p_path->gen_shared()->c_str());
+    if (p_value == nullptr) {
+        return Nill{};
     }
+    return string_t(std::string(p_value));
 }
 
 }  // namespace varlisp
