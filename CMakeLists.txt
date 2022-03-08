@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
+
+#set(CMAKE_TOOLCHAIN_FILE $ENV{CMAKE_TOOLCHAIN_FILE})
+
 set(CMAKE_CXX_STANDARD 20)
 add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors -Werror=return-type)
 add_definitions(-DV8_COMPRESS_POINTERS)
@@ -28,6 +31,7 @@ find_package(Boost COMPONENTS date_time filesystem system thread iostreams)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED) # for -lssl and -lcrypto
 find_package(restclient-cpp CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 #find_library(libbrotlidec NAMES brotlidec PATHS /usr/lib/brotli NO_DEFAULT_PATH)
 
@@ -56,7 +60,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 
 # must below the bin target definition!
-target_link_libraries(${target_name} PRIVATE restclient-cpp re2 ${ss1x} ${sss} uchardet gq gumbo ${Boost_LIBRARIES} Threads::Threads ${OPENSSL_LIBRARIES} v8 v8_libplatform magic iconv z brotlidec)
+target_link_libraries(${target_name} PRIVATE restclient-cpp re2 ${ss1x} ${sss} uchardet gq gumbo ${Boost_LIBRARIES} Threads::Threads ${OPENSSL_LIBRARIES} v8 v8_libplatform magic iconv z brotlidec fmt::fmt-header-only)
 target_link_libraries("test-omegaOption" PRIVATE re2 ${ss1x} ${sss} uchardet iconv)
 
 ### tests
