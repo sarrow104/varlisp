@@ -1,5 +1,6 @@
 Release/
 Debug/
+build/
 varLisp
 varLispD
 history.txt
@@ -11,3 +12,4 @@ tags
 todo.txt
 TODO.md
 **/.DS_Store
+.cache/
