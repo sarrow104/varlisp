@@ -3,6 +3,7 @@
 .PHONY: clean clean-debug clean-release clean-gprof
 .PHONY: gprof gprof-view perf-view
 .PHONY: memcheck-valgrind
+.PHONY: source-count
 CMAKE_FLAGS= -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 RUN_PARAMS=
 
@@ -94,3 +95,7 @@ clean-gprof:
 
 ctest:
 	@(cd Release/tests ; ctest ; cd -)
+
+source-count:
+	cloc src
+	cloc script
