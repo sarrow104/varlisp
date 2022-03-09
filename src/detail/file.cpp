@@ -1,30 +1,28 @@
 #include "file.hpp"
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <functional>
 #include <map>
 #include <stdexcept>
-#include <functional>
 
-#include <sss/util/PostionThrow.hpp>
+#include <sss/macro/defer.hpp>
 #include <sss/path.hpp>
 #include <sss/path/glob_path.hpp>
-#include <sss/macro/defer.hpp>
+#include <sss/util/PostionThrow.hpp>
 
 #if defined (__APPLE__)
-#	include <sys/syslimits.h>
-#	include <fcntl.h>
-#   include <sys/proc_info.h>
+#   include <fcntl.h>
 #   include <libproc.h>
+#   include <sys/proc_info.h>
+#   include <sys/syslimits.h>
 #endif
 
-namespace varlisp {
-namespace detail {
-namespace file {
+namespace varlisp::detail::file {
 
 std::string get_fname_from_fd(int fd)
 {
@@ -101,13 +99,12 @@ bool unregister_fd(int fd)
     auto it = m.find(fd);
     if (it == m.end()) {
         return false;
-    } else {
-        auto path = it->second;
-        m.erase(it);
-        sss::path::remove(path);
-
-        return true;
     }
+    auto path = it->second;
+    m.erase(it);
+    sss::path::remove(path);
+
+    return true;
 }
 
 static void on_exit()
@@ -125,7 +122,7 @@ void list_opened_fd(std::function<void(int fd, const std::string& path)> && func
 #if defined (__APPLE__)
     int pid = getpid();
     int bufferSize = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, 0, 0);
-    struct proc_fdinfo *procFdInfo = (struct proc_fdinfo*)malloc(bufferSize);
+    auto *procFdInfo = (struct proc_fdinfo*)malloc(bufferSize);
     SSS_DEFER(free(procFdInfo));
 
     bufferSize = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, procFdInfo,
@@ -137,7 +134,7 @@ void list_opened_fd(std::function<void(int fd, const std::string& path)> && func
         switch (procFdInfo[i].proc_fdtype) {
         case PROX_FDTYPE_VNODE:
             {
-                struct vnode_fdinfowithpath vnodeInfo;
+                struct vnode_fdinfowithpath vnodeInfo{};
                 int nb = proc_pidfdinfo(pid, procFdInfo[i].proc_fd, PROC_PIDFDVNODEPATHINFO,
                                         &vnodeInfo, PROC_PIDFDVNODEPATHINFO_SIZE);
 
@@ -172,6 +169,4 @@ void list_opened_fd(std::function<void(int fd, const std::string& path)> && func
 #endif
 }
 
-} // namespace file
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail::file

@@ -1,5 +1,5 @@
-#include <set>
 #include <array>
+#include <set>
 #include <vector>
 
 #include <sss/array_view.hpp>
@@ -178,7 +178,7 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
     const varlisp::Environment * p_env = &env;
     int64_t var_count = 0;
     std::array<Object, 1> objs;
-    if (args.length() != 0u) {
+    if (args.length() != 0U) {
        p_env =
             varlisp::requireTypedValue<varlisp::Environment>(env, args.nth(0), objs[0], funcName, 0, DEBUG_INFO);
     }
@@ -187,12 +187,12 @@ Object eval_var_list(varlisp::Environment& env, const varlisp::List& args)
     // keyword不允许覆盖定义
     std::set<std::string> outted;
     for (; p_env != nullptr; p_env = p_env->parent()) {
-        for (auto it = p_env->begin(); it != p_env->end(); ++it) {
-            if (outted.find(it->first) == outted.end()) {
-                std::cout << it->first << "\n"
-                    << "\t" << it->second.first << (it->second.second.is_const ? " CONST" : "")
+        for (const auto & it : *p_env) {
+            if (outted.find(it.first) == outted.end()) {
+                std::cout << it.first << "\n"
+                    << "\t" << it.second.first << (it.second.second.is_const ? " CONST" : "")
                     << std::endl;
-                outted.insert(it->first);
+                outted.insert(it.first);
             }
         }
     }

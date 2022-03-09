@@ -1,17 +1,17 @@
 #include <stdexcept>
 
-#include <sss/util/PostionThrow.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
+#include <sss/util/PostionThrow.hpp>
 
 #include "../object.hpp"
 
 #include "../builtin_helper.hpp"
-#include "../strict_less_visitor.hpp"
 #include "../cast2bool_visitor.hpp"
 #include "../detail/buitin_info_t.hpp"
 #include "../detail/car.hpp"
 #include "../detail/list_iterator.hpp"
+#include "../strict_less_visitor.hpp"
 
 // TODO
 //
@@ -44,8 +44,8 @@ REGIST_BUILTIN("for", 1, -1, eval_for,
 
 Object eval_loop_list(varlisp::Environment& env,
                       const varlisp::symbol& sym,
-                      const varlisp::List slist,
-                      const varlisp::List exprs);
+                      const varlisp::List& slist,
+                      const varlisp::List& exprs);
 
 Object eval_loop_step(varlisp::Environment& env,
                       const varlisp::symbol& sym,
@@ -108,7 +108,7 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
         }
         return eval_loop_list(env, *p_sym, *p_slist, args.tail());
     }
-    else if (4 == ctrl_block_len || (3 == ctrl_block_len && p_sym)) {
+    if (4 == ctrl_block_len || (3 == ctrl_block_len && (p_sym != nullptr))) {
         if (p_sym == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "(", funcName,
                                ": a symbol is_needed as iterator arg; but",
@@ -126,19 +126,17 @@ Object eval_for(varlisp::Environment& env, const varlisp::List& args)
                                 : tmpStep,
             args.tail());
     }
-    else if (3 == ctrl_block_len && (p_sym == nullptr)) {
+    if (3 == ctrl_block_len && (p_sym == nullptr)) {
         return eval_loop_condition(env, p_loop_ctrl, args.tail());
     }
-    else {
-        SSS_POSITION_THROW(std::runtime_error, "(", funcName,
-                           ": invalid arguments: ", args, ")");
-    }
+    SSS_POSITION_THROW(std::runtime_error, "(", funcName,
+                       ": invalid arguments: ", args, ")");
 }
 
 Object eval_loop_list(varlisp::Environment& env,
                       const varlisp::symbol& sym,
-                      const varlisp::List slist,
-                      const varlisp::List exprs)
+                      const varlisp::List& slist,
+                      const varlisp::List& exprs)
 {
     varlisp::Environment inner(&env);
     Object result;
@@ -317,7 +315,7 @@ Object eval_begin(varlisp::Environment& env, const varlisp::List& args)
         COLOG_DEBUG(arg);
         result = boost::apply_visitor(eval_visitor(env), arg);
     }
-    
+
     return result;
 }
 
@@ -338,6 +336,8 @@ Object eval_silent(varlisp::Environment& env, const varlisp::List& args)
     catch( std::exception& e) {
         COLOG_ERROR(e.what());
     }
+    // TODO
+    // cache Object::List
     catch(...) {
         COLOG_ERROR("unkown exception");
     }

@@ -3,14 +3,14 @@
 
 #include <re2/re2.h>
 
-#include <gq/QueryUtil.h>
 #include <gq/DocType.h>
+#include <gq/QueryUtil.h>
 
-#include <sss/string_view.hpp>
+#include <sss/algorithm.hpp>
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
+#include <sss/string_view.hpp>
 #include <sss/utlstring.hpp>
-#include <sss/algorithm.hpp>
 
 #include <ss1x/asio/headers.hpp>
 #include <ss1x/asio/utility.hpp>

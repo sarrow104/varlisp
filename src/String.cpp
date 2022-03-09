@@ -11,9 +11,7 @@ std::shared_ptr<std::string> String::gen_shared() const
     if (this->m_refer && this->data() == this->m_refer->data() && this->size() == this->m_refer->size()) {
         return this->m_refer;
     }
-    else {
-        return std::make_shared<std::string>(this->to_string());
-    }
+    return std::make_shared<std::string>(this->to_string());
 }
 
 String& String::operator=(const std::string& s)

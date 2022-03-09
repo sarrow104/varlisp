@@ -3,15 +3,14 @@
 #include <cctype>
 #include <stdexcept>
 
-#include <sss/util/PostionThrow.hpp>
 #include <sss/colorlog.hpp>
-#include <sss/util/utf8.hpp>
 #include <sss/jsonpp/parser.hpp>
+#include <sss/util/PostionThrow.hpp>
+#include <sss/util/utf8.hpp>
 
 #include "../detail/list_iterator.hpp"
 
-namespace varlisp {
-namespace json {
+namespace varlisp::json {
 
 struct LispHandle
 {
@@ -24,11 +23,11 @@ struct LispHandle
     {}
     bool Null()
     {
-        if (m_kv_value) {
+        if (m_kv_value != nullptr) {
             *m_kv_value = Nill{};
             m_kv_value = nullptr;
         }
-        else if (m_list){
+        else if (m_list != nullptr){
             m_list->append(Nill{});
         }
         else {
@@ -38,11 +37,11 @@ struct LispHandle
     }
     bool Bool(bool v)
     {
-        if (m_kv_value) {
+        if (m_kv_value != nullptr) {
             *m_kv_value = v;
             m_kv_value = nullptr;
         }
-        else if (m_list){
+        else if (m_list != nullptr){
             m_list->append(v);
         }
         else {
@@ -52,11 +51,11 @@ struct LispHandle
     }
     bool Int64(int64_t v)
     {
-        if (m_kv_value) {
+        if (m_kv_value != nullptr) {
             *m_kv_value = v;
             m_kv_value = nullptr;
         }
-        else if (m_list){
+        else if (m_list != nullptr){
             m_list->append(v);
         }
         else {
@@ -66,11 +65,11 @@ struct LispHandle
     }
     bool Double(double v)
     {
-        if (m_kv_value) {
+        if (m_kv_value != nullptr) {
             *m_kv_value = v;
             m_kv_value = nullptr;
         }
-        else if (m_list){
+        else if (m_list != nullptr){
             m_list->append(v);
         }
         else {
@@ -81,11 +80,11 @@ struct LispHandle
     // bool RawNumber(const Ch* str, SizeType length, bool copy);
     bool String(sss::string_view v)
     {
-        if (m_kv_value) {
+        if (m_kv_value != nullptr) {
             *m_kv_value = varlisp::string_t(v.to_string());
             m_kv_value = nullptr;
         }
-        else if (m_list){
+        else if (m_list != nullptr){
             m_list->append(varlisp::string_t(v.to_string()));
         }
         else {
@@ -100,12 +99,12 @@ struct LispHandle
             (*m_stack_obj.back()) = varlisp::Environment();
         }
         else {
-            if (m_kv_value) {
+            if (m_kv_value != nullptr) {
                 *m_kv_value = varlisp::Environment();
                 m_stack_obj.push_back(m_kv_value);
                 m_kv_value = nullptr;
             }
-            else if (m_list){
+            else if (m_list != nullptr){
                 m_list->append(varlisp::Environment());
                 m_stack_obj.push_back(&m_list->nth(m_list->size() - 1));
             }
@@ -118,16 +117,18 @@ struct LispHandle
     bool Key(sss::string_view s)
     {
         std::string name = s.to_string();
-        auto p_env = boost::get<varlisp::Environment>(m_stack_obj.back());
+        auto *p_env = boost::get<varlisp::Environment>(m_stack_obj.back());
         p_env->operator[](name) = Nill{};
         m_kv_value = &p_env->operator[](name);
         return true;
     }
-    bool EndObject(int )
+
+    bool EndObject(int  /*unused*/)
     {
         m_stack_obj.pop_back();
         return true;
     }
+
     bool StartArray()
     {
         if (m_stack_obj.empty()) {
@@ -135,12 +136,12 @@ struct LispHandle
             (*m_stack_obj.back()) = varlisp::List::makeSQuoteList();
         }
         else {
-            if (m_kv_value) {
+            if (m_kv_value != nullptr) {
                 *m_kv_value = varlisp::List::makeSQuoteList();
                 m_stack_obj.push_back(m_kv_value);
                 m_kv_value = nullptr;
             }
-            else if (m_list){
+            else if (m_list != nullptr){
                 m_list->append(varlisp::List::makeSQuoteList());
                 m_stack_obj.push_back(&m_list->nth(m_list->size() - 1));
             }
@@ -151,7 +152,8 @@ struct LispHandle
         }
         return true;
     }
-    bool EndArray(int )
+
+    bool EndArray(int  /*unused*/)
     {
         m_stack_obj.pop_back();
         return false;
@@ -168,7 +170,7 @@ struct JParser
             parse(s, ret);
             this->skip_white_space(s);
             if (!s.empty()) {
-                if (ret.which()) {
+                if (ret.which() != 0) {
                     SSS_POSITION_THROW(std::runtime_error, "extra char:",
                                        sss::raw_char(s.front()));
                 }
@@ -184,6 +186,7 @@ struct JParser
             throw;
         }
     }
+
     bool parse(sss::string_view& s, Object& ret)
     {
         COLOG_DEBUG(s);
@@ -211,37 +214,38 @@ struct JParser
         if (parse(s, ret)) {
             return;
         }
-        else {
-            COLOG_DEBUG(s);
-            switch (m_p.peekType(s)) {
-                case sss::json::Parser::kJE_STRING:
-                    {
-                        std::string str;
-                        this->parse_string(s, str);
-                        ret = varlisp::string_t(std::move(str));
-                    }
-                    break;
 
-                case sss::json::Parser::kJE_NUMBER:
-                    this->parse_number(s, ret);
-                    break;
-
-                case sss::json::Parser::kJE_TRUE:
-                case sss::json::Parser::kJE_FALSE:
-                    this->parse_bool(s, ret);
-                    break;
-
-                case sss::json::Parser::kJE_NULL:
-                    this->parse_null(s, ret);
-                    break;
-
-                default:
-                    SSS_POSITION_THROW(std::runtime_error,
-                                       "unexpect string ", sss::raw_string(s));
-                    break;
+        COLOG_DEBUG(s);
+        switch (m_p.peekType(s)) {
+        case sss::json::Parser::kJE_STRING:
+            {
+                std::string str;
+                this->parse_string(s, str);
+                ret = varlisp::string_t(str);
             }
+            break;
+
+        case sss::json::Parser::kJE_NUMBER:
+            this->parse_number(s, ret);
+            break;
+
+        case sss::json::Parser::kJE_TRUE:
+        case sss::json::Parser::kJE_FALSE:
+            this->parse_bool(s, ret);
+            break;
+
+        case sss::json::Parser::kJE_NULL:
+            this->parse_null(s, ret);
+            break;
+
+        default:
+            SSS_POSITION_THROW(std::runtime_error,
+                               "unexpect string ", sss::raw_string(s));
+            break;
         }
+       
     }
+
     void skip_white_space(sss::string_view& s)
     {
         m_p.consumeWhiteSpace(s);
@@ -274,6 +278,7 @@ struct JParser
         this->consume_or_throw(s, '}', "expect '}'");
         ret = std::move(env);
     }
+
     void parse_array(sss::string_view& s, Object& ret)
     {
         this->consume_or_throw(s, '[', "expect '['");
@@ -307,8 +312,8 @@ struct JParser
     void parse_number(sss::string_view& s, Object& ret)
     {
         std::tuple<double, int64_t> number;
-        int index;
-        if (!m_p.consumeNumber(s, number, index)) {
+        int index = 0;
+        if (m_p.consumeNumber(s, number, index) == 0) {
             return;
         }
 
@@ -323,10 +328,10 @@ struct JParser
 
     void parse_bool(sss::string_view& s, Object& ret)
     {
-        if (m_p.consumeTrue(s)) {
+        if (m_p.consumeTrue(s) != 0) {
             ret = true;
         }
-        else if (m_p.consumeFalse(s)) {
+        else if (m_p.consumeFalse(s) != 0) {
             ret = false;
         }
         else {
@@ -337,7 +342,7 @@ struct JParser
 
     void parse_null(sss::string_view& s, Object& ret)
     {
-        if (m_p.consumeNull(s)) {
+        if (m_p.consumeNull(s) != 0) {
             ret = varlisp::Nill{};
         }
     }
@@ -371,5 +376,5 @@ Object parse(sss::string_view s)
     JParser jp(s, ret);
     return ret;
 }
-} // namespace json
-} // namespace varlisp
+
+} // namespace varlisp::json

@@ -14,8 +14,8 @@ class Interpreter;
 //  <name - Object is_const>
 struct property_t
 {
-    property_t() : is_const(false) {}
-    property_t(bool c) : is_const(c) {}
+    property_t()  = default;
+    explicit property_t(bool c) : is_const(c) {}
     bool is_const = false;
 };
 
@@ -34,7 +34,7 @@ public:
     using const_iterator = BaseT::const_iterator;
     using iterator = BaseT::iterator;
 
-public:
+//public:
     const Object* find(const std::string& name) const;
     Object* find(const std::string& name);
 

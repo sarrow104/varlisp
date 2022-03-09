@@ -32,6 +32,6 @@ void LogicAnd::print(std::ostream& o) const
     o << ")";
 }
 
-bool operator==(const LogicAnd& lhs, const LogicAnd& rhs) { return false; }
-bool operator<(const LogicAnd& lhs, const LogicAnd& rhs) { return false; }
+bool operator==(const LogicAnd&  /*lhs*/, const LogicAnd&  /*rhs*/) { return false; }
+bool operator<(const LogicAnd&  /*lhs*/, const LogicAnd&  /*rhs*/) { return false; }
 }  // namespace varlisp

@@ -4,9 +4,7 @@
 
 #include <sss/colorlog.hpp>
 
-namespace varlisp {
-namespace detail {
-namespace url {
+namespace varlisp::detail::url {
 
 bool full_of(std::string& target, const std::string& mapping)
 {
@@ -23,7 +21,7 @@ bool full_of(std::string& target, const std::string& mapping)
         is_modified = true;
     }
     if (std::get<2>(targets) != std::get<2>(mappings) &&
-        !std::get<2>(targets) && std::get<2>(mappings)) {
+        (std::get<2>(targets) == 0) && (std::get<2>(mappings) != 0)) {
         std::get<2>(targets) = std::get<2>(mappings);
         is_modified = true;
     }
@@ -49,6 +47,5 @@ bool full_of(std::string& target, const std::string& mapping)
     }
     return is_modified;
 }
-} // namespace url
-} // namespace detail
-} // namespace varlisp
+
+} // namespace varlisp::detail::url

@@ -50,7 +50,7 @@ inline const Object& getAtomicValueUnquote(varlisp::Environment& env,
                                            const varlisp::Object& value, Object& tmp)
 {
     const Object& resRef = varlisp::getAtomicValue(env, value, tmp);
-    if (auto * p_list = boost::get<varlisp::List>(&resRef)) {
+    if (const auto * p_list = boost::get<varlisp::List>(&resRef)) {
         if (!p_list->is_quoted()) {
             SSS_POSITION_THROW(std::runtime_error,
                                "require s-list but", resRef);
@@ -75,7 +75,7 @@ inline const varlisp::symbol* getSymbol(varlisp::Environment& env,
                  const varlisp::Object& value, Object& obj)
 {
     const varlisp::symbol* p_sym = boost::get<varlisp::symbol>(&value);
-    if (!p_sym) {
+    if (p_sym == nullptr) {
         obj = boost::apply_visitor(eval_visitor(env), value);
         p_sym = boost::get<varlisp::symbol>(&obj);
     }
@@ -130,18 +130,45 @@ template <> inline const char * typeName<varlisp::regex_t>()     { return "regex
 template <> inline const char * typeName<varlisp::gumboNode>()   { return "gumboNode"; }
 template <> inline const char * typeName<varlisp::QuoteList>()   { return "s-list";  }
 
-inline const char* readableIndex(size_t index)
+struct readableIndex_t
 {
-    static char buf[30] = "";
-    switch (index) {
-        case 0: return "1st"; break;
-        case 1: return "2nd"; break;
-        case 2: return "3rd"; break;
-        case 3: return "4th"; break;
-        default:
-            std::sprintf(buf, "%d", int(index));
-            return buf;
+private:
+    size_t index;
+
+public:
+    explicit readableIndex_t(size_t s) : index(s) {}
+    readableIndex_t(const readableIndex_t& ) = default;
+    readableIndex_t(readableIndex_t&& ) = default;
+    readableIndex_t& operator=(const readableIndex_t& ) = default;
+    readableIndex_t& operator=(readableIndex_t&& ) = default;
+    ~readableIndex_t() = default;
+
+    void print(std::ostream& o) const
+    {
+        o << index << readableIndexSuffix(index);
     }
+
+    static const char* readableIndexSuffix(size_t index)
+    {
+        switch (index) {
+        case 0: return "st"; break;
+        case 1: return "nd"; break;
+        case 2: return "rd"; break;
+        default:
+                return "th"; break;
+        }
+    }
+};
+
+inline std::ostream& operator << (std::ostream& o, const readableIndex_t& r)
+{
+    r.print(o);
+    return o;
+}
+
+inline readableIndex_t readableIndex(size_t index)
+{
+    return readableIndex_t{index};
 }
 
 template <typename T>
@@ -172,7 +199,7 @@ template <typename T>
 inline const T* getQuotedType(varlisp::Environment& env,
                               const varlisp::Object& obj, Object& tmp)
 {
-    const varlisp::List* p_list = varlisp::getTypedValue<varlisp::List>(env, obj, tmp);
+    const auto* p_list = varlisp::getTypedValue<varlisp::List>(env, obj, tmp);
     if (p_list && p_list->is_quoted()) {
         return boost::get<T>(&p_list->nth(1));
     }
@@ -183,7 +210,7 @@ inline bool is_true(varlisp::Environment& env, const varlisp::Object& obj)
 {
     Object res;
     const bool* p_bool = getTypedValue<bool>(env, obj, res);
-    return p_bool && *p_bool;
+    return (p_bool != nullptr) && *p_bool;
 }
 
 // NOTE 注意，第二个参数是 Object的const&；这意味着，这个boost::variant的子类的参数，可以

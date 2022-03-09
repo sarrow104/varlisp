@@ -68,13 +68,13 @@ public:
     {
     }
 
-public:
-    void operator()(const empty& ) const
+//public:
+    void operator()(const empty&  /*unused*/) const
     {
         m_o << "<empty>";
     }
 
-    void operator()(const quote_sign_t& ) const
+    void operator()(const quote_sign_t&  /*unused*/) const
     {
         m_o << "'";
     }
@@ -129,7 +129,7 @@ inline std::ostream& operator << (std::ostream& o, const Token& tok)
 
 class Tokenizer
 {
-    typedef std::string::const_iterator StrIterator;
+    using StrIterator = std::string::const_iterator;
 public:
     Tokenizer();
 
@@ -137,15 +137,15 @@ public:
 
     ~Tokenizer() = default;
 
-public:
+//public:
     Tokenizer(Tokenizer&& ) = default;
     Tokenizer& operator = (Tokenizer&& ) = default;
 
-public:
+//public:
     Tokenizer(const Tokenizer& ) = default;
     Tokenizer& operator = (const Tokenizer& ) = default;
 
-public:
+//public:
     Token   top();
     bool    empty() const;
 
@@ -165,7 +165,7 @@ public:
         return !this->m_consumed.empty() ? this->m_consumed.back() : 0;
     }
 
-public:
+//public:
     void    append(const std::string& scripts);
 
     size_t  tokens_size() const;
@@ -178,7 +178,7 @@ public:
     void    print(std::ostream& o) const;
     void    print_token_stack(std::ostream& o) const;
 
-public:
+//public:
     void    push(const std::string& data = "");
     void    pop();
 

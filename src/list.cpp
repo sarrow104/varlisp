@@ -1,22 +1,22 @@
 #include "list.hpp"
 
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-#include <iterator>
 
 #include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
 #include <sss/log.hpp>
 #include <sss/util/PostionThrow.hpp>
 
+#include "builtin_helper.hpp"
+#include "detail/car.hpp"
 #include "detail/json_accessor.hpp"
+#include "keyword_t.hpp"
 #include "object.hpp"
 #include "print_visitor.hpp"
 #include "strict_equal_visitor.hpp"
-#include "builtin_helper.hpp"
-#include "detail/car.hpp"
-#include "keyword_t.hpp"
 
 namespace varlisp {
 
@@ -97,8 +97,8 @@ void List::append_list(const List& l)
 {
     this->make_unique();
     m_refer->reserve(this->size() + l.size());
-    for (auto it = l.begin(); it != l.end(); ++it) {
-        m_refer->emplace_back(*it);
+    for (const auto & it : l) {
+        m_refer->emplace_back(it);
     }
     m_length += l.size();
 }
@@ -108,8 +108,8 @@ void List::append_list(List&& l)
     if (l.is_unique()) {
         this->make_unique();
         m_refer->reserve(this->size() + l.size());
-        for (auto it = l.begin(); it != l.end(); ++it) {
-            m_refer->emplace_back(std::move(*it));
+        for (auto & it : l) {
+            m_refer->emplace_back(std::move(it));
         }
         m_length += l.size();
     }
@@ -128,16 +128,16 @@ void List::append(varlisp::Environment& env, const Object& o)
 void List::append(varlisp::Environment& env, Object&& o)
 {
     Object tmp;
-    this->append(std::move(varlisp::getAtomicValue(env, o, tmp)));
+    this->append(varlisp::getAtomicValue(env, o, tmp));
 }
 
 void List::append_list(varlisp::Environment& env, const List& l)
 {
     this->make_unique();
     m_refer->reserve(this->size() + l.size());
-    for (auto it = l.begin(); it != l.end(); ++it) {
+    for (const auto & it : l) {
         Object tmp;
-        m_refer->push_back(varlisp::getAtomicValue(env, *it, tmp));
+        m_refer->push_back(varlisp::getAtomicValue(env, it, tmp));
     }
     m_length += l.size();
 }
@@ -147,9 +147,9 @@ void List::append_list(varlisp::Environment& env, List&& l)
     if (l.is_unique()) {
         this->make_unique();
         m_refer->reserve(this->size() + l.size());
-        for (auto it = l.begin(); it != l.end(); ++it) {
+        for (auto & it : l) {
             Object tmp;
-            m_refer->emplace_back(std::move(varlisp::getAtomicValue(env, *it, tmp)));
+            m_refer->emplace_back(varlisp::getAtomicValue(env, it, tmp));
         }
         m_length += l.size();
     }
@@ -293,7 +293,7 @@ void List::clear()
     m_length = 0;
 }
 
-bool operator==(const List& lhs, const List& rhs)
+bool operator==(const List&  /*lhs*/, const List&  /*rhs*/)
 {
     // return boost::apply_visitor(strict_equal_visitor(), lhs.head, rhs.head)
     //     && ((lhs.tail.empty() && rhs.tail.empty()) ||
@@ -301,7 +301,7 @@ bool operator==(const List& lhs, const List& rhs)
     return false;
 }
 
-bool operator<(const List& lhs, const List& rhs)
+bool operator<(const List&  /*lhs*/, const List&  /*rhs*/)
 {
     // TODO FIXME
     return false;
@@ -311,7 +311,7 @@ const Object * List::objAt(size_t i) const
 {
     const List* p = none_empty_squote_check();
 
-    if (p && p->size() > i) {
+    if ((p != nullptr) && p->size() > i) {
         return &p->nth(i);
     }
     return nullptr;
@@ -321,7 +321,7 @@ Object * List::objAt(size_t i)
 {
     List* p = const_cast<List*>(none_empty_squote_check());
 
-    if (p && p->size() > i) {
+    if ((p != nullptr) && p->size() > i) {
         return &p->nth(i);
     }
     return nullptr;
@@ -332,7 +332,7 @@ const Object * List::unquote() const
     if (this->m_length >= 1) {
         const auto * p_key =
             boost::get<varlisp::keywords_t>(&this->front());
-        if (!p_key || p_key->type() != keywords_t::kw_QUOTE) {
+        if ((p_key == nullptr) || p_key->type() != keywords_t::kw_QUOTE) {
             return nullptr;
         }
         if (this->m_length != 2) {
@@ -385,7 +385,7 @@ const List * List::none_empty_squote_check() const
     }
     else {
         const auto * p_l = boost::get<varlisp::List>(&this->nth(1));
-        if (!p_l) {
+        if (p_l == nullptr) {
             SSS_POSITION_THROW(std::runtime_error, "expect a list; but", this->nth(1));
         }
         if (p_l->size() == 0) {
@@ -415,7 +415,7 @@ Object& List::nth(size_t i)
 
 List List::tail(size_t offset) const
 {
-    if (!m_length) {
+    if (m_length == 0U) {
         SSS_POSITION_THROW(std::runtime_error, "empty list");
     }
     if (offset >= m_length) {
@@ -424,29 +424,29 @@ List List::tail(size_t offset) const
     }
     ++offset;
     if (offset == m_length) {
-        return List();
+        return {};
     }
-    else {
-        return List(m_refer, m_start + offset , m_length - offset);
-    }
+    // NOTE {} will collision with {object...}
+    return List(m_refer, m_start + offset, m_length - offset);
 }
 
 List List::sublist(size_t offset, size_t len) const
 {
-    if (!m_length && len) {
+    if ((m_length == 0U) && (len != 0U)) {
         SSS_POSITION_THROW(std::runtime_error, "none-empty sublist from an empty list");
     }
     if (offset >= m_length) {
         SSS_POSITION_THROW(std::runtime_error,
                            "require ", offset, "th tail; but only ", m_length, "element(s).");
     }
-    return List(m_refer, m_start + offset , std::min(m_length - offset, len));
+    // NOTE {} will collision with {object...}
+    return List(m_refer, m_start + offset, std::min(m_length - offset, len));
 }
 
 // 注意，这是lisp语义的car！
 Object List::car(size_t n) const
 {
-    auto p_l = none_empty_squote_check();
+    const auto *p_l = none_empty_squote_check();
     return p_l->nth(n);
 }
 
@@ -454,7 +454,7 @@ Object List::car(size_t n) const
 Object List::cdr(size_t n) const
 {
     // FIXME 是否需要s-list？
-    auto p_l = none_empty_squote_check();
+    const auto *p_l = none_empty_squote_check();
     COLOG_DEBUG(*p_l);
     return List({
         varlisp::keywords_t{keywords_t::kw_QUOTE},

@@ -2,21 +2,21 @@
 
 #include <sstream>
 
+#include <sss/colorlog.hpp>
 #include <sss/debug/value_msg.hpp>
 #include <sss/log.hpp>
 #include <sss/util/Memory.hpp>
 #include <sss/util/PostionThrow.hpp>
-#include <sss/colorlog.hpp>
 
-#include <ss1x/parser/oparser.hpp>
 #include <ss1x/parser/exception.hpp>
+#include <ss1x/parser/oparser.hpp>
 
-#include "environment.hpp"
 #include "builtin_helper.hpp"
+#include "detail/list_iterator.hpp"
+#include "environment.hpp"
+#include "keyword_t.hpp"
 #include "print_visitor.hpp"
 #include "tokenizer.hpp"
-#include "detail/list_iterator.hpp"
-#include "keyword_t.hpp"
 
 namespace detail {
 bool & parser_colog_switch()

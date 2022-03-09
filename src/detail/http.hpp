@@ -10,10 +10,7 @@
 
 #include "../environment.hpp"
 
-namespace varlisp {
-
-namespace detail {
-namespace http {
+namespace varlisp::detail::http {
 
 void Environment2ss1x_header(ss1x::http::Headers& header,
                              varlisp::Environment& env,
@@ -45,7 +42,4 @@ void downloadUrl(
     const ss1x::http::Headers& request_header,
     int max_test = 5);
 
-} // namespace http
-
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail::http

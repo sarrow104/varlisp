@@ -2,15 +2,16 @@
 
 #include "../gumboNode.hpp"
 
-#include <gsl/util>
 #include <iostream>
 #include <map>
+#include <utility>
 
 #include <ss1x/asio/headers.hpp>
 
 #include <sss/raw_print.hpp>
 
 #include <gsl/gsl>
+#include <gsl/util>
 
 namespace varlisp::detail::html {
 
@@ -23,9 +24,9 @@ enum file_status_t {
 };
 
 struct local_info_t {
-    local_info_t() {};
-    local_info_t(const std::string& path, uint64_t size, file_status_t fs)
-        : path(path), fsize(size), status(fs){};
+    local_info_t() = default;
+    local_info_t(std::string  path, uint64_t size, file_status_t fs)
+        : path(std::move(path)), fsize(size), status(fs){};
     std::string   path;
     uint64_t      fsize = 0;
     file_status_t status = fs_NONE;

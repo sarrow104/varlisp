@@ -7,12 +7,11 @@
 
 #include <memory>
 
-namespace varlisp {
-namespace detail {
+namespace varlisp::detail {
 
 struct gfw_omegaoption : public gfw_base {
-    gfw_omegaoption(std::string omegaPath);
-    ~gfw_omegaoption();
+    explicit gfw_omegaoption(std::string omegaPath);
+    ~gfw_omegaoption() override;
 
     std::string host;
     int port;
@@ -25,5 +24,4 @@ struct gfw_omegaoption : public gfw_base {
     int get_port() const override;
 };
 
-}
-}
+} // namespace varlisp::detail

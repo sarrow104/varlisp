@@ -27,7 +27,7 @@ struct Environment;
 // 如果，让 head==EMPTY, tail==vector.empty() 来表示nil节点的话；是不能够，再附
 // 加一个nil的！
 struct List {
-    List() {}
+    List() = default;
     List(std::initializer_list<Object> l);
     // List(const Object& h, const List& t);
     List(const List& l) = default;

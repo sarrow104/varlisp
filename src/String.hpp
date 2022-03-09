@@ -1,9 +1,10 @@
 #pragma once
 
-#include <memory>
 #include <iosfwd>
+#include <memory>
 
 #include <sss/string_view.hpp>
+#include <utility>
 
 #include <re2/re2.h>
 
@@ -34,12 +35,12 @@ public:
     String& operator=(const std::string&);
     String& operator=(std::string&&);
 
-    String(sss::string_view s, bool )
+    String(sss::string_view s, bool  /*unused*/)
         : sss::string_view(s)
     {
     }
 
-    String& assign(sss::string_view s, bool )
+    String& assign(sss::string_view s, bool  /*unused*/)
     {
         this->clear();
         this->sss::string_view::operator=(s);
@@ -48,7 +49,7 @@ public:
 
 protected:
     String(sss::string_view s, std::shared_ptr<std::string> ref)
-        : sss::string_view(s), m_refer(ref)
+        : sss::string_view(s), m_refer(std::move(ref))
     {
     }
 
@@ -59,7 +60,7 @@ public:
         if (this->m_refer) {
             const char * buf = this->m_refer->data();
             size_t len = this->m_refer->length();
-            return (buf && this->data() >= buf && this->data() < (buf + len));
+            return ((buf != nullptr) && this->data() >= buf && this->data() < (buf + len));
         }
         return false;
     }
@@ -115,11 +116,12 @@ private:
     std::shared_ptr<std::string> m_refer;
 };
 
-typedef String string_t;
+using string_t = String;
 
 inline std::ostream& operator<<(std::ostream& o, const String& s)
 {
     s.print(o);
     return o;
 }
+
 }  // namespace varlisp

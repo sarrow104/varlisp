@@ -1,5 +1,5 @@
-#include <vector>
 #include <cstring>
+#include <vector>
 
 #include <re2/re2.h>
 
@@ -7,10 +7,9 @@
 
 #include "../builtin_helper.hpp"
 #include "../detail/buitin_info_t.hpp"
-#include "../json_print_visitor.hpp"
-#include "../json/parser.hpp"
 #include "../detail/car.hpp"
-#include "../detail/buitin_info_t.hpp"
+#include "../json/parser.hpp"
+#include "../json_print_visitor.hpp"
 
 #include <fmt/core.h>
 

@@ -142,14 +142,14 @@ struct list_const_iterator_t {
     explicit list_const_iterator_t(const varlisp::List* p_list)
         : m_list_ptr(p_list)
     {
-        if (m_list_ptr) {
+        if (m_list_ptr != nullptr) {
             // 如果是slist
             //  则枚举内部的list
             // 如果是'atom
             //  则定位到atom，即，可以取一次值
             if (m_list_ptr->is_quoted()) {
-                auto p_slist = m_list_ptr->get_slist();
-                if (p_slist) {
+                const auto *p_slist = m_list_ptr->get_slist();
+                if (p_slist != nullptr) {
                     m_list_ptr = p_slist;
                     m_it = m_list_ptr->begin();
                 }
@@ -191,7 +191,7 @@ struct list_const_iterator_t {
     }
     bool is_ok() const
     {
-        if (m_list_ptr) {
+        if (m_list_ptr != nullptr) {
             if (m_it == varlisp::List::const_iterator()) {
                 SSS_POSITION_THROW(std::runtime_error, "not init iterator");
             }
@@ -204,10 +204,9 @@ struct list_const_iterator_t {
         if (is_ok()) {
             return this;
         }
-        else {
-            return nullptr;
-        }
+        return nullptr;
     }
+
     list_const_iterator_t operator++(int)
     {
         list_const_iterator_t ret(*this);

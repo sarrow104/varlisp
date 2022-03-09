@@ -51,7 +51,7 @@ std::string v8Env::Accepter::to_string(v8::Local<v8::String> str) const
 
 void v8Env::Accepter::loopArray(
     v8::Local<v8::Array> arr,
-    std::function<void(uint32_t index, v8::Local<v8::Value> val)> func) const
+    const std::function<void(uint32_t index, v8::Local<v8::Value> val)>& func) const
 {
     auto context = isolate->GetCurrentContext();
     for (uint32_t i = 0; i != arr->Length(); ++i) {
@@ -62,7 +62,7 @@ void v8Env::Accepter::loopArray(
 
 void v8Env::Accepter::loopObject(
     v8::Local<v8::Object> obj,
-    std::function<void(uint32_t index, v8::Local<v8::Value> key, v8::Local<v8::Value> val)> func) const
+    const std::function<void(uint32_t index, v8::Local<v8::Value> key, v8::Local<v8::Value> val)>& func) const
 {
     auto context = isolate->GetCurrentContext();
     // v8::Local<v8::Array> propertyNames = obj->GetPropertyNames(context).ToLocalChecked();
@@ -97,12 +97,13 @@ std::string v8_value_as_string(v8::Isolate * isolate, const v8::Local<v8::Value>
     return *utf8;
 }
 
-v8Env::v8Env(const char * name)
-    : isolate(nullptr)
+v8::Isolate* NewV8Isolate(const char * name,
+                          std::unique_ptr<v8::Platform>& platform,
+                          v8::Isolate::CreateParams& create_params)
 {
     v8::V8::InitializeICUDefaultLocation(name);
     v8::V8::InitializeExternalStartupData(name);
-    this->platform = v8::platform::NewDefaultPlatform();
+    platform = v8::platform::NewDefaultPlatform();
     v8::V8::InitializePlatform(platform.get());
     v8::V8::Initialize();
 
@@ -110,7 +111,12 @@ v8Env::v8Env(const char * name)
     create_params.array_buffer_allocator =
         v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
-    isolate = v8::Isolate::New(create_params);
+    return v8::Isolate::New(create_params);
+}
+
+v8Env::v8Env(const char * name)
+    : isolate(NewV8Isolate(name, this->platform, this->create_params))
+{
     //COLOG_INFO(isolate);
 }
 
@@ -122,7 +128,7 @@ v8Env::~v8Env()
     delete create_params.array_buffer_allocator;
 }
 
-void v8Env::runWithResult(std::string raw_script, std::function<void(v8::Local<v8::Value>)> func)
+void v8Env::runWithResult(const std::string& raw_script, const std::function<void(v8::Local<v8::Value>)>& func)
 {
     // NOTE isolate_scope 变量，以及下面的 context_scope，都要求在 stack 上创建——对于js的操作，必须被
     // 包裹在里面！

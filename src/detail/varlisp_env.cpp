@@ -5,9 +5,7 @@
 
 extern char ** environ;
 
-namespace varlisp {
-namespace detail {
-namespace envmgr {
+namespace varlisp::detail::envmgr {
 
 struct pgr_wrapper_t {
     sss::PenvMgr2 mgr;
@@ -43,11 +41,7 @@ std::string expand(const std::string& path)
     if (path.find('$') != std::string::npos) {
         return envmgr::get_instance().get_expr(path);
     }
-    else {
-        return path;
-    }
+    return path;
 }
 
-} // namespace envmgr
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail::envmgr

@@ -15,19 +15,22 @@ struct Empty;
 struct Nill;
 struct symbol;
 struct String;
-typedef String string_t;
+using string_t = String;
 
 struct print_visitor : public boost::static_visitor<void> {
+private:
     std::ostream& m_o;
-    print_visitor(std::ostream& o) : m_o(o) {}
+
+public:
+    explicit print_visitor(std::ostream& o) : m_o(o) {}
     template <typename T>
     void operator()(const T& v) const
     {
         m_o << v;
     }
 
-    void operator()(const Empty&                  ) const {}
-    void operator()(const Nill&                   ) const { m_o << "nil";             }
+    void operator()(const Empty&                   /*unused*/) const {}
+    void operator()(const Nill&                    /*unused*/) const { m_o << "nil";             }
     void operator()(bool v                        ) const { m_o << (v ? "#t" : "#f"); }
     void operator()(const string_t& v             ) const ;
     void operator()(const varlisp::symbol& s      ) const ;

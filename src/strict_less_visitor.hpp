@@ -12,8 +12,11 @@
 
 namespace varlisp {
 struct strict_less_visitor : boost::static_visitor<bool> {
+private:
     varlisp::Environment& m_env;
-    strict_less_visitor(varlisp::Environment& env) : m_env(env) {}
+
+public:
+    explicit strict_less_visitor(varlisp::Environment& env) : m_env(env) {}
     template <typename T, typename U>
     bool operator()(const T& lhs, const U& rhs) const
     {
@@ -33,17 +36,17 @@ struct strict_less_visitor : boost::static_visitor<bool> {
         return lhs < rhs;
     }
 
-    bool operator()(Empty lhs, Empty rhs) const
+    bool operator()(Empty  /*lhs*/, Empty  /*rhs*/) const
     {
         throw std::runtime_error("Empty < Empty");
     }
-    bool operator()(Nill lhs, Nill rhs) const
+    bool operator()(Nill  /*lhs*/, Nill  /*rhs*/) const
     {
         throw std::runtime_error("Nill < Nill");
     }
 
-    bool operator()(const varlisp::regex_t& lhs,
-                    const varlisp::regex_t& rhs) const
+    bool operator()(const varlisp::regex_t&  /*lhs*/,
+                    const varlisp::regex_t&  /*rhs*/) const
     {
         throw std::runtime_error("regex_t < regex_t");
     }

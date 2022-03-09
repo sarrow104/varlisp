@@ -9,8 +9,8 @@
 #include "../builtin_helper.hpp"
 
 #include "../detail/buitin_info_t.hpp"
-#include "../detail/list_iterator.hpp"
 #include "../detail/car.hpp"
+#include "../detail/list_iterator.hpp"
 #include "../detail/magic.hpp"
 
 namespace varlisp {

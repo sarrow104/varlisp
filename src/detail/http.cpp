@@ -20,8 +20,7 @@
 #include "../builtin_helper.hpp"
 #include "url.hpp"
 
-namespace varlisp {
-namespace detail {
+namespace varlisp::detail {
 
 int64_t get_value_with_default(std::string name, int64_t def);
 
@@ -217,7 +216,7 @@ void downloadUrlCurlImpl(
             break;
 
         case curl_method_patch:
-            if (!ptr_post_body) {
+            if (ptr_post_body == nullptr) {
                 COLOG_ERROR("null ptr_post_body");
                 respond_header.status_code = 0;
                 return;
@@ -226,7 +225,7 @@ void downloadUrlCurlImpl(
             break;
 
         case curl_method_post:
-            if (!ptr_post_body) {
+            if (ptr_post_body == nullptr) {
                 COLOG_ERROR("null ptr_post_body");
                 respond_header.status_code = 0;
                 return;
@@ -313,7 +312,7 @@ void downloadUrl(
     std::ostringstream oss;
 
     ss1x::http::Headers request_header2;
-    ss1x::http::Headers* p_req = const_cast<ss1x::http::Headers*>(&request_header);
+    auto* p_req = const_cast<ss1x::http::Headers*>(&request_header);
 
     do {
         oss.str("");
@@ -335,13 +334,13 @@ void downloadUrl(
                 cur_url = headers["Location"];
                 continue;
             }
-            else if (headers.status_code == 403 && p_req->has("Referer")) {
+            if (headers.status_code == 403 && p_req->has("Referer")) {
                 request_header2 = request_header;
                 request_header2.unset("Referer");
                 p_req = &request_header2;
                 continue;
             }
-            else if (headers.status_code == 0) {
+            if (headers.status_code == 0) {
                 // NOTE zero means nothing happend or totally failed;
                 // so try again
                 continue;
@@ -353,9 +352,7 @@ void downloadUrl(
                 max_content = oss.str();
                 break;
             }
-            else {
-                COLOG_ERROR(ec, "; loop = ", max_test);
-            }
+            COLOG_ERROR(ec, "; loop = ", max_test);
         }
         else {
             std::string content_length_str = headers.get("Content-Length");
@@ -372,7 +369,7 @@ void downloadUrl(
                             SSS_VALUE_MSG(content_length));
                 break;
             }
-            else if (actual_recieved < content_length) {
+            if (actual_recieved < content_length) {
                 COLOG_DEBUG(SSS_VALUE_MSG(actual_recieved), '<',
                             SSS_VALUE_MSG(content_length));
                 // retry
@@ -387,6 +384,6 @@ void downloadUrl(
         }
     } while (max_test-- > 0);
 }
+
 } // namespace http
-} // namespace detail
-} // namespace varlisp
+} // namespace varlisp::detail

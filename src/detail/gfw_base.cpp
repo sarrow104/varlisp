@@ -1,12 +1,12 @@
 // src/detail/gfw_base.cpp
 #include "gfw_base.hpp"
 #include "gfw_omegaoption.hpp"
+
 #include "consumer.hpp"
 
 #include <memory>
 
-namespace varlisp {
-namespace detail {
+namespace varlisp::detail {
 
 std::shared_ptr<gfw_base> gfw_base::make_mgr(int type, std::string omegaPath)
 {
@@ -33,7 +33,7 @@ bool gfw_need_proxy_with(const re2::RE2& reg, const std::string &url)
         return true;
     }
 
-    if (trim_positive_if(sv, [](char c)->bool { return std::isalpha(c); }) &&
+    if (trim_positive_if(sv, [](char c)->bool { return std::isalpha(c) != 0; }) &&
         trim_one(sv, ':') &&
         trim_times(sv, 2, '/'))
     {
@@ -47,6 +47,5 @@ bool gfw_need_proxy_with(const re2::RE2& reg, const std::string &url)
     return false;
 }
 
-}
-}
+} // namespace varlisp::detail
 

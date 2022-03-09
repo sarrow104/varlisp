@@ -1,8 +1,8 @@
 #include "fmt_print_visitor.hpp"
 
 #include "String.hpp"
-#include "symbol.hpp"
 #include "keyword_t.hpp"
+#include "symbol.hpp"
 
 namespace varlisp {
 
@@ -26,4 +26,5 @@ void fmt_print_visitor::operator()(const varlisp::Environment& e) const
 {
     m_fmt.print(m_o, e);
 }
+
 }  // namespace varlisp

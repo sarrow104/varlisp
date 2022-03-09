@@ -9,7 +9,10 @@
 
 namespace varlisp {
 struct strict_equal_visitor : boost::static_visitor<bool> {
+private:
     Environment& m_env;
+
+public:
     explicit strict_equal_visitor(Environment& env) : m_env(env) {}
 
     template <typename T>
@@ -18,12 +21,12 @@ struct strict_equal_visitor : boost::static_visitor<bool> {
         return lhs == rhs;
     }
 
-    bool operator()(Empty lhs, Empty rhs) const
+    bool operator()(Empty  /*lhs*/, Empty  /*rhs*/) const
     {
         throw std::runtime_error("Empty = Empty");
     }
 
-    bool operator()(Nill lhs, Nill rhs) const
+    bool operator()(Nill  /*lhs*/, Nill  /*rhs*/) const
     {
         return true;
     }
